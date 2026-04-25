@@ -1,6 +1,8 @@
 import { useState } from "react";
-
 import { useNavigate } from "react-router-dom";
+import QuickAccessToolbar from "./fabric/subcomponents/QuickAccessToolbar";
+import FabricFilterPanel from "./fabric/subcomponents/FabricFilterPanel";
+import FabricDetailModal from "./fabric/subcomponents/FabricDetailModal";
 
 
 
@@ -918,925 +920,614 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
 
 
 
-        {/* Quick Access Toolbar - Reference Design */}
-
-        <div className="quick-access-container">
-
-          <div className="quick-access-inner">
-
-            {/* Left - AI Bot Large */}
-
-            <button className="qa-btn qa-ai-bot" title="AI Bot">
-
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-
-                <rect x="4" y="10" width="16" height="10" rx="3" />
-
-                <circle cx="12" cy="5" r="2.5" />
-
-                <path d="M12 8v3" />
-
-                <path d="M9 14h6" />
-
-              </svg>
-
-              <span>AI Bot</span>
-
-            </button>
+        <QuickAccessToolbar 
+          isToolbarCollapsed={isToolbarCollapsed} 
+          setIsToolbarCollapsed={setIsToolbarCollapsed} 
+        />
 
 
 
-            {/* Right Column */}
+        {/* FABRIC TAB CONTENT */}
 
-            <div className="qa-right-col">
+        {activeTab === "fabric" && (
 
-              {/* Top Row */}
+          <>
 
-              <div className="qa-row">
+            <div className="fabric-search-bar">
 
-                <button className="qa-btn qa-pill" title="Profile">
+              <div className="fabric-search-input-wrapper">
 
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <input
 
-                    <circle cx="12" cy="7" r="3.5" />
+                  type="text"
 
-                    <path d="M4 20c0-3.5 3.5-5.5 8-5.5s8 2 8 5.5" />
+                  placeholder="Search fabrics..."
 
-                  </svg>
+                  className="fabric-search-input"
 
-                  <span>Profile with symbol</span>
+                  value={searchTerm}
 
-                </button>
+                  onChange={(e) => setSearchTerm(e.target.value)}
 
-                <button className="qa-btn qa-pill" title="Saved">
-
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-
-                    <path d="M13 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-
-                    <polyline points="13 2 13 8 19 8" />
-
-                    <line x1="12" y1="18" x2="12" y2="12" />
-
-                    <line x1="9" y1="15" x2="15" y2="15" />
-
-                  </svg>
-
-                  <span>Saved files symbol</span>
-
-                </button>
+                />
 
               </div>
 
+              <button className="fabric-filter-btn" onClick={() => setShowFilterPanel(true)}>
 
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
 
-              {/* Bottom Row - Toggleable */}
+                  <path d="M4 4h16M4 8h10M4 12h6M4 16h10M4 20h16" strokeWidth="2" strokeLinecap="round" />
 
-              {!isToolbarCollapsed && (
+                </svg>
 
-                <div className="qa-row">
+                Filter
 
-                  <button className="qa-btn qa-pill" title="Normal">
-
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-
-                      <path d="M6 3h12l4 6-4 2v11H6V11L2 9l4-6z" />
-
-                      <path d="M12 3v20" />
-
-                    </svg>
-
-                    <span>Normal</span>
-
-                  </button>
-
-                  <button className="qa-btn qa-pill" title="Tuxedo">
-
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-
-                      <path d="M6 3h12l4 6-4 2v11H6V11L2 9l4-6z" />
-
-                      <path d="M12 3v20" />
-
-                      <path d="M9 7l3-3 3 3" />
-
-                    </svg>
-
-                    <span>Tuxedo</span>
-
-                  </button>
-
-                </div>
-
-              )}
+              </button>
 
             </div>
 
-          </div>
 
 
+            <div className="fabric-list-modern">
 
-          {/* Min/Max Toggle - Bottom Center */}
+              {filteredFabrics.map((fabric) => (
 
-          <button
+                <div
 
-            className="qa-toggle-center"
+                  key={fabric.id}
 
-            onClick={() => setIsToolbarCollapsed(!isToolbarCollapsed)}
+                  className={`fabric-row-card ${
 
-          >
+                    selected?.id === fabric.id ? "active" : ""
 
-            <span>{isToolbarCollapsed ? "Maximize to select style preference" : ""}</span>
+                  }`}
 
-            <svg
+                  onClick={() => onSelect(fabric)}
 
-              viewBox="0 0 24 24"
+                >
 
-              fill="#e74c3c"
+                  <div className="fabric-row-border"></div>
 
-              className={isToolbarCollapsed ? "" : "rotated"}
+                  <div className="fabric-row-content">
 
-            >
+                    <div className="fabric-row-image-wrapper">
 
-              <path d="M12 16l-6-6h12z" />
+                      {fabric.thumbnail ? (
 
-            </svg>
+                        <img src={fabric.thumbnail} alt={fabric.name} className="fabric-thumbnail" />
 
-          </button>
+                      ) : (
 
-        </div>
+                        <div
 
-      </div>
+                          className="fabric-color-swatch"
 
+                          style={{ backgroundColor: fabric.color || "#ccc" }}
 
+                        >
 
-      {/* FABRIC TAB CONTENT */}
+                          {fabric.pattern === "stripe" && <div className="fabric-pattern stripe" />}
 
-      {activeTab === "fabric" && (
+                        </div>
 
-        <>
+                      )}
 
-          <div className="fabric-search-bar">
+                      {selected?.id === fabric.id && (
 
-            <div className="fabric-search-input-wrapper">
+                        <div className="fabric-row-checkmark">
 
-              <input
+                          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
 
-                type="text"
+                            <polyline points="20 6 9 17 4 12" />
 
-                placeholder="Search fabrics..."
+                          </svg>
 
-                className="fabric-search-input"
+                        </div>
 
-                value={searchTerm}
+                      )}
 
-                onChange={(e) => setSearchTerm(e.target.value)}
+                      <div className="fabric-row-info" onClick={(e) => openFabricDetail(fabric, e)}>
 
-              />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
 
-            </div>
+                          <circle cx="12" cy="12" r="10" />
 
-            <button className="fabric-filter-btn" onClick={() => setShowFilterPanel(true)}>
-
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-
-                <path d="M4 4h16M4 8h10M4 12h6M4 16h10M4 20h16" strokeWidth="2" strokeLinecap="round" />
-
-              </svg>
-
-              Filter
-
-            </button>
-
-          </div>
-
-
-
-          <div className="fabric-list-modern">
-
-            {filteredFabrics.map((fabric) => (
-
-              <div
-
-                key={fabric.id}
-
-                className={`fabric-row-card ${
-
-                  selected?.id === fabric.id ? "active" : ""
-
-                }`}
-
-                onClick={() => onSelect(fabric)}
-
-              >
-
-                <div className="fabric-row-border"></div>
-
-                <div className="fabric-row-content">
-
-                  <div className="fabric-row-image-wrapper">
-
-                    {fabric.thumbnail ? (
-
-                      <img src={fabric.thumbnail} alt={fabric.name} className="fabric-thumbnail" />
-
-                    ) : (
-
-                      <div
-
-                        className="fabric-color-swatch"
-
-                        style={{ backgroundColor: fabric.color || "#ccc" }}
-
-                      >
-
-                        {fabric.pattern === "stripe" && <div className="fabric-pattern stripe" />}
-
-                      </div>
-
-                    )}
-
-                    {selected?.id === fabric.id && (
-
-                      <div className="fabric-row-checkmark">
-
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-
-                          <polyline points="20 6 9 17 4 12" />
+                          <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
 
                         </svg>
 
                       </div>
 
-                    )}
+                    </div>
 
-                    <div className="fabric-row-info" onClick={(e) => openFabricDetail(fabric, e)}>
+                    <div className="fabric-info">
 
-                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-
-                        <circle cx="12" cy="12" r="10" />
-
-                        <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
-
-                      </svg>
+                      <h4 className="fabric-name">{fabric.name}</h4>
 
                     </div>
 
                   </div>
 
-                  <div className="fabric-info">
-
-                    <h4 className="fabric-name">{fabric.name}</h4>
-
-                  </div>
-
                 </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </>
-
-      )}
-
-
-
-      {/* CUSTOMIZE TAB CONTENT */}
-
-      {activeTab === "customize" && (
-
-        <div className="customize-panel">
-
-          {!selectedCategory ? (
-
-            // Category Selection View
-
-            <>
-
-              {/* Your Style Section */}
-
-              <div className="your-style-card" onClick={() => setShowStyleConfirm(true)}>
-
-                <div className="your-style-icon">
-
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-
-                  </svg>
-
-                </div>
-
-                <div className="your-style-info">
-
-                  <span className="your-style-label">Your Style</span>
-
-                  <span className="your-style-value">{styleNames[garmentType] || "Classic"}</span>
-
-                </div>
-
-                <div className="your-style-edit">
-
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-
-                  </svg>
-
-                </div>
-
-              </div>
-
-
-
-              {/* Customization Categories */}
-
-              <div className="customize-categories">
-
-                {Object.entries(categoriesSource).map(([key, category]) => (
-
-                  <div 
-
-                    key={key} 
-
-                    className="customize-category-card"
-
-                    onClick={() => handleCategoryClick(key)}
-
-                  >
-
-                    <div className="customize-category-image">
-
-                      <img src={selected?.thumbnail || category.options?.[0]?.image} alt={category.title} />
-
-                    </div>
-
-                    <div className="customize-category-info">
-
-                      <h4>{category.title}</h4>
-
-                      <p>{category.options?.find(o => o.selected)?.name || category.options?.[0]?.name}</p>
-
-                    </div>
-
-                    <div className="customize-category-arrow">
-
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-                        <path d="M9 18l6-6-6-6" />
-
-                      </svg>
-
-                    </div>
-
-                  </div>
-
-                ))}
-
-              </div>
-
-            </>
-
-          ) : (
-
-            // Detail Options View
-
-            <>
-
-              {/* Back Header */}
-
-              <div className="customize-detail-header">
-
-                <button className="customize-back-btn" onClick={handleBackClick}>
-
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-                    <path d="M15 18l-6-6 6-6" />
-
-                  </svg>
-
-                </button>
-
-                <h3 className="customize-detail-title">
-
-                  {categoriesSource?.[selectedCategory]?.title}
-
-                </h3>
-
-              </div>
-
-
-
-              {/* Optional: Contrast/Second Tab for some categories */}
-
-              {(selectedCategory === "collar" || selectedCategory === "cuff") && !!categoriesSource?.[selectedCategory]?.contrastOptions?.length && (
-
-                <div className="customize-detail-tabs">
-
-                  <button 
-
-                    className={activeDetailTab === "main" ? "active" : ""}
-
-                    onClick={() => setActiveDetailTab("main")}
-
-                  >
-
-                    {selectedCategory === "collar" ? "Collar" : "Cuff"}
-
-                  </button>
-
-                  <button 
-
-                    className={activeDetailTab === "contrast" ? "active" : ""}
-
-                    onClick={() => setActiveDetailTab("contrast")}
-
-                  >
-
-                    Contrast
-
-                  </button>
-
-                </div>
-
-              )}
-
-
-
-              {/* Search (for buttons category) */}
-
-              {categoriesSource?.[selectedCategory]?.searchable && (
-
-
-                <div className="customize-detail-search">
-
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-                    <circle cx="11" cy="11" r="8" />
-
-                    <path d="m21 21-4.35-4.35" strokeLinecap="round" />
-
-                  </svg>
-
-                  <input
-
-                    type="text"
-
-                    placeholder="Search"
-
-                    value={customizeSearch}
-
-                    onChange={(e) => setCustomizeSearch(e.target.value)}
-
-                  />
-
-                </div>
-
-              )}
-
-
-
-              {/* Options List */}
-
-              <div className="customize-options-list">
-
-                {(() => {
-
-                  const category = categoriesSource?.[selectedCategory];
-
-                  if (!category) return null;
-
-
-                  
-
-                  // Use contrast options when contrast tab is active and available
-
-                  const optionsToShow = (activeDetailTab === "contrast" && category.contrastOptions) 
-
-                    ? category.contrastOptions 
-
-                    : category.options;
-
-                  
-
-                  const filteredOptions = optionsToShow.filter(opt => 
-
-                    customizeSearch === "" || 
-
-                    opt.name.toLowerCase().includes(customizeSearch.toLowerCase()) ||
-
-                    opt.code?.toLowerCase().includes(customizeSearch.toLowerCase())
-
-                  );
-
-                  
-
-                  return filteredOptions.map((option) => (
-
-                    <div 
-
-                      key={option.id} 
-
-                      className={`customize-option-card ${option.selected ? 'selected' : ''}`}
-
-                      onClick={() => {
-
-                        // Trigger focus area zoom when selecting a style option
-
-                        if (onFocusAreaChange && selectedCategory) {
-
-                          onFocusAreaChange(selectedCategory);
-
-                        }
-
-
-
-                        // Trigger layer update in parent component
-
-                        if (onPieceChange && selectedCategory) {
-
-                          onPieceChange(selectedCategory, option, activeDetailTab === "contrast");
-
-                        }
-
-                      }}
-
-                    >
-
-                      <div className="customize-option-image">
-
-                        <img 
-                          src={activeDetailTab === "contrast" ? (option.image || selected?.thumbnail) : (option.image || selected?.thumbnail)} 
-                          alt={option.name} 
-                          onError={(e) => {
-                            e.target.src = selected?.thumbnail || "/assets/shirt/body.avif";
-                          }}
-                        />
-
-                      </div>
-
-                      <div className="customize-option-info">
-
-                        <div className="customize-option-header">
-
-                          <h4>{option.name}</h4>
-
-                          {option.code && <span className="customize-option-code">{option.code}</span>}
-
-                        </div>
-
-                        <p className="customize-option-desc">{option.description}</p>
-
-                      </div>
-
-                    </div>
-
-                  ));
-
-                })()}
-
-              </div>
-
-            </>
-
-          )}
-
-        </div>
-
-      )}
-
-
-
-      {/* FINISH TAB CONTENT */}
-
-      {activeTab === "finish" && (
-
-        <div className="finish-panel">
-
-          {/* Selected Fabric Preview */}
-
-          <div className="finish-fabric-preview">
-
-            <h3 className="finish-panel-title">Selected Design</h3>
-
-            <div className="finish-fabric-card-small">
-
-              <div className="finish-fabric-image-small">
-
-                {selected?.thumbnail ? (
-
-                  <img src={selected.thumbnail} alt={selected.name} />
-
-                ) : (
-
-                  <div 
-
-                    className="finish-fabric-swatch"
-
-                    style={{ backgroundColor: selected?.color || '#ccc' }}
-
-                  >
-
-                    {selected?.pattern === 'stripe' && <div className="fabric-pattern stripe" />}
-
-                  </div>
-
-                )}
-
-              </div>
-
-              <div className="finish-fabric-info">
-
-                <span className="finish-fabric-name">{selected?.name || 'No fabric selected'}</span>
-
-                <span className="finish-fabric-type">{styleNames[garmentType] || 'Classic'}</span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-
-          {/* Full Preview */}
-
-          <div className="finish-full-preview">
-
-            <h3 className="finish-panel-title">Full Preview</h3>
-
-            <div className="finish-full-image-wrapper">
-
-              {selected?.layers?.map((layer, index) => (
-
-                <img
-
-                  key={index}
-
-                  src={layer}
-
-                  alt={`${selected?.name} layer ${index + 1}`}
-
-                  className="finish-full-layer"
-
-                  style={{ zIndex: index }}
-
-                />
 
               ))}
 
             </div>
 
-          </div>
+          </>
 
+        )}
 
 
-          {/* Action Button */}
 
-          <button 
+        {/* CUSTOMIZE TAB CONTENT */}
 
-            className="finish-action-btn"
+        {activeTab === "customize" && (
 
-            onClick={() => {
+          <div className="customize-panel">
 
-              // Navigate to finish page with selected fabric data
+            {!selectedCategory ? (
 
-              navigate('/finish', {
+              // Category Selection View
 
-                state: {
+              <>
 
-                  garmentType,
+                {/* Your Style Section */}
 
-                  fabric: selected,
+                <div className="your-style-card" onClick={() => setShowStyleConfirm(true)}>
 
-                  styleName: styleNames[garmentType] || 'Classic',
+                  <div className="your-style-icon">
 
-                  customizationOptions: customizationOptions[garmentType] || customizationOptions.shirt
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 
-                }
-
-              });
-
-            }}
-
-          >
-
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-              <polyline points="20 6 9 17 4 12" />
-
-            </svg>
-
-            <span>Complete & Review</span>
-
-          </button>
-
-        </div>
-
-      )}
-
-
-
-      {showStyleConfirm && (
-
-        <div className="style-confirm-overlay" onClick={() => setShowStyleConfirm(false)}>
-
-          <div className="style-confirm-modal" onClick={(e) => e.stopPropagation()}>
-
-            <h3 className="style-confirm-title">Move to Choose your style?</h3>
-
-            <p className="style-confirm-subtitle">
-
-              This will take you to the style selection page for the current garment.
-
-            </p>
-
-            <div className="style-confirm-actions">
-
-              <button className="style-confirm-btn cancel" onClick={() => setShowStyleConfirm(false)}>
-
-                No
-
-              </button>
-
-              <button className="style-confirm-btn confirm" onClick={handleGoToStyle}>
-
-                Yes
-
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
-
-
-
-      {/* Fabric Detail Modal */}
-
-      {showModal && selectedFabricDetail && (
-
-        <div className="fabric-modal-overlay" onClick={closeModal}>
-
-          <div className="fabric-modal" onClick={(e) => e.stopPropagation()}>
-
-            <button className="fabric-modal-close" onClick={closeModal}>
-
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-
-              </svg>
-
-            </button>
-
-
-
-            <div className="fabric-modal-content">
-
-              {/* Left Side - Full Shirt Preview */}
-
-              <div className="fabric-modal-left">
-
-                <div className="fabric-modal-label">FABRIC DETAIL</div>
-
-                <div className="fabric-modal-image-wrapper fabric-full-view">
-
-                  {/* Fullscreen icon */}
-
-                  <div className="fabric-modal-fullscreen" onClick={openFullscreen}>
-
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-
-                      <path d="M15 3h6v6M14 10l7-7M3 21l7-7m-7 7v-6m0 6h6" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 
                     </svg>
 
                   </div>
 
-                  {/* Stack all layers to show complete shirt */}
+                  <div className="your-style-info">
 
-                  {selectedFabricDetail.layers?.map((layer, index) => (
+                    <span className="your-style-label">Your Style</span>
 
-                    <img
+                    <span className="your-style-value">{styleNames[garmentType] || "Classic"}</span>
 
-                      key={index}
+                  </div>
 
-                      src={layer}
+                  <div className="your-style-edit">
 
-                      alt={`${selectedFabricDetail.name} layer ${index + 1}`}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
 
-                      className="fabric-layer-image"
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
 
-                      style={{ zIndex: index }}
+                      <polyline points="13 2 13 8 19 8" />
 
-                    />
+                      <line x1="12" y1="18" x2="12" y2="12" />
+
+                      <line x1="9" y1="15" x2="15" y2="15" />
+
+                    </svg>
+
+                  </div>
+
+                </div>
+
+
+
+                {/* Customization Categories */}
+
+                <div className="customize-categories">
+
+                  {Object.entries(categoriesSource).map(([key, category]) => (
+
+                    <div 
+
+                      key={key} 
+
+                      className="customize-category-card"
+
+                      onClick={() => handleCategoryClick(key)}
+
+                    >
+
+                      <div className="customize-category-image">
+
+                        <img src={selected?.thumbnail || category.options?.[0]?.image} alt={category.title} />
+
+                      </div>
+
+                      <div className="customize-category-info">
+
+                        <h4>{category.title}</h4>
+
+                        <p>{category.options?.find(o => o.selected)?.name || category.options?.[0]?.name}</p>
+
+                      </div>
+
+                      <div className="customize-category-arrow">
+
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+                          <path d="M9 18l6-6-6-6" />
+
+                        </svg>
+
+                      </div>
+
+                    </div>
 
                   ))}
 
                 </div>
 
-              </div>
+              </>
 
+            ) : (
 
+              // Detail Options View
 
-              {/* Right Side - Details */}
+              <>
 
-              <div className="fabric-modal-right">
+                {/* Back Header */}
 
-                <h2 className="fabric-modal-title">{selectedFabricDetail.name}</h2>
+                <div className="customize-detail-header">
 
+                  <button className="customize-back-btn" onClick={handleBackClick}>
 
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
 
-                <p className="fabric-modal-description">
+                      <path d="M15 18l-6-6 6-6" />
 
-                  A luxurious blend of wool, silk, and linen with a distinctive herringbone pattern. Perfect for sophisticated formal occasions.
+                    </svg>
 
-                </p>
+                  </button>
 
+                  <h3 className="customize-detail-title">
 
+                    {categoriesSource?.[selectedCategory]?.title}
 
-                <div className="fabric-modal-specs-title">FABRIC SPECIFICATIONS</div>
-
-
-
-                <div className="fabric-modal-specs">
-
-                  <div className="fabric-modal-spec-row">
-
-                    <div className="fabric-modal-spec-item full-width">
-
-                      <label>COMPOSITION</label>
-
-                      <span>70% Wool, 18% Silk, 12% Linen</span>
-
-                    </div>
-
-                  </div>
-
-
-
-                  <div className="fabric-modal-spec-row">
-
-                    <div className="fabric-modal-spec-item">
-
-                      <label>WEIGHT</label>
-
-                      <span>220g/m2</span>
-
-                    </div>
-
-                    <div className="fabric-modal-spec-item">
-
-                      <label>SEASON</label>
-
-                      <span>Spring/Summer</span>
-
-                    </div>
-
-                  </div>
-
-
-
-                  <div className="fabric-modal-spec-row">
-
-                    <div className="fabric-modal-spec-item full-width">
-
-                      <label>FABRIC CODE</label>
-
-                      <span>210702/8027</span>
-
-                    </div>
-
-                  </div>
+                  </h3>
 
                 </div>
 
 
 
-                <button
+                {/* Optional: Contrast/Second Tab for some categories */}
 
-                  className="fabric-modal-select-btn"
+                {(selectedCategory === "collar" || selectedCategory === "cuff") && !!categoriesSource?.[selectedCategory]?.contrastOptions?.length && (
 
-                  onClick={() => {
+                  <div className="customize-detail-tabs">
 
-                    onSelect(selectedFabricDetail);
+                    <button 
 
-                    closeModal();
+                      className={activeDetailTab === "main" ? "active" : ""}
 
-                  }}
+                      onClick={() => setActiveDetailTab("main")}
 
-                >
+                    >
 
-                  SELECT THIS FABRIC
+                      {selectedCategory === "collar" ? "Collar" : "Cuff"}
+
+                    </button>
+
+                    <button 
+
+                      className={activeDetailTab === "contrast" ? "active" : ""}
+
+                      onClick={() => setActiveDetailTab("contrast")}
+
+                    >
+
+                      Contrast
+
+                    </button>
+
+                  </div>
+
+                )}
+
+
+
+                {/* Search (for buttons category) */}
+
+                {categoriesSource?.[selectedCategory]?.searchable && (
+
+
+                  <div className="customize-detail-search">
+
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+                      <circle cx="11" cy="11" r="8" />
+
+                      <path d="M21 21-4.35-4.35" strokeLinecap="round" />
+
+                    </svg>
+
+                    <input
+
+                      type="text"
+
+                      placeholder="Search"
+
+                      value={customizeSearch}
+
+                      onChange={(e) => setCustomizeSearch(e.target.value)}
+
+                    />
+
+                  </div>
+
+                )}
+
+
+
+                {/* Options List */}
+
+                <div className="customize-options-list">
+
+                  {(() => {
+
+                    const category = categoriesSource?.[selectedCategory];
+
+                    if (!category) return null;
+
+
+                    
+
+                    // Use contrast options when contrast tab is active and available
+
+                    const optionsToShow = (activeDetailTab === "contrast" && category.contrastOptions) 
+
+                      ? category.contrastOptions 
+
+                      : category.options;
+
+                    
+
+                    const filteredOptions = optionsToShow.filter(opt => 
+
+                      customizeSearch === "" || 
+
+                      opt.name.toLowerCase().includes(customizeSearch.toLowerCase()) ||
+
+                      opt.code?.toLowerCase().includes(customizeSearch.toLowerCase())
+
+                    );
+
+                    
+
+                    return filteredOptions.map((option) => (
+
+                      <div 
+
+                        key={option.id} 
+
+                        className={`customize-option-card ${option.selected ? 'selected' : ''}`}
+
+                        onClick={() => {
+
+                          // Trigger focus area zoom when selecting a style option
+
+                          if (onFocusAreaChange && selectedCategory) {
+
+                            onFocusAreaChange(selectedCategory);
+
+                          }
+
+
+
+                          // Trigger layer update in parent component
+
+                          if (onPieceChange && selectedCategory) {
+
+                            onPieceChange(selectedCategory, option, activeDetailTab === "contrast");
+
+                          }
+
+                        }}
+
+                      >
+
+                        <div className="customize-option-image">
+
+                          <img 
+                            src={activeDetailTab === "contrast" ? (option.image || selected?.thumbnail) : (option.image || selected?.thumbnail)} 
+                            alt={option.name} 
+                            onError={(e) => {
+                              e.target.src = selected?.thumbnail || "/assets/shirt/body.avif";
+                            }}
+                          />
+
+                        </div>
+
+                        <div className="customize-option-info">
+
+                          <div className="customize-option-header">
+
+                            <h4>{option.name}</h4>
+
+                            {option.code && <span className="customize-option-code">{option.code}</span>}
+
+                          </div>
+
+                          <p className="customize-option-desc">{option.description}</p>
+
+                        </div>
+
+                      </div>
+
+                    ));
+
+                  })()}
+
+                </div>
+
+              </>
+
+            )}
+
+          </div>
+
+        )}
+
+
+
+        {/* FINISH TAB CONTENT */}
+
+        {activeTab === "finish" && (
+
+          <div className="finish-panel">
+
+            {/* Selected Fabric Preview */}
+
+            <div className="finish-fabric-preview">
+
+              <h3 className="finish-panel-title">Selected Design</h3>
+
+              <div className="finish-fabric-card-small">
+
+                <div className="finish-fabric-image-small">
+
+                  {selected?.thumbnail ? (
+
+                    <img src={selected.thumbnail} alt={selected.name} />
+
+                  ) : (
+
+                    <div 
+
+                      className="finish-fabric-swatch"
+
+                      style={{ backgroundColor: selected?.color || '#ccc' }}
+
+                    >
+
+                      {selected?.pattern === 'stripe' && <div className="fabric-pattern stripe" />}
+
+                    </div>
+
+                  )}
+
+                </div>
+
+                <div className="finish-fabric-info">
+
+                  <span className="finish-fabric-name">{selected?.name || 'No fabric selected'}</span>
+
+                  <span className="finish-fabric-type">{styleNames[garmentType] || 'Classic'}</span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            {/* Full Preview */}
+
+            <div className="finish-full-preview">
+
+              <h3 className="finish-panel-title">Full Preview</h3>
+
+              <div className="finish-full-image-wrapper">
+
+                {selected?.layers?.map((layer, index) => (
+
+                  <img
+
+                    key={index}
+
+                    src={layer}
+
+                    alt={`${selected?.name} layer ${index + 1}`}
+
+                    className="finish-full-layer"
+
+                    style={{ zIndex: index }}
+
+                  />
+
+                ))}
+
+              </div>
+
+            </div>
+
+
+
+            {/* Action Button */}
+
+            <button 
+
+              className="finish-action-btn"
+
+              onClick={() => {
+
+                // Navigate to finish page with selected fabric data
+
+                navigate('/finish', {
+
+                  state: {
+
+                    garmentType,
+
+                    fabric: selected,
+
+                    styleName: styleNames[garmentType] || 'Classic',
+
+                    customizationOptions: customizationOptions[garmentType] || customizationOptions.shirt
+
+                  }
+
+                });
+
+              }}
+
+            >
+
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+                <polyline points="20 6 9 17 4 12" />
+
+              </svg>
+
+              <span>Complete & Review</span>
+
+            </button>
+
+          </div>
+
+        )}
+
+
+
+        {showStyleConfirm && (
+
+          <div className="style-confirm-overlay" onClick={() => setShowStyleConfirm(false)}>
+
+            <div className="style-confirm-modal" onClick={(e) => e.stopPropagation()}>
+
+              <h3 className="style-confirm-title">Move to Choose your style?</h3>
+
+              <p className="style-confirm-subtitle">
+
+                This will take you to the style selection page for the current garment.
+
+              </p>
+
+              <div className="style-confirm-actions">
+
+                <button className="style-confirm-btn cancel" onClick={() => setShowStyleConfirm(false)}>
+
+                  No
+
+                </button>
+
+                <button className="style-confirm-btn confirm" onClick={handleGoToStyle}>
+
+                  Yes
 
                 </button>
 
@@ -1846,77 +1537,31 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
 
           </div>
 
-        </div>
-
-      )}
+        )}
 
 
 
-      {/* Fullscreen Preview */}
-
-      {showFullscreen && selectedFabricDetail && (
-
-        <div className="fabric-fullscreen-overlay" onClick={closeFullscreen}>
-
-          <div className="fabric-fullscreen-content" onClick={(e) => e.stopPropagation()}>
-
-            <button className="fabric-fullscreen-close" onClick={closeFullscreen}>
-
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-
-                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-
-              </svg>
-
-            </button>
-
-            <div className="fabric-fullscreen-image">
-
-              {selectedFabricDetail.layers?.map((layer, index) => (
-
-                <img
-
-                  key={index}
-
-                  src={layer}
-
-                  alt={`${selectedFabricDetail.name} layer ${index + 1}`}
-
-                  className="fabric-fullscreen-layer"
-
-                  style={{ zIndex: index }}
-
-                />
-
-              ))}
-
-            </div>
-
-            <p className="fabric-fullscreen-name">{selectedFabricDetail.name}</p>
-
-          </div>
-
-        </div>
-
-      )}
+        <FabricDetailModal 
+          showModal={showModal} 
+          selectedFabricDetail={selectedFabricDetail} 
+          closeModal={closeModal} 
+          openFullscreen={openFullscreen} 
+          onSelect={onSelect} 
+        />
 
 
 
-      {/* Filter Panel - Slide from right */}
+        {/* Fullscreen Preview */}
 
-      {showFilterPanel && (
+        {showFullscreen && selectedFabricDetail && (
 
-        <div className="fabric-filter-overlay" onClick={() => setShowFilterPanel(false)}>
+          <div className="fabric-fullscreen-overlay" onClick={closeFullscreen}>
 
-          <div className="fabric-filter-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="fabric-fullscreen-content" onClick={(e) => e.stopPropagation()}>
 
-            <div className="fabric-filter-header">
+              <button className="fabric-fullscreen-close" onClick={closeFullscreen}>
 
-              <h3>Filter Fabrics</h3>
-
-              <button className="fabric-filter-close" onClick={() => setShowFilterPanel(false)}>
-
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
 
                   <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
 
@@ -1924,209 +1569,50 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
 
               </button>
 
-            </div>
+              <div className="fabric-fullscreen-image">
 
+                {selectedFabricDetail.layers?.map((layer, index) => (
 
+                  <img
 
-            <div className="fabric-filter-content">
+                    key={index}
 
-              {/* Sort By Section */}
+                    src={layer}
 
-              <div className="fabric-filter-section">
+                    alt={`${selectedFabricDetail.name} layer ${index + 1}`}
 
-                <div className="fabric-filter-section-header">
+                    className="fabric-fullscreen-layer"
 
-                  <h4>Sort by</h4>
+                    style={{ zIndex: index }}
 
-                  <button
+                  />
 
-                    className="fabric-filter-collapse"
-
-                    onClick={() => setCollapsedSections({ ...collapsedSections, sort: !collapsedSections.sort })}
-
-                  >
-
-                    {collapsedSections.sort ? "+" : "−"}
-
-                  </button>
-
-                </div>
-
-                {!collapsedSections.sort && (
-
-                  <div className="fabric-filter-options">
-
-                    {[
-
-                      { value: "default", label: "Default" },
-
-                      { value: "newest", label: "Newest" }
-
-                    ].map((option) => (
-
-                      <label key={option.value} className="fabric-filter-option">
-
-                        <input
-
-                          type="radio"
-
-                          name="sort"
-
-                          value={option.value}
-
-                          checked={sortBy === option.value}
-
-                          onChange={() => setSortBy(option.value)}
-
-                        />
-
-                        <span>{option.label}</span>
-
-                      </label>
-
-                    ))}
-
-                  </div>
-
-                )}
+                ))}
 
               </div>
 
-
-
-              {/* Color Section */}
-
-              <div className="fabric-filter-section">
-
-                <div className="fabric-filter-section-header">
-
-                  <h4>Color</h4>
-
-                  <button
-
-                    className="fabric-filter-collapse"
-
-                    onClick={() => setCollapsedSections({ ...collapsedSections, color: !collapsedSections.color })}
-
-                  >
-
-                    {collapsedSections.color ? "+" : "−"}
-
-                  </button>
-
-                </div>
-
-                {!collapsedSections.color && (
-
-                  <div className="fabric-filter-color-grid">
-
-                    {[
-
-                      { name: "Blue", color: "#4A5568" },
-
-                      { name: "White", color: "#FFFFFF", border: true },
-
-                      { name: "Brown", color: "#8B6F5C" },
-
-                      { name: "Green", color: "#68A07C" },
-
-                      { name: "Purple", color: "#8B7AA8" },
-
-                      { name: "Black", color: "#1A1A1A" },
-
-                      { name: "Grey", color: "#9BA5B0" },
-
-                      { name: "Red", color: "#8B4545" }
-
-                    ].map((color) => (
-
-                      <label key={color.name} className="fabric-filter-color-option">
-
-                        <input
-
-                          type="checkbox"
-
-                          checked={selectedColors.includes(color.name)}
-
-                          onChange={() => {
-
-                            if (selectedColors.includes(color.name)) {
-
-                              setSelectedColors(selectedColors.filter((c) => c !== color.name));
-
-                            } else {
-
-                              setSelectedColors([...selectedColors, color.name]);
-
-                            }
-
-                          }}
-
-                        />
-
-                        <div
-
-                          className={`fabric-filter-color-swatch ${color.border ? "has-border" : ""}`}
-
-                          style={{ backgroundColor: color.color }}
-
-                        />
-
-                        <span>{color.name}</span>
-
-                      </label>
-
-                    ))}
-
-                  </div>
-
-                )}
-
-              </div>
-
-            </div>
-
-
-
-            <div className="fabric-filter-footer">
-
-              <button
-
-                className="fabric-filter-clear"
-
-                onClick={() => {
-
-                  setSortBy("default");
-
-                  setSelectedColors([]);
-
-                }}
-
-              >
-
-                Clear All
-
-              </button>
-
-              <button
-
-                className="fabric-filter-apply"
-
-                onClick={() => setShowFilterPanel(false)}
-
-              >
-
-                Apply Filters
-
-              </button>
+              <p className="fabric-fullscreen-name">{selectedFabricDetail.name}</p>
 
             </div>
 
           </div>
 
-        </div>
+        )}
 
-      )}
+
+
+        <FabricFilterPanel 
+          showFilterPanel={showFilterPanel} 
+          setShowFilterPanel={setShowFilterPanel} 
+          collapsedSections={collapsedSections} 
+          setCollapsedSections={setCollapsedSections} 
+          sortBy={sortBy} 
+          setSortBy={setSortBy} 
+          selectedColors={selectedColors} 
+          setSelectedColors={setSelectedColors} 
+        />
+
+      </div>
 
     </div>
 
