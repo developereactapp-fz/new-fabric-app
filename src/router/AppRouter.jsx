@@ -21,9 +21,42 @@ import VerificationSuccess from "../features/verification/VerificationSuccess";
 import SavedDesigns from "../features/save/SavedDesigns";
 import SavedDesignDetails from "../features/save/SavedDesignDetails";
 
+// Admin imports
+import AdminLayout from "../admin/AdminLayout";
+import AdminDashboard from "../admin/pages/AdminDashboard";
+import PlaceholderPage from "../admin/pages/PlaceholderPage";
+import FabricConfiguratorPage from "../admin/pages/FabricConfigurator/FabricConfiguratorPage";
+import CategoryConfiguratorPage from "../admin/pages/CategoryConfigurator/CategoryConfiguratorPage";
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <Routes>
+        {/* ═══════ Admin Routes ═══════ */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="fabric-configurator" element={<FabricConfiguratorPage />} />
+          <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
+          <Route path="fabric-onboarding" element={<PlaceholderPage title="Fabric Onboarding" />} />
+          <Route path="materials-panel" element={<PlaceholderPage title="Materials Panel" />} />
+          <Route path="category-components" element={<PlaceholderPage title="Category-wise Components" />} />
+          <Route path="custom-shirt" element={<PlaceholderPage title="Custom Shirt Form" />} />
+          <Route path="fabric-detail" element={<PlaceholderPage title="Fabric Detail" />} />
+          <Route path="component-active" element={<PlaceholderPage title="Component Active" />} />
+          <Route path="group-builder" element={<PlaceholderPage title="Group Builder" />} />
+          <Route path="contrast-mapper" element={<PlaceholderPage title="Contrast Group Mapper" />} />
+        </Route>
+
+        {/* ═══════ Customer Routes ═══════ */}
+        <Route path="/*" element={<CustomerApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function CustomerApp() {
+  return (
+    <>
       <Header />
       <main className="app-content">
         <Routes>
@@ -69,6 +102,6 @@ export default function AppRouter() {
 
         </Routes>
       </main>
-    </BrowserRouter>
+    </>
   );
 }

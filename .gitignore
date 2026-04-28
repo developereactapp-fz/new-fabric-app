@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+context.md
+output_final_names_1_example.xlsx
