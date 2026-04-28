@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import SubCategoryManager from "./SubCategoryManager";
 import { isDuplicate } from "../../utils/validators";
 
 export default function ComponentManager({ categoryId, categoryName, selectedComponentId, onSelectComponent }) {
@@ -149,6 +150,14 @@ export default function ComponentManager({ categoryId, categoryName, selectedCom
             )}
           </div>
         </div>
+      )}
+
+      {/* Sub-Category Manager (shown when component selected + has values) */}
+      {selectedComp && (
+        <SubCategoryManager
+          componentId={selectedComponentId}
+          componentName={selectedComp.name}
+        />
       )}
 
       <ConfirmDialog

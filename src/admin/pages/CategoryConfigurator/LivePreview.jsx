@@ -58,35 +58,74 @@ export default function LivePreview({ categoryId, categoryName }) {
 
                     {values.length > 0 && (
                       <div className="cc-tree-children">
-                        {values.map((val) => (
-                          <div key={val.id} className={`cc-tree-node value ${val.isDefault ? "default" : ""}`}>
-                            <span className="cc-tree-icon">{val.isDefault ? "⭐" : "•"}</span>
-                            <span className="cc-tree-label">{val.valueName}</span>
-                            {val.isDefault && <span className="cc-tree-badge">Default</span>}
-                            <span className={`cc-tree-status ${val.status}`}>{val.status}</span>
-                          </div>
-                        ))}
+                        {values.map((val) => {
+                          // Find dependent sub-categories for this value
+                          const dependentSubs = subCats.filter((sc) => sc.type === "dependent");
+
+                          return (
+                            <div key={val.id} className="cc-tree-branch">
+                              <div className={`cc-tree-node value ${val.isDefault ? "default" : ""}`}>
+                                <span className="cc-tree-icon">{val.isDefault ? "⭐" : "•"}</span>
+                                <span className="cc-tree-label">{val.valueName}</span>
+                                {val.isDefault && <span className="cc-tree-badge">Default</span>}
+                                <span className={`cc-tree-status ${val.status}`}>{val.status}</span>
+                              </div>
+
+                              {/* Dependent sub-category values for this parent value */}
+                              {dependentSubs.length > 0 && (
+                                <div className="cc-tree-children">
+                                  {dependentSubs.map((sub) => {
+                                    const subValsForParent = (state.subCategoryValues[sub.id] || [])
+                                      .filter((sv) => sv.parentValueId === val.id);
+
+                                    if (subValsForParent.length === 0) return null;
+
+                                    return (
+                                      <div key={sub.id} className="cc-tree-branch">
+                                        <div className="cc-tree-node subcategory">
+                                          <span className="cc-tree-icon">📂</span>
+                                          <span className="cc-tree-label">{sub.name}</span>
+                                        </div>
+                                        <div className="cc-tree-children">
+                                          {subValsForParent.map((sv) => (
+                                            <div key={sv.id} className={`cc-tree-node subvalue ${sv.isDefault ? "default" : ""}`}>
+                                              <span className="cc-tree-icon">{sv.isDefault ? "★" : "◦"}</span>
+                                              <span className="cc-tree-label">{sv.valueName}</span>
+                                              {sv.isDefault && <span className="cc-tree-badge">Default</span>}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
-                    {subCats.length > 0 && (
+                    {/* Independent sub-categories (not nested under parent values) */}
+                    {subCats.filter((sc) => sc.type === "independent").length > 0 && (
                       <div className="cc-tree-children">
-                        {subCats.map((sub) => {
+                        {subCats.filter((sc) => sc.type === "independent").map((sub) => {
                           const subValues = state.subCategoryValues[sub.id] || [];
                           return (
                             <div key={sub.id} className="cc-tree-branch">
                               <div className="cc-tree-node subcategory">
                                 <span className="cc-tree-icon">📂</span>
                                 <span className="cc-tree-label">{sub.name}</span>
-                                <span className="cc-tree-tag">{sub.type}</span>
+                                <span className="cc-tree-tag">independent</span>
                                 <span className="cc-tree-count">{subValues.length} values</span>
                               </div>
                               {subValues.length > 0 && (
                                 <div className="cc-tree-children">
                                   {subValues.map((sv) => (
-                                    <div key={sv.id} className="cc-tree-node subvalue">
-                                      <span className="cc-tree-icon">◦</span>
+                                    <div key={sv.id} className={`cc-tree-node subvalue ${sv.isDefault ? "default" : ""}`}>
+                                      <span className="cc-tree-icon">{sv.isDefault ? "★" : "◦"}</span>
                                       <span className="cc-tree-label">{sv.valueName}</span>
+                                      {sv.isDefault && <span className="cc-tree-badge">Default</span>}
                                     </div>
                                   ))}
                                 </div>
