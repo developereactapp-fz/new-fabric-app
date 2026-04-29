@@ -1,0 +1,303 @@
+import { useState, useMemo, useEffect } from "react";
+import { useAdmin } from "../../store/adminStore.jsx";
+import StatusBadge from "../../components/StatusBadge";
+import { isDuplicate } from "../../utils/validators";
+
+export default function EditFabricMode({ groupId, groupName, onDirty, preselectedEditId }) {
+  const { state, editFabric } = useAdmin();
+  const [selectedFabricId, setSelectedFabricId] = useState(null);
+  const [form, setForm] = useState(null);
+  const [saved, setSaved] = useState(false);
+
+  // Get attribute options from the store
+  const getAttrValues = (attr) => {
+    const allCats = Object.values(state.attributes);
+    const merged = [];
+    allCats.forEach((catAttrs) => {
+      (catAttrs[attr] || []).forEach((v) => {
+        if (v.status === "active" && !merged.includes(v.value)) merged.push(v.value);
+      });
+    });
+    return merged;
+  };
+
+  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes]);
+
+  // Fabrics filtered by group
+  const fabrics = useMemo(() => {
+    if (!groupId) return state.fabrics;
+    const mappedIds = state.fabricGroupMappings
+      .filter((m) => m.groupId === groupId)
+      .map((m) => m.fabricId);
+    return state.fabrics.filter((f) => mappedIds.includes(f.id));
+  }, [groupId, state.fabrics, state.fabricGroupMappings]);
+
+  useEffect(() => {
+    if (preselectedEditId) {
+      setSelectedFabricId(preselectedEditId);
+      const fab = state.fabrics.find((f) => f.id === preselectedEditId);
+      if (fab) {
+        setForm({
+          fabricName: fab.fabricName || "",
+          description: fab.description || "",
+          color: fab.color || "",
+          material: fab.material || "",
+          subMaterial: fab.subMaterial || "",
+          pattern: fab.pattern || "",
+          weavePattern: fab.weavePattern || "",
+          season: fab.season || "",
+          gsm: fab.gsm || "",
+          feature1: fab.feature1 || "",
+          feature2: fab.feature2 || "",
+          feature3: fab.feature3 || "",
+          image: fab.image || null,
+          status: fab.status || "active",
+        });
+        setSaved(false);
+        onDirty?.(true);
+      }
+    }
+  }, [preselectedEditId, state.fabrics]);
+
+  const handleLoad = () => {
+    const fab = state.fabrics.find((f) => f.id === selectedFabricId);
+    if (!fab) return;
+    setForm({
+      fabricName: fab.fabricName || "",
+      description: fab.description || "",
+      color: fab.color || "",
+      material: fab.material || "",
+      subMaterial: fab.subMaterial || "",
+      pattern: fab.pattern || "",
+      weavePattern: fab.weavePattern || "",
+      season: fab.season || "",
+      gsm: fab.gsm || "",
+      feature1: fab.feature1 || "",
+      feature2: fab.feature2 || "",
+      feature3: fab.feature3 || "",
+      image: fab.image || null,
+      status: fab.status || "active",
+    });
+    setSaved(false);
+    onDirty?.(true);
+  };
+
+  const setField = (key, val) => {
+    setForm((prev) => ({ ...prev, [key]: val }));
+    setSaved(false);
+    onDirty?.(true);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setField("image", file);
+    }
+  };
+
+  const handleSave = () => {
+    if (!selectedFabricId || !form) return;
+    editFabric(selectedFabricId, { ...form, gsm: form.gsm ? Number(form.gsm) : null });
+    setSaved(true);
+    onDirty?.(false);
+  };
+
+  const handleCancel = () => {
+    setForm(null);
+    setSelectedFabricId(null);
+    setSaved(false);
+    onDirty?.(false);
+  };
+
+  const selectedFab = state.fabrics.find((f) => f.id === selectedFabricId);
+  const nameDup = form?.fabricName?.trim()
+    ? isDuplicate(form.fabricName.trim(), state.fabrics.filter((f) => f.id !== selectedFabricId).map((f) => f.fabricName))
+    : false;
+  const isValid = form && form.fabricName.trim() && !nameDup && form.color && form.material;
+
+  const renderDropdown = (label, field, options) => (
+    <div className="fo-field">
+      <label className="admin-label">{label}</label>
+      <select className="admin-select" value={form[field]} onChange={(e) => setField(field, e.target.value)}>
+        <option value="">Select {label}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  return (
+    <div className="fo-edit-layout">
+      {/* Selector */}
+      <div className="admin-card">
+        <div className="admin-card-header">
+          <div>
+            <h3 className="admin-card-title">Edit Existing Fabric</h3>
+            <p className="admin-card-subtitle">
+              {groupName ? `Showing fabrics in "${groupName}"` : "Showing all fabrics"}
+            </p>
+          </div>
+        </div>
+
+        <div className="fo-edit-selector">
+          <div className="fo-field" style={{ flex: 1 }}>
+            <label className="admin-label">Select Fabric</label>
+            <select
+              className="admin-select"
+              value={selectedFabricId || ""}
+              onChange={(e) => setSelectedFabricId(e.target.value || null)}
+            >
+              <option value="">Choose a fabric...</option>
+              {(fabrics.length > 0 ? fabrics : state.fabrics).map((f) => (
+                <option key={f.id} value={f.id}>{f.fabricId} – {f.fabricName}</option>
+              ))}
+            </select>
+          </div>
+          <button className="admin-btn admin-btn-primary" onClick={handleLoad} disabled={!selectedFabricId} style={{ alignSelf: "flex-end" }}>
+            Load Fabric
+          </button>
+        </div>
+      </div>
+
+      {/* Edit Form */}
+      {form && (
+        <div className="fo-create-layout">
+          <div className="fo-form-column">
+            <div className="admin-card">
+              <div className="admin-card-header">
+                <div>
+                  <h3 className="admin-card-title">Editing: {selectedFab?.fabricId}</h3>
+                  <p className="admin-card-subtitle">Fabric ID is read-only</p>
+                </div>
+                {saved && <StatusBadge status="active" label="Saved ✓" size="sm" />}
+              </div>
+
+              {/* Basic Info */}
+              <div className="fo-section">
+                <h4 className="fo-section-title">Basic Information</h4>
+                <div className="fo-field-grid">
+                  <div className="fo-field">
+                    <label className="admin-label">Fabric ID</label>
+                    <input className="admin-input" value={selectedFab?.fabricId || ""} disabled />
+                  </div>
+                  <div className="fo-field">
+                    <label className="admin-label">Fabric Name <span className="fo-required">*</span></label>
+                    <input
+                      className={`admin-input ${nameDup ? "error" : ""}`}
+                      value={form.fabricName}
+                      onChange={(e) => setField("fabricName", e.target.value)}
+                    />
+                    {nameDup && <span className="fo-availability taken">Already Exists</span>}
+                  </div>
+                  <div className="fo-field fo-field-full">
+                    <label className="admin-label">Description</label>
+                    <textarea className="admin-input fo-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} rows={3} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Attributes */}
+              <div className="fo-section">
+                <h4 className="fo-section-title">Attributes</h4>
+                <div className="fo-field-grid">
+                  {renderDropdown("Color", "color", colorOptions)}
+                  {renderDropdown("Material", "material", materialOptions)}
+                  {renderDropdown("Sub Material", "subMaterial", subMaterialOptions)}
+                  {renderDropdown("Pattern", "pattern", patternOptions)}
+                  {renderDropdown("Weave Pattern", "weavePattern", weavePatternOptions)}
+                  {renderDropdown("Season", "season", seasonOptions)}
+                </div>
+              </div>
+
+              {/* Technical + Features */}
+              <div className="fo-section">
+                <h4 className="fo-section-title">Technical & Features</h4>
+                <div className="fo-field-grid">
+                  <div className="fo-field">
+                    <label className="admin-label">GSM</label>
+                    <input className="admin-input" type="number" value={form.gsm} onChange={(e) => setField("gsm", e.target.value)} />
+                  </div>
+                  {renderDropdown("Feature 1", "feature1", featureOptions)}
+                  {renderDropdown("Feature 2", "feature2", featureOptions)}
+                  {renderDropdown("Feature 3", "feature3", featureOptions)}
+                </div>
+              </div>
+
+              {/* Media & Status */}
+              <div className="fo-section">
+                <h4 className="fo-section-title">Media & Status</h4>
+                <div className="fo-field-grid">
+                  <div className="fo-field fo-field-full">
+                    <label className="admin-label">Fabric Image</label>
+                    <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} />
+                  </div>
+                </div>
+                <div className="fo-status-row" style={{ marginTop: 16 }}>
+                  <label className="fo-radio-label">
+                    <input type="radio" name="edit-status" checked={form.status === "active"} onChange={() => setField("status", "active")} />
+                    <span>Active</span>
+                  </label>
+                  <label className="fo-radio-label">
+                    <input type="radio" name="edit-status" checked={form.status === "inactive"} onChange={() => setField("status", "inactive")} />
+                    <span>Inactive</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="fo-form-actions">
+                <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={!isValid}>
+                  Save Changes
+                </button>
+                <button className="admin-btn admin-btn-secondary" onClick={handleCancel}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div className="fo-preview-column">
+            <div className="admin-card fo-live-preview">
+              <div className="admin-card-header">
+                <h3 className="admin-card-title">Live Preview</h3>
+              </div>
+              <div className="fo-preview-card-inner">
+                <div className="fo-preview-image">
+                  {form.image instanceof File ? (
+                    <img src={URL.createObjectURL(form.image)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                  ) : (
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                  )}
+                </div>
+                <div className="fo-preview-details">
+                  <h4 className="fo-preview-name">{form.fabricName || "Fabric Name"}</h4>
+                  <span className="fo-preview-id">{selectedFab?.fabricId}</span>
+                  <div className="fo-preview-props">
+                    {form.color && <span className="fo-prop-tag">{form.color}</span>}
+                    {form.material && <span className="fo-prop-tag">{form.material}</span>}
+                    {form.pattern && <span className="fo-prop-tag">{form.pattern}</span>}
+                    {form.season && <span className="fo-prop-tag">{form.season}</span>}
+                    {form.gsm && <span className="fo-prop-tag">{form.gsm} GSM</span>}
+                  </div>
+                  <StatusBadge status={form.status} size="sm" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -190,14 +190,19 @@ export default function SubCategoryManager({ componentId, componentName }) {
       {selectedSub && (
         <div className="cc-subval-section">
           <div className="cc-subval-header">
-            <h4>Values for "{selectedSub.name}"</h4>
+            <h4>
+              Values for "{selectedSub.name}" 
+              <span style={{ fontSize: "0.85em", color: "var(--text-tertiary)", marginLeft: "8px", fontWeight: "normal" }}>
+                (Parent: {componentName})
+              </span>
+            </h4>
             <StatusBadge status={selectedSub.type === "dependent" ? "warning" : "active"} label={selectedSub.type} size="xs" />
           </div>
 
           {/* Parent value selector for dependent type */}
           {selectedSub.type === "dependent" && (
             <div className="cc-parent-selector">
-              <label className="admin-label">Select Parent Value</label>
+              <label className="admin-label">Select Parent "{componentName}" Value</label>
               {parentValues.length === 0 ? (
                 <p className="cc-sub-type-hint">No parent values exist. Add values to "{componentName}" first.</p>
               ) : (

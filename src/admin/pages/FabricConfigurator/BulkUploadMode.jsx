@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import ExcelUploader from "../../components/ExcelUploader";
 import StatusBadge from "../../components/StatusBadge";
@@ -17,6 +17,10 @@ export default function BulkUploadMode({ category }) {
   const [validationResults, setValidationResults] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
 
+  // Ref to always have current state for validation inside callbacks
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   const handleFileLoaded = useCallback((buffer, fileName) => {
     try {
       const result = parseExcelBuffer(buffer);
@@ -29,7 +33,6 @@ export default function BulkUploadMode({ category }) {
 
       let values = null;
       let usedSheet = "";
-
       if (uniqueTab) {
         values = extractUniqueTabValues(result.sheets[uniqueTab]);
         usedSheet = uniqueTab;
@@ -47,11 +50,12 @@ export default function BulkUploadMode({ category }) {
     } catch (err) {
       console.error("Excel parse error:", err);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   const runValidation = (values) => {
     const results = {};
-    const existingAttrs = state.attributes[category] || {};
+    const existingAttrs = stateRef.current.attributes[category] || {};
 
     ATTRIBUTES.forEach((attr) => {
       const vals = values[attr] || [];

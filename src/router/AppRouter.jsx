@@ -27,6 +27,7 @@ import AdminDashboard from "../admin/pages/AdminDashboard";
 import PlaceholderPage from "../admin/pages/PlaceholderPage";
 import FabricConfiguratorPage from "../admin/pages/FabricConfigurator/FabricConfiguratorPage";
 import CategoryConfiguratorPage from "../admin/pages/CategoryConfigurator/CategoryConfiguratorPage";
+import FabricOnboardingPage from "../admin/pages/FabricOnboarding/FabricOnboardingPage";
 
 export default function AppRouter() {
   return (
@@ -37,7 +38,7 @@ export default function AppRouter() {
           <Route index element={<AdminDashboard />} />
           <Route path="fabric-configurator" element={<FabricConfiguratorPage />} />
           <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
-          <Route path="fabric-onboarding" element={<PlaceholderPage title="Fabric Onboarding" />} />
+          <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
           <Route path="materials-panel" element={<PlaceholderPage title="Materials Panel" />} />
           <Route path="category-components" element={<PlaceholderPage title="Category-wise Components" />} />
           <Route path="custom-shirt" element={<PlaceholderPage title="Custom Shirt Form" />} />

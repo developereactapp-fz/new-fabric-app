@@ -37,8 +37,21 @@ export default function ManualEntryMode({ category }) {
     if (isDuplicate(trimmed, existingNames)) return;
 
     addAttributeValue(category, selectedAttr, trimmed);
+    // If user selected "inactive" status, update the newly-added value
+    if (newStatus === "inactive") {
+      // The new value was just appended to the end of the attribute array
+      // We need to find it after the next render, so we use a microtask
+      setTimeout(() => {
+        const updatedVals = state.attributes[category]?.[selectedAttr] || [];
+        const lastVal = updatedVals[updatedVals.length - 1];
+        if (lastVal && lastVal.value === trimmed) {
+          editAttributeValue(category, selectedAttr, lastVal.id, { status: "inactive" });
+        }
+      }, 0);
+    }
     setRecentlyAdded((prev) => [trimmed, ...prev].slice(0, 5));
     setNewValue("");
+    setNewStatus("active");
   };
 
   // Start edit
