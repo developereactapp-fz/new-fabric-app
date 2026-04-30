@@ -28,6 +28,9 @@ import PlaceholderPage from "../admin/pages/PlaceholderPage";
 import FabricConfiguratorPage from "../admin/pages/FabricConfigurator/FabricConfiguratorPage";
 import CategoryConfiguratorPage from "../admin/pages/CategoryConfigurator/CategoryConfiguratorPage";
 import FabricOnboardingPage from "../admin/pages/FabricOnboarding/FabricOnboardingPage";
+import MaterialsPanelPage from "../admin/pages/MaterialsPanel/MaterialsPanelPage";
+import CategoryComponentsPage from "../admin/pages/CategoryComponents/CategoryComponentsPage";
+import CustomShirtPage from "../admin/pages/CustomShirt/CustomShirtPage";
 
 export default function AppRouter() {
   return (
@@ -39,9 +42,9 @@ export default function AppRouter() {
           <Route path="fabric-configurator" element={<FabricConfiguratorPage />} />
           <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
           <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
-          <Route path="materials-panel" element={<PlaceholderPage title="Materials Panel" />} />
-          <Route path="category-components" element={<PlaceholderPage title="Category-wise Components" />} />
-          <Route path="custom-shirt" element={<PlaceholderPage title="Custom Shirt Form" />} />
+          <Route path="materials-panel" element={<MaterialsPanelPage />} />
+          <Route path="category-components" element={<CategoryComponentsPage />} />
+          <Route path="custom-shirt" element={<CustomShirtPage />} />
           <Route path="fabric-detail" element={<PlaceholderPage title="Fabric Detail" />} />
           <Route path="component-active" element={<PlaceholderPage title="Component Active" />} />
           <Route path="group-builder" element={<PlaceholderPage title="Group Builder" />} />

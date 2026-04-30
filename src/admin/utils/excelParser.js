@@ -62,7 +62,7 @@ export function extractUniqueTabValues(rows) {
  * Extract fabric properties from the Fabric_Properties sheet.
  * Expected columns: A=fabric_id, B=fabric_name, C=Description, D=color,
  * E=material, F=sub-material, G=pattern, H=weave_pattern, I=season,
- * J=gsm, K=features1, L=features2, M=features3
+ * J=gsm, K=features1, L=features2, M=features3, N=price, O=stock
  */
 export function extractFabricProperties(rows) {
   if (!rows || rows.length < 2) return [];
@@ -81,6 +81,8 @@ export function extractFabricProperties(rows) {
     feature1: String(row[10] || "").trim(),
     feature2: String(row[11] || "").trim(),
     feature3: String(row[12] || "").trim(),
+    price: row[13] ? Number(row[13]) : null,
+    stock: row[14] ? Number(row[14]) : 0,
     status: "active",
     availability: true,
   }));

@@ -14,6 +14,8 @@ const EMPTY_FORM = {
   weavePattern: "",
   season: "",
   gsm: "",
+  price: "",
+  stock: "",
   feature1: "",
   feature2: "",
   feature3: "",
@@ -30,6 +32,18 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const [addNewField, setAddNewField] = useState(null); // which attribute field to add new
   const [addNewValue, setAddNewValue] = useState("");
   const [errors, setErrors] = useState({});
+
+  // Memoize image preview URL and revoke on cleanup to prevent memory leak
+  const imagePreviewUrl = useMemo(() => {
+    if (form.image instanceof File) return URL.createObjectURL(form.image);
+    return null;
+  }, [form.image]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
 
   // Get attribute options from the store (global category)
   const getAttrValues = (attr) => {
@@ -102,7 +116,12 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
   const handleSave = (addAnother = false) => {
     if (!validate()) return;
-    const fabricData = { ...form, gsm: form.gsm ? Number(form.gsm) : null };
+    const fabricData = {
+      ...form,
+      gsm: form.gsm ? Number(form.gsm) : null,
+      price: form.price !== "" ? Number(form.price) : null,
+      stock: form.stock !== "" ? Number(form.stock) : null,
+    };
     addFabric(fabricData);
 
     // Map to group if selected — use ref to track pending mapping
@@ -151,14 +170,14 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         </select>
         <button
           className="admin-btn admin-btn-ghost admin-btn-sm"
-          onClick={() => { setAddNewField(attrName); setAddNewValue(""); }}
+          onClick={() => { setAddNewField(field); setAddNewValue(""); }}
           title={`Add new ${label}`}
         >
           +
         </button>
       </div>
       {errors[field] && <span className="fo-error-text" style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>{errors[field]}</span>}
-      {addNewField === attrName && (
+      {addNewField === field && (
         <div className="fo-add-new-inline">
           <input
             className="admin-input"
@@ -267,6 +286,29 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
                   placeholder="80 – 300"
                 />
               </div>
+              <div className="fo-field">
+                <label className="admin-label">Price (₹ per meter)</label>
+                <input
+                  className="admin-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setField("price", e.target.value)}
+                  placeholder="e.g. 450.00"
+                />
+              </div>
+              <div className="fo-field">
+                <label className="admin-label">Stock (units)</label>
+                <input
+                  className="admin-input"
+                  type="number"
+                  min="0"
+                  value={form.stock}
+                  onChange={(e) => setField("stock", e.target.value)}
+                  placeholder="e.g. 150"
+                />
+              </div>
             </div>
           </div>
 
@@ -325,8 +367,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           </div>
           <div className="fo-preview-card-inner">
             <div className="fo-preview-image">
-              {form.image instanceof File ? (
-                <img src={URL.createObjectURL(form.image)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+              {imagePreviewUrl ? (
+                <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
               ) : (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -345,6 +387,12 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
                 {form.season && <span className="fo-prop-tag">{form.season}</span>}
                 {form.gsm && <span className="fo-prop-tag">{form.gsm} GSM</span>}
               </div>
+              {(form.price || form.stock) && (
+                <div className="fo-preview-props" style={{ marginTop: 6 }}>
+                  {form.price && <span className="fo-prop-tag">₹{form.price}/m</span>}
+                  {form.stock && <span className="fo-prop-tag">{form.stock} units</span>}
+                </div>
+              )}
               {form.description && <p className="fo-preview-desc">{form.description}</p>}
               <div className="fo-preview-features">
                 {form.feature1 && <span className="fo-feature-tag">{form.feature1}</span>}

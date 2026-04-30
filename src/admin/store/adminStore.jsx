@@ -301,7 +301,12 @@ function adminReducer(state, action) {
       };
 
     case ACTIONS.DELETE_FABRIC:
-      return { ...state, fabrics: state.fabrics.filter((f) => f.id !== action.payload.id) };
+      return {
+        ...state,
+        fabrics: state.fabrics.filter((f) => f.id !== action.payload.id),
+        fabricGroupMappings: state.fabricGroupMappings.filter((m) => m.fabricId !== action.payload.id),
+        fabricMappings: state.fabricMappings.filter((m) => m.fabricId !== action.payload.id),
+      };
 
     case ACTIONS.IMPORT_FABRICS:
       return { ...state, fabrics: [...state.fabrics, ...action.payload.fabrics.map((f) => ({ id: genId(), ...f, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }))] };
@@ -325,7 +330,11 @@ function adminReducer(state, action) {
       };
 
     case ACTIONS.DELETE_FABRIC_GROUP:
-      return { ...state, fabricGroups: state.fabricGroups.filter((g) => g.id !== action.payload.id) };
+      return {
+        ...state,
+        fabricGroups: state.fabricGroups.filter((g) => g.id !== action.payload.id),
+        fabricGroupMappings: state.fabricGroupMappings.filter((m) => m.groupId !== action.payload.id),
+      };
 
     case ACTIONS.TOGGLE_FABRIC_GROUP:
       return {

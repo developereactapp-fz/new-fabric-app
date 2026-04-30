@@ -9,6 +9,18 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(false);
 
+  // Memoize image preview URL and revoke on cleanup to prevent memory leak
+  const imagePreviewUrl = useMemo(() => {
+    if (form?.image instanceof File) return URL.createObjectURL(form.image);
+    return null;
+  }, [form?.image]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
+
   // Get attribute options from the store
   const getAttrValues = (attr) => {
     const allCats = Object.values(state.attributes);
@@ -53,6 +65,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
           weavePattern: fab.weavePattern || "",
           season: fab.season || "",
           gsm: fab.gsm || "",
+          price: fab.price ?? "",
+          stock: fab.stock ?? "",
           feature1: fab.feature1 || "",
           feature2: fab.feature2 || "",
           feature3: fab.feature3 || "",
@@ -78,6 +92,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       weavePattern: fab.weavePattern || "",
       season: fab.season || "",
       gsm: fab.gsm || "",
+      price: fab.price ?? "",
+      stock: fab.stock ?? "",
       feature1: fab.feature1 || "",
       feature2: fab.feature2 || "",
       feature3: fab.feature3 || "",
@@ -103,7 +119,12 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
 
   const handleSave = () => {
     if (!selectedFabricId || !form) return;
-    editFabric(selectedFabricId, { ...form, gsm: form.gsm ? Number(form.gsm) : null });
+    editFabric(selectedFabricId, {
+      ...form,
+      gsm: form.gsm ? Number(form.gsm) : null,
+      price: form.price !== "" ? Number(form.price) : null,
+      stock: form.stock !== "" ? Number(form.stock) : null,
+    });
     setSaved(true);
     onDirty?.(false);
   };
@@ -155,9 +176,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
               onChange={(e) => setSelectedFabricId(e.target.value || null)}
             >
               <option value="">Choose a fabric...</option>
-              {(fabrics.length > 0 ? fabrics : state.fabrics).map((f) => (
-                <option key={f.id} value={f.id}>{f.fabricId} – {f.fabricName}</option>
-              ))}
+              {fabrics.length === 0 && groupId ? (
+                <option value="" disabled>No fabrics in this group</option>
+              ) : (
+                fabrics.map((f) => (
+                  <option key={f.id} value={f.id}>{f.fabricId} – {f.fabricName}</option>
+                ))
+              )}
             </select>
           </div>
           <button className="admin-btn admin-btn-primary" onClick={handleLoad} disabled={!selectedFabricId} style={{ alignSelf: "flex-end" }}>
@@ -224,6 +249,14 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
                     <label className="admin-label">GSM</label>
                     <input className="admin-input" type="number" value={form.gsm} onChange={(e) => setField("gsm", e.target.value)} />
                   </div>
+                  <div className="fo-field">
+                    <label className="admin-label">Price (₹ per meter)</label>
+                    <input className="admin-input" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setField("price", e.target.value)} placeholder="e.g. 450.00" />
+                  </div>
+                  <div className="fo-field">
+                    <label className="admin-label">Stock (units)</label>
+                    <input className="admin-input" type="number" min="0" value={form.stock} onChange={(e) => setField("stock", e.target.value)} placeholder="e.g. 150" />
+                  </div>
                   {renderDropdown("Feature 1", "feature1", featureOptions)}
                   {renderDropdown("Feature 2", "feature2", featureOptions)}
                   {renderDropdown("Feature 3", "feature3", featureOptions)}
@@ -271,8 +304,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
               </div>
               <div className="fo-preview-card-inner">
                 <div className="fo-preview-image">
-                  {form.image instanceof File ? (
-                    <img src={URL.createObjectURL(form.image)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                  {imagePreviewUrl ? (
+                    <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
                   ) : (
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                       <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -291,6 +324,12 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
                     {form.season && <span className="fo-prop-tag">{form.season}</span>}
                     {form.gsm && <span className="fo-prop-tag">{form.gsm} GSM</span>}
                   </div>
+                  {(form.price || form.stock) && (
+                    <div className="fo-preview-props" style={{ marginTop: 6 }}>
+                      {form.price && <span className="fo-prop-tag">₹{form.price}/m</span>}
+                      {form.stock && <span className="fo-prop-tag">{form.stock} units</span>}
+                    </div>
+                  )}
                   <StatusBadge status={form.status} size="sm" />
                 </div>
               </div>

@@ -27,11 +27,15 @@ export default function FabricOnboardingPage() {
     if (hasUnsaved && newMode !== mode) {
       setPendingMode(newMode);
     } else {
+      // Clear preselectedEditId when leaving edit mode to prevent stale state
+      if (mode === "edit" && newMode !== "edit") setPreselectedEditId(null);
       setMode(newMode);
     }
   };
 
   const confirmModeSwitch = () => {
+    // Clear preselectedEditId when confirming mode switch away from edit
+    if (pendingMode !== "edit") setPreselectedEditId(null);
     setMode(pendingMode);
     setPendingMode(null);
     setHasUnsaved(false);

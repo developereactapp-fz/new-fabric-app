@@ -1,0 +1,547 @@
+/* ═══════════════════ CUSTOM SHIRT FORM PAGE ═══════════════════ */
+
+.csf-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.csf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.csf-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.csf-header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.csf-header-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 4px 0 0;
+}
+
+/* ── Global Selector ── */
+.csf-global-bar {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.csf-global-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.csf-global-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+
+/* ── Fabric Info Strip ── */
+.csf-fabric-strip {
+  background: linear-gradient(135deg, #eff0ff 0%, #f5f0ff 100%);
+  border: 1px solid #ddd8f0;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.csf-fabric-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #e5e7eb;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.csf-fabric-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.csf-fabric-id {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+
+.csf-default-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+/* ── Component Section Card ── */
+.csf-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.csf-section:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.csf-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.csf-section-header:hover {
+  background: #fafbfc;
+}
+
+.csf-section-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.csf-section-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+.csf-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.csf-section-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.csf-section-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.csf-section-badge.selected {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.csf-section-badge.complete {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+
+.csf-section-badge.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.csf-section-badge.empty {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.csf-section-chevron {
+  color: #9ca3af;
+  transition: transform 0.2s;
+  display: flex;
+}
+
+.csf-section-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* ── Section Body ── */
+.csf-section-body {
+  padding: 0 20px 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.csf-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── Option Item ── */
+.csf-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.csf-option.checked {
+  border-color: #c7d2fe;
+  background: #fafbff;
+}
+
+.csf-option.checked.has-image {
+  border-color: #a7f3d0;
+  background: #f0fdf8;
+}
+
+.csf-option.checked.missing-image {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.csf-option-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid #d1d5db;
+  cursor: pointer;
+  accent-color: #6366f1;
+  flex-shrink: 0;
+}
+
+.csf-option-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.csf-option.checked .csf-option-name {
+  color: #111827;
+  font-weight: 600;
+}
+
+.csf-option-image {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  border: 1px dashed #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  position: relative;
+  background: #f9fafb;
+}
+
+.csf-option-image:hover {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.csf-option-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.csf-option-image input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.csf-option-default {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.csf-option-default input[type="radio"] {
+  accent-color: #6366f1;
+}
+
+.csf-option-default.is-default {
+  color: #6366f1;
+  font-weight: 600;
+}
+
+/* ── Contrast Panel ── */
+.csf-contrast {
+  margin-top: 12px;
+  background: #faf8ff;
+  border: 1px solid #ede9fe;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.csf-contrast-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.csf-contrast-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b21b6;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.csf-contrast-body {
+  padding-top: 8px;
+  border-top: 1px solid #ede9fe;
+}
+
+.csf-contrast-default {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.csf-contrast-default-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.csf-contrast-default-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.csf-contrast-default-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #6366f1;
+  color: #fff;
+}
+
+.csf-contrast-info {
+  font-size: 12px;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.csf-contrast-info a {
+  color: #6366f1;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* ── Action Bar ── */
+.csf-action-bar {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 16px 24px;
+  margin: 20px -28px -24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+}
+
+.csf-action-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.csf-action-stats {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.csf-action-stats strong {
+  color: #111827;
+}
+
+.csf-action-right {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Toast ── */
+.csf-toast {
+  position: fixed;
+  bottom: 80px;
+  right: 28px;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 9999;
+  animation: adminSlideUp 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Validation Banner ── */
+.csf-validation {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.csf-validation.success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #166534;
+}
+
+.csf-validation-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.csf-validation ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+
+.csf-validation li {
+  margin-bottom: 2px;
+}
+
+/* ── Empty State ── */
+.csf-empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: #9ca3af;
+}
+
+.csf-empty svg {
+  opacity: 0.3;
+  margin-bottom: 12px;
+}
+
+.csf-empty h3 {
+  font-size: 16px;
+  color: #475569;
+  margin: 0 0 4px;
+}
+
+.csf-empty p {
+  font-size: 13px;
+  margin: 0;
+  max-width: 380px;
+  margin-inline: auto;
+}
+
+/* ── Progress Bar ── */
+.csf-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.csf-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.csf-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.csf-progress-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
