@@ -31,6 +31,10 @@ import FabricOnboardingPage from "../admin/pages/FabricOnboarding/FabricOnboardi
 import MaterialsPanelPage from "../admin/pages/MaterialsPanel/MaterialsPanelPage";
 import CategoryComponentsPage from "../admin/pages/CategoryComponents/CategoryComponentsPage";
 import CustomShirtPage from "../admin/pages/CustomShirt/CustomShirtPage";
+import FabricDetailPage from "../admin/pages/FabricDetail/FabricDetailPage";
+import ComponentActivePage from "../admin/pages/ComponentActive/ComponentActivePage";
+import GroupBuilderPage from "../admin/pages/GroupBuilder/GroupBuilderPage";
+import ContrastMapperPage from "../admin/pages/ContrastMapper/ContrastMapperPage";
 
 export default function AppRouter() {
   return (
@@ -45,10 +49,10 @@ export default function AppRouter() {
           <Route path="materials-panel" element={<MaterialsPanelPage />} />
           <Route path="category-components" element={<CategoryComponentsPage />} />
           <Route path="custom-shirt" element={<CustomShirtPage />} />
-          <Route path="fabric-detail" element={<PlaceholderPage title="Fabric Detail" />} />
-          <Route path="component-active" element={<PlaceholderPage title="Component Active" />} />
-          <Route path="group-builder" element={<PlaceholderPage title="Group Builder" />} />
-          <Route path="contrast-mapper" element={<PlaceholderPage title="Contrast Group Mapper" />} />
+          <Route path="fabric-detail" element={<FabricDetailPage />} />
+          <Route path="component-active" element={<ComponentActivePage />} />
+          <Route path="group-builder" element={<GroupBuilderPage />} />
+          <Route path="contrast-mapper" element={<ContrastMapperPage />} />
         </Route>
 
         {/* ═══════ Customer Routes ═══════ */}
