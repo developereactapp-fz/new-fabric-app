@@ -1,6 +1,12 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAdmin } from "../../store/adminStore";
+import useMappingValidation from "../../hooks/useMappingValidation";
+import PageHeader from "../../components/PageHeader";
+import EmptyState from "../../components/EmptyState";
+import ActionBar from "../../components/ActionBar";
 import ComponentMappingSection from "./ComponentMappingSection";
+import Toast from "../../components/Toast";
+import ValidationBanner from "../../components/ValidationBanner";
 import "./CategoryComponents.css";
 
 /**
@@ -59,6 +65,13 @@ export default function CategoryComponentsPage() {
     );
   }, [state.components, selectedCategoryId]);
 
+  // ── Validation via hook ──
+  const { validationIssues, stats } = useMappingValidation(
+    loaded,
+    mappingState,
+    categoryComponents
+  );
+
   // ── Load existing mappings when fabric is selected ──
   const handleLoad = useCallback(() => {
     if (!selectedFabricId || !selectedCategoryId) return;
@@ -116,43 +129,6 @@ export default function CategoryComponentsPage() {
     });
   }, []);
 
-  // ── Validation ──
-  const validationIssues = useMemo(() => {
-    if (!loaded) return [];
-    const issues = [];
-    categoryComponents.forEach((comp) => {
-      const compMap = mappingState[comp.id] || {};
-      const checkedValues = Object.entries(compMap).filter(([, v]) => v.checked);
-      if (checkedValues.length === 0) return;
-
-      const missingImgs = checkedValues.filter(([, v]) => !v.image);
-      if (missingImgs.length > 0) {
-        issues.push(`${comp.name}: ${missingImgs.length} option(s) missing images`);
-      }
-      const hasDefault = checkedValues.some(([, v]) => v.isDefault);
-      if (!hasDefault) {
-        issues.push(`${comp.name}: No default value selected`);
-      }
-    });
-    return issues;
-  }, [loaded, mappingState, categoryComponents]);
-
-  // ── Stats ──
-  const stats = useMemo(() => {
-    let totalChecked = 0;
-    let totalImages = 0;
-    categoryComponents.forEach((comp) => {
-      const compMap = mappingState[comp.id] || {};
-      Object.values(compMap).forEach((v) => {
-        if (v.checked) {
-          totalChecked++;
-          if (v.image) totalImages++;
-        }
-      });
-    });
-    return { totalChecked, totalImages };
-  }, [mappingState, categoryComponents]);
-
   // ── Save ──
   const handleSave = useCallback(() => {
     if (validationIssues.length > 0) return;
@@ -183,14 +159,10 @@ export default function CategoryComponentsPage() {
   return (
     <div className="cc-page">
       {/* Header */}
-      <div className="cc-header">
-        <div>
-          <h1>Category-wise Components</h1>
-          <p className="cc-header-sub">
-            Map component values to fabrics for a selected category
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Category-wise Components"
+        subtitle="Map component values to fabrics for a selected category"
+      />
 
       {/* Global Selector Bar */}
       <div className="cc-selector-bar">
@@ -279,23 +251,7 @@ export default function CategoryComponentsPage() {
 
       {/* Validation Banner */}
       {loaded && validationIssues.length > 0 && stats.totalChecked > 0 && (
-        <div className="cc-validation">
-          <span className="cc-validation-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </span>
-          <div>
-            <strong>Validation Issues</strong>
-            <ul>
-              {validationIssues.map((issue, i) => (
-                <li key={i}>{issue}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <ValidationBanner issues={validationIssues} />
       )}
 
       {/* Component Sections */}
@@ -313,36 +269,34 @@ export default function CategoryComponentsPage() {
             />
           ))
         ) : (
-          <div className="cc-empty-components">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-              <rect x="8" y="2" width="8" height="4" rx="1" />
-            </svg>
-            <h3>No Components Configured</h3>
-            <p>
-              This category has no components. Add components via the{" "}
-              <strong>Category & Components</strong> configurator first.
-            </p>
-          </div>
+          <EmptyState
+            icon={
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+                <rect x="8" y="2" width="8" height="4" rx="1" />
+              </svg>
+            }
+            heading="No Components Configured"
+            message={<>This category has no components. Add components via the <strong>Category &amp; Components</strong> configurator first.</>}
+          />
         )
       ) : (
-        <div className="cc-empty-components">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
-          </svg>
-          <h3>Select a Fabric to Begin</h3>
-          <p>
-            Choose a Category, Fabric Group, and Fabric above, then click
-            "Load Components" to start mapping.
-          </p>
-        </div>
+        <EmptyState
+          icon={
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          }
+          heading="Select a Fabric to Begin"
+          message={'Choose a Category, Fabric Group, and Fabric above, then click "Load Components" to start mapping.'}
+        />
       )}
 
       {/* Sticky Action Bar */}
       {loaded && categoryComponents.length > 0 && (
-        <div className="cc-action-bar">
+        <ActionBar className="cc-action-bar" sticky>
           <div className="cc-action-left">
             <span className="cc-action-stats">
               <strong>{stats.totalChecked}</strong> options selected ·{" "}
@@ -367,18 +321,11 @@ export default function CategoryComponentsPage() {
               Save Mapping
             </button>
           </div>
-        </div>
+        </ActionBar>
       )}
 
       {/* Toast */}
-      {toast && (
-        <div className="cc-toast success">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

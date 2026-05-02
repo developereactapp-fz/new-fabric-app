@@ -3,14 +3,7 @@ import BulkUploadMode from "./BulkUploadMode";
 import ManualEntryMode from "./ManualEntryMode";
 import "./FabricConfigurator.css";
 
-const CATEGORIES = [
-  "Custom Shirt",
-  "Custom Tuxedo Shirt",
-  "Custom Pant",
-  "Custom Jacket",
-  "Custom Waistcoat",
-  "Custom Suit",
-];
+import { CATEGORIES } from "../../config/appConfig";
 
 export default function FabricConfiguratorPage() {
   const [mode, setMode] = useState("bulk"); // "bulk" | "manual"

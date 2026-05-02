@@ -1,104 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAdmin } from "../../store/adminStore";
+import SHIRT_COMPONENTS, { initialContrastState } from "./shirtConfig";
+import PageHeader from "../../components/PageHeader";
+import EmptyState from "../../components/EmptyState";
+import ActionBar from "../../components/ActionBar";
 import ShirtComponentSection from "./ShirtComponentSection";
+import Toast from "../../components/Toast";
+import ValidationBanner from "../../components/ValidationBanner";
 import "./CustomShirt.css";
-
-/**
- * SHIRT_COMPONENTS — Hardcoded component sections per spec (Section 38).
- * Each section has a key, title, options array, and optional contrast flag.
- */
-const SHIRT_COMPONENTS = [
-  {
-    key: "collar",
-    title: "Collar",
-    hasContrast: true,
-    options: [
-      { key: "classic", label: "Classic" },
-      { key: "classic_widespread", label: "Classic Widespread" },
-      { key: "curved", label: "Curved" },
-      { key: "cutaway", label: "Cutaway" },
-      { key: "high_widespread", label: "High Widespread" },
-      { key: "point", label: "Point" },
-      { key: "button_down", label: "Button Down" },
-      { key: "band", label: "Band" },
-      { key: "wing_tip", label: "Wing Tip" },
-      { key: "club", label: "Club" },
-    ],
-  },
-  {
-    key: "cuff",
-    title: "Cuff",
-    hasContrast: true,
-    options: [
-      { key: "single_round", label: "Single Round" },
-      { key: "single_eclipse", label: "Single Eclipse" },
-      { key: "single_chisel", label: "Single Chisel" },
-      { key: "single_square", label: "Single Square" },
-      { key: "double_cuff_round", label: "Double Cuff Round" },
-      { key: "double_cuff_square", label: "Double Cuff Square" },
-      { key: "double_cuff_chisel", label: "Double Cuff Chisel" },
-      { key: "turnback_cuff", label: "Turnback Cuff" },
-    ],
-  },
-  {
-    key: "placket",
-    title: "Placket",
-    options: [
-      { key: "plain", label: "Plain" },
-      { key: "hidden_button", label: "Hidden Button" },
-      { key: "half_hidden_button", label: "Half Hidden Button" },
-      { key: "stitched_on", label: "Stitched-On" },
-      { key: "plain_bib", label: "Plain Bib" },
-      { key: "pleated_bib", label: "Pleated Bib" },
-    ],
-  },
-  {
-    key: "back_details",
-    title: "Back Details",
-    options: [
-      { key: "rear_side_pleats", label: "Rear Side Pleats" },
-      { key: "center_box_pleats", label: "Center Box Pleats" },
-      { key: "box_pleat", label: "Box Pleat" },
-      { key: "no_back_pleats", label: "No Back Pleats" },
-      { key: "dart_pleats", label: "Dart Pleats" },
-    ],
-  },
-  {
-    key: "chest_pocket",
-    title: "Chest Pocket",
-    options: [
-      { key: "no_pocket", label: "No Pocket" },
-      { key: "patch_pocket", label: "Patch Pocket" },
-      { key: "regular_pocket", label: "Regular Pocket" },
-      { key: "regular_flap_pocket", label: "Regular Flap Pocket" },
-    ],
-  },
-  {
-    key: "sleeve",
-    title: "Sleeve",
-    options: [
-      { key: "long_sleeve", label: "Long Sleeve" },
-      { key: "short_sleeve", label: "Short Sleeve" },
-    ],
-  },
-  {
-    key: "hem",
-    title: "Hem",
-    options: [
-      { key: "straight", label: "Straight" },
-      { key: "curved", label: "Curved" },
-      { key: "gusset", label: "Gusset" },
-    ],
-  },
-  {
-    key: "button",
-    title: "Accessories — Button",
-    options: [
-      { key: "tie", label: "Tie" },
-      { key: "bow", label: "Bow" },
-    ],
-  },
-];
 
 /**
  * CustomShirtPage
@@ -118,10 +27,7 @@ export default function CustomShirtPage() {
   const [mappingState, setMappingState] = useState({});
 
   // ── Contrast toggles ──
-  const [contrastState, setContrastState] = useState({
-    collar: false,
-    cuff: false,
-  });
+  const [contrastState, setContrastState] = useState(initialContrastState);
 
   // ── Toast ──
   const [toast, setToast] = useState(null);
@@ -164,7 +70,6 @@ export default function CustomShirtPage() {
   const handleLoad = useCallback(() => {
     if (!selectedFabricId || !categoryId) return;
 
-    // Check for existing saved mappings
     const existing = state.fabricMappings.filter(
       (m) => m.fabricId === selectedFabricId && m.categoryId === categoryId
     );
@@ -173,7 +78,6 @@ export default function CustomShirtPage() {
     SHIRT_COMPONENTS.forEach((section) => {
       newState[section.key] = {};
       section.options.forEach((opt) => {
-        // Try to match with existing mapping by checking componentValueId or option key
         const match = existing.find(
           (m) => m.componentValueId === opt.key || m.componentValueId === `${section.key}_${opt.key}`
         );
@@ -193,7 +97,7 @@ export default function CustomShirtPage() {
   useEffect(() => {
     setLoaded(false);
     setMappingState({});
-    setContrastState({ collar: false, cuff: false });
+    setContrastState(initialContrastState());
   }, [selectedGroupId, selectedFabricId]);
 
   // ── Option change handler ──
@@ -318,28 +222,27 @@ export default function CustomShirtPage() {
       setSelectedFabricId("");
       setLoaded(false);
       setMappingState({});
-      setContrastState({ collar: false, cuff: false });
+      setContrastState(initialContrastState());
     }
   }, [validationIssues, mappingState, contrastState, selectedGroupId, selectedFabricId, categoryId, bulkSaveFabricMappings]);
 
   return (
     <div className="csf-page">
       {/* Header */}
-      <div className="csf-header">
-        <div>
-          <h1>
+      <PageHeader
+        title={
+          <>
             <span className="csf-header-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.66 3.3l1.82 2.56a4 4 0 002.83 1.65V22h10V9.97a4 4 0 002.83-1.65l1.82-2.56a2 2 0 00-1.66-3.3z" />
               </svg>
             </span>
             Custom Shirt Form
-          </h1>
-          <p className="csf-header-sub">
-            Map shirt-specific components to a selected fabric
-          </p>
-        </div>
-      </div>
+          </>
+        }
+        subtitle="Map shirt-specific components to a selected fabric"
+        className="csf-header"
+      />
 
       {/* Global Selection Bar */}
       <div className="csf-global-bar">
@@ -429,23 +332,7 @@ export default function CustomShirtPage() {
 
       {/* Validation Banner */}
       {loaded && validationIssues.length > 0 && progress.totalChecked > 0 && (
-        <div className="csf-validation">
-          <span className="csf-validation-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </span>
-          <div>
-            <strong>Fix before saving</strong>
-            <ul>
-              {validationIssues.map((issue, i) => (
-                <li key={i}>{issue}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <ValidationBanner issues={validationIssues} title="Fix before saving" />
       )}
 
       {/* Component Sections */}
@@ -467,21 +354,20 @@ export default function CustomShirtPage() {
           />
         ))
       ) : (
-        <div className="csf-empty">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.66 3.3l1.82 2.56a4 4 0 002.83 1.65V22h10V9.97a4 4 0 002.83-1.65l1.82-2.56a2 2 0 00-1.66-3.3z" />
-          </svg>
-          <h3>Select a Fabric to Begin</h3>
-          <p>
-            Choose a Fabric Group and Fabric above, then click "Load Shirt Components"
-            to start configuring the custom shirt mapping.
-          </p>
-        </div>
+        <EmptyState
+          icon={
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.66 3.3l1.82 2.56a4 4 0 002.83 1.65V22h10V9.97a4 4 0 002.83-1.65l1.82-2.56a2 2 0 00-1.66-3.3z" />
+            </svg>
+          }
+          heading="Select a Fabric to Begin"
+          message='Choose a Fabric Group and Fabric above, then click "Load Shirt Components" to start configuring the custom shirt mapping.'
+        />
       )}
 
       {/* Sticky Action Bar */}
       {loaded && (
-        <div className="csf-action-bar">
+        <ActionBar className="csf-action-bar" sticky>
           <div className="csf-action-left">
             <span className="csf-action-stats">
               <strong>{progress.totalChecked}</strong> options ·{" "}
@@ -496,7 +382,7 @@ export default function CustomShirtPage() {
                 if (progress.totalChecked > 0 && !window.confirm("Discard unsaved changes?")) return;
                 setLoaded(false);
                 setMappingState({});
-                setContrastState({ collar: false, cuff: false });
+                setContrastState(initialContrastState());
               }}
             >
               Cancel
@@ -517,18 +403,11 @@ export default function CustomShirtPage() {
               Save Mapping
             </button>
           </div>
-        </div>
+        </ActionBar>
       )}
 
       {/* Toast */}
-      {toast && (
-        <div className="csf-toast">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

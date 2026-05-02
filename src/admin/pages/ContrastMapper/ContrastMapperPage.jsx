@@ -1,33 +1,34 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../store/adminStore";
+import useCascadingSelection from "../../hooks/useCascadingSelection";
+import PageHeader from "../../components/PageHeader";
+import CascadingSelect from "../../components/CascadingSelect";
+import FormGroup from "../../components/FormGroup";
+import ActionBar from "../../components/ActionBar";
+import EmptyState from "../../components/EmptyState";
 import "./ContrastMapper.css";
 
 export default function ContrastMapperPage() {
   const { state, actions } = useAdmin();
 
-  // Selections
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedComponentId, setSelectedComponentId] = useState("");
-  const [selectedComponentValueId, setSelectedComponentValueId] = useState("");
+  const {
+    categories,
+    selectedCategory,
+    selectedComponent: selectedComponentId,
+    selectedValue: selectedComponentValueId,
+    availableComponents,
+    availableValues: availableComponentValues,
+    setCategory,
+    setComponent,
+    setValue,
+    reset: resetCascade,
+  } = useCascadingSelection();
+
   const [selectedGroupId, setSelectedGroupId] = useState("");
 
-  const categories = state.categories || [];
   const builderGroups = state.builderGroups || [];
 
-  // Available components based on category
-  const availableComponents = useMemo(() => {
-    if (!selectedCategory) return [];
-    return state.components[selectedCategory] || [];
-  }, [selectedCategory, state.components]);
-
-  // Available values based on component
-  const availableComponentValues = useMemo(() => {
-    if (!selectedComponentId) return [];
-    return state.componentValues[selectedComponentId] || [];
-  }, [selectedComponentId, state.componentValues]);
-
   // Find the default mapping for this component to auto-detect default fabric
-  // Note: Usually default fabric is detected via isDefault flag on fabricMappings.
   const defaultFabricMapping = useMemo(() => {
     if (!selectedCategory || !selectedComponentId) return null;
     return state.fabricMappings.find(
@@ -51,14 +52,11 @@ export default function ContrastMapperPage() {
     if (!selectedGroup) return [];
     const items = selectedGroup.items || [];
     
-    // Clean up: remove the default fabric if it exists
     if (defaultFabric) {
-      return items.map(item => {
-        return {
-          ...item,
-          isDuplicate: item.fabricId === defaultFabric.id
-        };
-      });
+      return items.map(item => ({
+        ...item,
+        isDuplicate: item.fabricId === defaultFabric.id
+      }));
     }
     
     return items.map(item => ({ ...item, isDuplicate: false }));
@@ -67,6 +65,11 @@ export default function ContrastMapperPage() {
   const validItems = useMemo(() => {
     return cleanGroupItems.filter(item => !item.isDuplicate);
   }, [cleanGroupItems]);
+
+  const handleReset = () => {
+    resetCascade();
+    setSelectedGroupId("");
+  };
 
   const handleSaveContrastMapping = () => {
     if (!selectedCategory || !selectedComponentId || !selectedComponentValueId || !selectedGroupId) {
@@ -91,90 +94,38 @@ export default function ContrastMapperPage() {
 
     actions.addContrastMapping(mappingData);
     alert("Contrast Mapping saved successfully!");
-    
-    // Reset form
-    setSelectedCategory("");
-    setSelectedComponentId("");
-    setSelectedComponentValueId("");
-    setSelectedGroupId("");
+    handleReset();
   };
 
   return (
     <div className="contrast-mapper-page">
-      <div className="page-header">
-        <h1>Contrast Group Mapper</h1>
-        <p>Apply reusable fabric groups as contrast options to specific component values.</p>
-      </div>
-
-      <div className="info-alert">
-        <div className="info-alert-icon">💡</div>
-        <p className="info-alert-text">
-          <strong>Auto-cleanup enabled:</strong> If the default fabric for the selected component exists within the chosen contrast group, it will automatically be identified and excluded to prevent duplicate material selection.
-        </p>
-      </div>
+      <PageHeader
+        title="Contrast Group Mapper"
+        subtitle="Apply reusable fabric groups as contrast options to specific component values."
+      />
 
       <div className="mapper-layout">
         {/* Left Sidebar: Form */}
         <div className="mapper-sidebar">
-          <div className="form-group">
-            <label>Target Category</label>
-            <select
-              className="form-control"
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setSelectedComponentId("");
-                setSelectedComponentValueId("");
-              }}
-            >
-              <option value="">Select Category...</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CascadingSelect
+            categories={categories}
+            components={availableComponents}
+            componentValues={availableComponentValues}
+            selectedCategory={selectedCategory}
+            selectedComponent={selectedComponentId}
+            selectedValue={selectedComponentValueId}
+            onCategoryChange={setCategory}
+            onComponentChange={setComponent}
+            onValueChange={setValue}
+            categoryLabel="Target Category"
+            componentLabel="Component"
+            valueLabel="Sub-component Type / Value"
+            categoryPlaceholder="Select Category..."
+            componentPlaceholder="Select Component..."
+            valuePlaceholder="Select Value..."
+          />
 
-          <div className="form-group">
-            <label>Component</label>
-            <select
-              className="form-control"
-              value={selectedComponentId}
-              onChange={(e) => {
-                setSelectedComponentId(e.target.value);
-                setSelectedComponentValueId("");
-              }}
-              disabled={!selectedCategory}
-            >
-              <option value="">Select Component...</option>
-              {availableComponents.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Sub-component Type / Value</label>
-            <select
-              className="form-control"
-              value={selectedComponentValueId}
-              onChange={(e) => setSelectedComponentValueId(e.target.value)}
-              disabled={!selectedComponentId}
-            >
-              <option value="">Select Value...</option>
-              {availableComponentValues.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.valueName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Select Reusable Group</label>
+          <FormGroup label="Select Reusable Group">
             <select
               className="form-control"
               value={selectedGroupId}
@@ -187,15 +138,10 @@ export default function ContrastMapperPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </FormGroup>
 
-          <div className="actions-footer">
-            <button className="btn-secondary" onClick={() => {
-              setSelectedCategory("");
-              setSelectedComponentId("");
-              setSelectedComponentValueId("");
-              setSelectedGroupId("");
-            }}>
+          <ActionBar>
+            <button className="btn-secondary" onClick={handleReset}>
               Reset
             </button>
             <button 
@@ -205,7 +151,7 @@ export default function ContrastMapperPage() {
             >
               Save Mapping
             </button>
-          </div>
+          </ActionBar>
         </div>
 
         {/* Right Content: Preview */}
@@ -223,9 +169,7 @@ export default function ContrastMapperPage() {
                   </div>
                 </div>
               ) : (
-                <div className="empty-state">
-                  No default fabric is mapped for this component yet.
-                </div>
+                <EmptyState message="No default fabric is mapped for this component yet." />
               )}
             </div>
           )}
@@ -242,9 +186,7 @@ export default function ContrastMapperPage() {
             </div>
 
             {!selectedGroup ? (
-              <div className="empty-state">
-                Select a group to preview contrast options.
-              </div>
+              <EmptyState message="Select a group to preview contrast options." />
             ) : (
               <div className="contrast-grid">
                 {cleanGroupItems.map((item, index) => (

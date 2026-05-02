@@ -1,5 +1,8 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../store/adminStore";
+import PageHeader from "../../components/PageHeader";
+import FormGroup from "../../components/FormGroup";
+import StatusBadge from "../../components/StatusBadge";
 import "./ComponentActive.css";
 
 export default function ComponentActivePage() {
@@ -44,9 +47,9 @@ export default function ComponentActivePage() {
   }, [filterCategory, state.components]);
 
   // Handle cascading filter resets
-  const handleCategoryChange = (e) => {
-    setFilterCategory(e.target.value);
-    setFilterComponent("All"); // reset component filter when category changes
+  const handleCategoryChange = (value) => {
+    setFilterCategory(value);
+    setFilterComponent("All");
   };
 
   // Filtered List
@@ -65,33 +68,28 @@ export default function ComponentActivePage() {
       : `Mark "${item.valueName}" as ACTIVE?`;
       
     if (window.confirm(confirmMsg)) {
-       // Since componentValues is keyed by componentId in the store, we need to pass entityKey
        actions.toggleStatus("componentValues", item.id, item.componentId);
     }
   };
 
   return (
     <div className="component-active-page">
-      <div className="admin-page-header">
-        <div>
-          <h2>Component Global Control</h2>
-          <p>Globally enable or disable specific component options across all fabrics</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Component Global Control"
+        subtitle="Globally enable or disable specific component options across all fabrics"
+      />
 
       <div className="admin-card filters-card">
-        <div className="filter-group">
-          <label className="admin-label">Category</label>
-          <select className="admin-select" value={filterCategory} onChange={handleCategoryChange}>
+        <FormGroup label="Category">
+          <select className="admin-select" value={filterCategory} onChange={(e) => handleCategoryChange(e.target.value)}>
             <option value="All">All Categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.name}>{c.name}</option>
             ))}
           </select>
-        </div>
+        </FormGroup>
 
-        <div className="filter-group">
-          <label className="admin-label">Component</label>
+        <FormGroup label="Component">
           <select 
             className="admin-select" 
             value={filterComponent} 
@@ -103,16 +101,15 @@ export default function ComponentActivePage() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-        </div>
+        </FormGroup>
 
-        <div className="filter-group">
-          <label className="admin-label">Status</label>
+        <FormGroup label="Status">
           <select className="admin-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="All">All Statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
-        </div>
+        </FormGroup>
       </div>
 
       <div className="admin-card list-card">
@@ -146,9 +143,7 @@ export default function ComponentActivePage() {
                       <span className="used-count">{item.usedCount}</span>
                     </td>
                     <td>
-                      <span className={`status-badge ${item.status}`}>
-                        {item.status}
-                      </span>
+                      <StatusBadge status={item.status} />
                     </td>
                     <td>
                       <button

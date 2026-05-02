@@ -5,7 +5,7 @@ import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { isDuplicate, validateName } from "../../utils/validators";
 
-const ATTRIBUTES = ["Color", "Material", "Sub Material", "Pattern", "Weave Pattern", "Season", "Feature"];
+import { ATTRIBUTES } from "../../config/appConfig";
 
 export default function ManualEntryMode({ category }) {
   const { state, addAttributeValue, editAttributeValue, deleteAttributeValue } = useAdmin();

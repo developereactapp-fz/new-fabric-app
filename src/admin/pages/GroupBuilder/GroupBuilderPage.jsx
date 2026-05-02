@@ -1,5 +1,12 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../store/adminStore";
+import useCascadingSelection from "../../hooks/useCascadingSelection";
+import PageHeader from "../../components/PageHeader";
+import FormGroup from "../../components/FormGroup";
+import CascadingSelect from "../../components/CascadingSelect";
+import CheckboxList from "../../components/CheckboxList";
+import SelectableFabricGrid from "../../components/SelectableFabricGrid";
+import ActionBar from "../../components/ActionBar";
 import "./GroupBuilder.css";
 
 export default function GroupBuilderPage() {
@@ -7,33 +14,25 @@ export default function GroupBuilderPage() {
 
   const [groupName, setGroupName] = useState("");
   const [groupId, setGroupId] = useState("");
-  
-  // Selections
   const [targetCategories, setTargetCategories] = useState([]);
-  const [sourceCategory, setSourceCategory] = useState("");
-  const [selectedComponentId, setSelectedComponentId] = useState("");
-  const [selectedComponentValueId, setSelectedComponentValueId] = useState("");
   const [selectedFabrics, setSelectedFabrics] = useState([]);
 
-  const categories = state.categories || [];
-  
-  // Available components based on source category
-  const availableComponents = useMemo(() => {
-    if (!sourceCategory) return [];
-    return state.components[sourceCategory] || [];
-  }, [sourceCategory, state.components]);
-
-  // Available values based on component
-  const availableComponentValues = useMemo(() => {
-    if (!selectedComponentId) return [];
-    return state.componentValues[selectedComponentId] || [];
-  }, [selectedComponentId, state.componentValues]);
+  const {
+    categories,
+    selectedCategory: sourceCategory,
+    selectedComponent: selectedComponentId,
+    selectedValue: selectedComponentValueId,
+    availableComponents,
+    availableValues: availableComponentValues,
+    setCategory: setSourceCategory,
+    setComponent: setSelectedComponentId,
+    setValue: setSelectedComponentValueId,
+  } = useCascadingSelection();
 
   // Load mapped fabrics based on Source Category, Component, and Value
   const availableFabrics = useMemo(() => {
     if (!sourceCategory || !selectedComponentId || !selectedComponentValueId) return [];
     
-    // Find mappings that match these criteria
     const relevantMappings = state.fabricMappings.filter(
       (m) => m.categoryId === sourceCategory && 
              m.componentId === selectedComponentId &&
@@ -41,7 +40,6 @@ export default function GroupBuilderPage() {
              m.isAvailable === true
     );
 
-    // Map to fabric details, including the specific image mapped to this component
     return relevantMappings.map((mapping) => {
       const fabric = state.fabrics.find(f => f.id === mapping.fabricId);
       return {
@@ -52,7 +50,7 @@ export default function GroupBuilderPage() {
         mappedImage: mapping.image,
         isSelected: selectedFabrics.includes(mapping.fabricId)
       };
-    }).filter(f => f.fabricId); // exclude any where fabric wasn't found
+    }).filter(f => f.fabricId);
   }, [sourceCategory, selectedComponentId, selectedComponentValueId, state.fabricMappings, state.fabrics, selectedFabrics]);
 
   const handleTargetCategoryChange = (catName) => {
@@ -73,7 +71,7 @@ export default function GroupBuilderPage() {
 
   const handleSelectAllFabrics = () => {
     if (selectedFabrics.length === availableFabrics.length) {
-      setSelectedFabrics([]); // deselect all
+      setSelectedFabrics([]);
     } else {
       setSelectedFabrics(availableFabrics.map(f => f.fabricId));
     }
@@ -90,7 +88,6 @@ export default function GroupBuilderPage() {
       return;
     }
 
-    // Validation: Check if selected fabrics have images
     const missingImages = availableFabrics.filter(
       (f) => selectedFabrics.includes(f.fabricId) && !f.mappedImage
     );
@@ -111,38 +108,35 @@ export default function GroupBuilderPage() {
       status: "active"
     };
 
-    dispatch({ type: "ADD_BUILDER_GROUP", payload }); // Assuming custom dispatch or direct store action
-    
-    // Fallback if ADD_BUILDER_GROUP isn't directly exposed in actions
     if(actions.addBuilderGroup) {
       actions.addBuilderGroup(payload);
     } else {
-      // Using generic store modification if specific action isn't available
        alert("Group saved successfully! (Simulated)");
     }
 
-    // Reset
     setGroupName("");
     setGroupId("");
     setSelectedFabrics([]);
   };
 
+  // Determine the empty/prompt state for the fabric grid
+  const fabricGridPrompt = (!sourceCategory || !selectedComponentId || !selectedComponentValueId)
+    ? "Please complete the Source Mapping selection on the left to view available fabrics."
+    : null;
+
   return (
     <div className="group-builder-page">
-      <div className="admin-page-header">
-        <div>
-          <h2>Group Builder</h2>
-          <p>Create reusable groups from existing mapped fabrics for use as Contrast Options or general groups.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Group Builder"
+        subtitle="Create reusable groups from existing mapped fabrics for use as Contrast Options or general groups."
+      />
 
       <div className="builder-layout">
         <div className="builder-sidebar">
           
           <div className="admin-card">
             <h3>Group Details</h3>
-            <div className="form-group">
-              <label className="admin-label">Group ID *</label>
+            <FormGroup label="Group ID" required>
               <input 
                 type="text" 
                 className="admin-input" 
@@ -150,9 +144,8 @@ export default function GroupBuilderPage() {
                 onChange={(e) => setGroupId(e.target.value)} 
                 placeholder="e.g. GRP-LINEN-COLLAR"
               />
-            </div>
-            <div className="form-group">
-              <label className="admin-label">Group Name *</label>
+            </FormGroup>
+            <FormGroup label="Group Name" required>
               <input 
                 type="text" 
                 className="admin-input" 
@@ -160,81 +153,37 @@ export default function GroupBuilderPage() {
                 onChange={(e) => setGroupName(e.target.value)} 
                 placeholder="e.g. Linen Collar Options"
               />
-            </div>
+            </FormGroup>
           </div>
 
           <div className="admin-card">
             <h3>Target Categories *</h3>
             <p className="admin-helper">Which categories can use this group?</p>
-            <div className="target-categories-list">
-              {categories.map(c => (
-                <label key={c.id} className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={targetCategories.includes(c.name)}
-                    onChange={() => handleTargetCategoryChange(c.name)}
-                  />
-                  <span>{c.name}</span>
-                </label>
-              ))}
-            </div>
+            <CheckboxList
+              items={categories.map(c => ({ id: c.name, label: c.name }))}
+              checkedIds={targetCategories}
+              onChange={handleTargetCategoryChange}
+              className="target-categories-list"
+            />
           </div>
 
           <div className="admin-card">
             <h3>Source Mapping *</h3>
             <p className="admin-helper">Select the source criteria to load available fabrics.</p>
-            
-            <div className="form-group">
-              <label className="admin-label">Source Category</label>
-              <select 
-                className="admin-select" 
-                value={sourceCategory} 
-                onChange={(e) => {
-                  setSourceCategory(e.target.value);
-                  setSelectedComponentId("");
-                  setSelectedComponentValueId("");
-                }}
-              >
-                <option value="">-- Select Category --</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="admin-label">Component</label>
-              <select 
-                className="admin-select" 
-                value={selectedComponentId} 
-                onChange={(e) => {
-                  setSelectedComponentId(e.target.value);
-                  setSelectedComponentValueId("");
-                }}
-                disabled={!sourceCategory}
-              >
-                <option value="">-- Select Component --</option>
-                {availableComponents.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="admin-label">Component Type/Value</label>
-              <select 
-                className="admin-select" 
-                value={selectedComponentValueId} 
-                onChange={(e) => setSelectedComponentValueId(e.target.value)}
-                disabled={!selectedComponentId}
-              >
-                <option value="">-- Select Value --</option>
-                {availableComponentValues.map(v => (
-                  <option key={v.id} value={v.id}>{v.valueName}</option>
-                ))}
-              </select>
-            </div>
-
+            <CascadingSelect
+              categories={categories}
+              components={availableComponents}
+              componentValues={availableComponentValues}
+              selectedCategory={sourceCategory}
+              selectedComponent={selectedComponentId}
+              selectedValue={selectedComponentValueId}
+              onCategoryChange={setSourceCategory}
+              onComponentChange={setSelectedComponentId}
+              onValueChange={setSelectedComponentValueId}
+              categoryLabel="Source Category"
+              componentLabel="Component"
+              valueLabel="Component Type/Value"
+            />
           </div>
         </div>
 
@@ -242,58 +191,23 @@ export default function GroupBuilderPage() {
           <div className="admin-card">
             <div className="main-header">
               <h3>Available Fabrics</h3>
-              {availableFabrics.length > 0 && (
-                <button className="admin-btn secondary small" onClick={handleSelectAllFabrics}>
-                  {selectedFabrics.length === availableFabrics.length ? "Deselect All" : "Select All"}
-                </button>
-              )}
             </div>
-            
-            {!sourceCategory || !selectedComponentId || !selectedComponentValueId ? (
-              <div className="builder-empty-state">
-                Please complete the Source Mapping selection on the left to view available fabrics.
-              </div>
-            ) : availableFabrics.length === 0 ? (
-              <div className="builder-empty-state">
-                No fabrics found with mapped images for the selected criteria.
-              </div>
-            ) : (
-              <div className="fabric-grid">
-                {availableFabrics.map((fabric) => (
-                  <div 
-                    key={fabric.fabricId} 
-                    className={`fabric-group-card ${fabric.isSelected ? "selected" : ""}`}
-                    onClick={() => handleToggleFabricSelection(fabric.fabricId)}
-                  >
-                    <div className="fabric-group-img-wrapper">
-                      {fabric.mappedImage ? (
-                        <img src={fabric.mappedImage} alt={fabric.fabricName} />
-                      ) : (
-                        <div className="no-image-warning">No Mapped Image</div>
-                      )}
-                      <div className="selection-overlay">
-                        {fabric.isSelected && (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                    <div className="fabric-group-details">
-                      <span className="fabric-code">{fabric.fabricCode}</span>
-                      <span className="fabric-name">{fabric.fabricName}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <SelectableFabricGrid
+              fabrics={availableFabrics}
+              selectedIds={selectedFabrics}
+              onToggle={handleToggleFabricSelection}
+              onSelectAll={handleSelectAllFabrics}
+              emptyMessage="No fabrics found with mapped images for the selected criteria."
+              emptyPrompt={fabricGridPrompt}
+              showSelectAll={availableFabrics.length > 0}
+            />
           </div>
 
-          <div className="builder-actions">
+          <ActionBar className="builder-actions">
             <button className="admin-btn primary full-width" onClick={handleSaveGroup}>
               Save Fabric Group
             </button>
-          </div>
+          </ActionBar>
         </div>
       </div>
     </div>

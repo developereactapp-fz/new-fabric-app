@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
+import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
 
 const EMPTY_FORM = {
@@ -29,8 +30,6 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [previewFabricId, setPreviewFabricId] = useState(null);
-  const [addNewField, setAddNewField] = useState(null); // which attribute field to add new
-  const [addNewValue, setAddNewValue] = useState("");
   const [errors, setErrors] = useState({});
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
@@ -139,60 +138,24 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     setErrors({});
   };
 
-  const handleAddNewAttr = (attrName, formField) => {
-    const val = addNewValue.trim();
+  const handleAddNewAttr = (attrName, formField, val) => {
     if (!val) return;
     // Add to global attributes under a default category
     // Features all share the "Feature" attribute key in the store
     const storeAttrName = attrName.startsWith("Feature") ? "Feature" : attrName;
     addAttributeValue("Custom Shirt", storeAttrName, val);
-    setAddNewField(null);
-    setAddNewValue("");
     // Set the form field
-    if (formField) setField(formField, val);
+    if (formField) {
+      setField(formField, val);
+      if (errors[formField]) setErrors(prev => ({...prev, [formField]: undefined}));
+    }
   };
 
   const previewFabric = previewFabricId
     ? state.fabrics.find((f) => f.id === previewFabricId)
     : null;
 
-  const renderDropdown = (label, field, options, attrName, required = false) => (
-    <div className="fo-field">
-      <label className="admin-label">
-        {label} {required && <span className="fo-required">*</span>}
-      </label>
-      <div className="fo-dropdown-row">
-        <select className={`admin-select ${errors[field] ? "error" : ""}`} value={form[field]} onChange={(e) => { setField(field, e.target.value); if(errors[field]) setErrors(prev => ({...prev, [field]: undefined})) }}>
-          <option value="">Select {label}</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        <button
-          className="admin-btn admin-btn-ghost admin-btn-sm"
-          onClick={() => { setAddNewField(field); setAddNewValue(""); }}
-          title={`Add new ${label}`}
-        >
-          +
-        </button>
-      </div>
-      {errors[field] && <span className="fo-error-text" style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>{errors[field]}</span>}
-      {addNewField === field && (
-        <div className="fo-add-new-inline">
-          <input
-            className="admin-input"
-            value={addNewValue}
-            onChange={(e) => setAddNewValue(e.target.value)}
-            placeholder={`New ${label}...`}
-            autoFocus
-            onKeyDown={(e) => e.key === "Enter" && handleAddNewAttr(attrName, field)}
-          />
-          <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={() => handleAddNewAttr(attrName, field)}>Add</button>
-          <button className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => setAddNewField(null)}>×</button>
-        </div>
-      )}
-    </div>
-  );
+
 
   return (
     <div className="fo-create-layout">
@@ -261,12 +224,12 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           <div className="fo-section">
             <h4 className="fo-section-title">Attributes</h4>
             <div className="fo-field-grid">
-              {renderDropdown("Color", "color", colorOptions, "Color", true)}
-              {renderDropdown("Material", "material", materialOptions, "Material", true)}
-              {renderDropdown("Sub Material", "subMaterial", subMaterialOptions, "Sub Material")}
-              {renderDropdown("Pattern", "pattern", patternOptions, "Pattern")}
-              {renderDropdown("Weave Pattern", "weavePattern", weavePatternOptions, "Weave Pattern")}
-              {renderDropdown("Season", "season", seasonOptions, "Season")}
+              <AddableDropdown label="Color" value={form.color} onChange={(val) => { setField("color", val); if (errors.color) setErrors(prev => ({...prev, color: undefined})); }} options={colorOptions} attrName="Color" required error={errors.color} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "color", val)} />
+              <AddableDropdown label="Material" value={form.material} onChange={(val) => { setField("material", val); if (errors.material) setErrors(prev => ({...prev, material: undefined})); }} options={materialOptions} attrName="Material" required error={errors.material} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "material", val)} />
+              <AddableDropdown label="Sub Material" value={form.subMaterial} onChange={(val) => setField("subMaterial", val)} options={subMaterialOptions} attrName="Sub Material" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "subMaterial", val)} />
+              <AddableDropdown label="Pattern" value={form.pattern} onChange={(val) => setField("pattern", val)} options={patternOptions} attrName="Pattern" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "pattern", val)} />
+              <AddableDropdown label="Weave Pattern" value={form.weavePattern} onChange={(val) => setField("weavePattern", val)} options={weavePatternOptions} attrName="Weave Pattern" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "weavePattern", val)} />
+              <AddableDropdown label="Season" value={form.season} onChange={(val) => setField("season", val)} options={seasonOptions} attrName="Season" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "season", val)} />
             </div>
           </div>
 
@@ -316,9 +279,9 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           <div className="fo-section">
             <h4 className="fo-section-title">Features</h4>
             <div className="fo-field-grid">
-              {renderDropdown("Feature 1", "feature1", featureOptions, "Feature 1")}
-              {renderDropdown("Feature 2", "feature2", featureOptions, "Feature 2")}
-              {renderDropdown("Feature 3", "feature3", featureOptions, "Feature 3")}
+              <AddableDropdown label="Feature 1" value={form.feature1} onChange={(val) => setField("feature1", val)} options={featureOptions} attrName="Feature 1" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "feature1", val)} />
+              <AddableDropdown label="Feature 2" value={form.feature2} onChange={(val) => setField("feature2", val)} options={featureOptions} attrName="Feature 2" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "feature2", val)} />
+              <AddableDropdown label="Feature 3" value={form.feature3} onChange={(val) => setField("feature3", val)} options={featureOptions} attrName="Feature 3" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "feature3", val)} />
             </div>
           </div>
 
