@@ -1,5 +1,8 @@
 import { useState, useMemo } from "react";
+import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
+
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import SearchInput from "../../components/SearchInput";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -18,6 +21,7 @@ export default function ManualEntryMode({ category }) {
   const [editStatus, setEditStatus] = useState("active");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [recentlyAdded, setRecentlyAdded] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const catAttrs = state.attributes[category] || {};
   const attrValues = catAttrs[selectedAttr] || [];
@@ -31,10 +35,33 @@ export default function ManualEntryMode({ category }) {
   const existingNames = attrValues.map((v) => v.value);
 
   // Add value
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const trimmed = newValue.trim();
     if (!trimmed) return;
     if (isDuplicate(trimmed, existingNames)) return;
+
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("token")
+      await axios.post(`${API}/api/attributes`, {
+        name: trimmed,
+        value: trimmed,
+        attribute: selectedAttr,
+        category: category,
+        status: newStatus
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-slug": "test-tenant"
+        }
+      });
+    } catch (err) {
+      console.error("Failed to save attribute to server", err);
+      alert(err.response?.data?.message || "Failed to save attribute to server");
+      setIsSaving(false);
+      return;
+    }
+    setIsSaving(false);
 
     addAttributeValue(category, selectedAttr, trimmed);
     // If user selected "inactive" status, update the newly-added value
@@ -222,10 +249,10 @@ export default function ManualEntryMode({ category }) {
             <button
               className="admin-btn admin-btn-primary"
               onClick={handleAdd}
-              disabled={!newValue.trim() || dupCheck}
+              disabled={!newValue.trim() || dupCheck || isSaving}
               style={{ width: "100%", justifyContent: "center" }}
             >
-              Add {selectedAttr} Value
+              {isSaving ? "Saving..." : `Add ${selectedAttr} Value`}
             </button>
           </div>
 

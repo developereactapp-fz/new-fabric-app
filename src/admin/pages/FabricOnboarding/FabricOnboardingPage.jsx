@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
+
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import FabricGroupManager from "./FabricGroupManager";
 import CreateFabricMode from "./CreateFabricMode";
 import ImportFabricMode from "./ImportFabricMode";
@@ -14,8 +17,9 @@ const MODES = [
 ];
 
 export default function FabricOnboardingPage() {
-  const { state } = useAdmin();
+  const { state, setFabrics } = useAdmin();
   const [mode, setMode] = useState("create");
+  const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
@@ -32,6 +36,30 @@ export default function FabricOnboardingPage() {
       setMode(newMode);
     }
   };
+
+  useEffect(() => {
+    const fetchFabrics = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token")
+        const res = await axios.get(`${API}/api/materials/fabrics?limit=100`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-tenant-slug": "test-tenant"
+          }
+        });
+        const data = res.data?.data || res.data;
+        if (Array.isArray(data)) {
+          setFabrics(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch fabrics", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFabrics();
+  }, [setFabrics]);
 
   const confirmModeSwitch = () => {
     // Clear preselectedEditId when confirming mode switch away from edit

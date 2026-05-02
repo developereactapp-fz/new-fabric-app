@@ -1,7 +1,7 @@
-import { createContext, useContext, useReducer, useCallback } from "react";
+import { createContext, useContext, useReducer, useCallback, useEffect } from "react";
 
 // ─── Initial State ───────────────────────────────────────────────
-const initialState = {
+const defaultInitialState = {
   // Master attribute values keyed by category → attribute → [values]
   // e.g. { "Custom Shirt": { Color: [{ id, value, status }], Material: [...] } }
   attributes: {},
@@ -39,6 +39,21 @@ const initialState = {
   // Contrast mappings
   contrastMappings: [],
   contrastMappingItems: [],
+  contrastMappingItems: [],
+};
+
+const getInitialState = () => {
+  try {
+    const saved = localStorage.getItem("adminStoreState");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure all arrays/objects exist in case of old state format
+      return { ...defaultInitialState, ...parsed };
+    }
+  } catch (err) {
+    console.error("Failed to load state from localStorage:", err);
+  }
+  return defaultInitialState;
 };
 
 // ─── Action Types ────────────────────────────────────────────────
@@ -77,6 +92,7 @@ const ACTIONS = {
   DELETE_SUB_CATEGORY_VALUE: "DELETE_SUB_CATEGORY_VALUE",
 
   // Fabrics
+  SET_FABRICS: "SET_FABRICS",
   ADD_FABRIC: "ADD_FABRIC",
   EDIT_FABRIC: "EDIT_FABRIC",
   DELETE_FABRIC: "DELETE_FABRIC",
@@ -283,12 +299,15 @@ function adminReducer(state, action) {
     }
 
     // ── Fabrics ──
+    case ACTIONS.SET_FABRICS:
+      return { ...state, fabrics: action.payload };
+
     case ACTIONS.ADD_FABRIC:
       return {
         ...state,
         fabrics: [
           ...state.fabrics,
-          { id: genId(), ...action.payload, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: action.payload.id || genId(), ...action.payload, createdAt: action.payload.createdAt || new Date().toISOString(), updatedAt: action.payload.updatedAt || new Date().toISOString() },
         ],
       };
 
@@ -309,7 +328,7 @@ function adminReducer(state, action) {
       };
 
     case ACTIONS.IMPORT_FABRICS:
-      return { ...state, fabrics: [...state.fabrics, ...action.payload.fabrics.map((f) => ({ id: genId(), ...f, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }))] };
+      return { ...state, fabrics: [...state.fabrics, ...action.payload.fabrics.map((f) => ({ id: f.id || genId(), ...f, createdAt: f.createdAt || new Date().toISOString(), updatedAt: f.updatedAt || new Date().toISOString() }))] };
 
     // ── Fabric Groups ──
     case ACTIONS.ADD_FABRIC_GROUP:
@@ -436,7 +455,16 @@ function adminReducer(state, action) {
 const AdminContext = createContext(null);
 
 export function AdminProvider({ children }) {
-  const [state, dispatch] = useReducer(adminReducer, initialState);
+  const [state, dispatch] = useReducer(adminReducer, defaultInitialState, getInitialState);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("adminStoreState", JSON.stringify(state));
+    } catch (err) {
+      console.error("Failed to save state to localStorage:", err);
+    }
+  }, [state]);
 
   // Convenience dispatchers
   const actions = {
@@ -493,6 +521,8 @@ export function AdminProvider({ children }) {
       dispatch({ type: ACTIONS.DELETE_SUB_CATEGORY_VALUE, payload: { subCategoryId, id } }), []),
 
     // Fabrics
+    setFabrics: useCallback((fabrics) =>
+      dispatch({ type: ACTIONS.SET_FABRICS, payload: fabrics }), []),
     addFabric: useCallback((fabricData) =>
       dispatch({ type: ACTIONS.ADD_FABRIC, payload: fabricData }), []),
     editFabric: useCallback((id, updates) =>
