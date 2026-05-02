@@ -14,7 +14,7 @@ html, body, #root {
 
 /* Base app content layout */
 .app-content {
-  padding-top: 60px;
+  padding-top: 40px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -752,7 +752,7 @@ body:has(.finish-page) {
 .fabric-tab {
   flex: 1;
   padding: 1.2vh 2vh;
-  border-radius: 0.8vh;
+  border-radius: 2.8vh;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -883,6 +883,7 @@ body:has(.finish-page) {
   border-radius: 1.5vh;
   overflow: visible;
   background: #f8f8f8;
+  margin-bottom: 3vh;
 }
 
 .fabric-row-content {
@@ -1067,8 +1068,8 @@ body:has(.finish-page) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.4vh;
-  padding: 0.8vh;
+  gap: 0.6vh;
+  padding: 1.2vh;
   background: white;
   border: none;
   border-radius: 1.5vh;
@@ -1285,11 +1286,19 @@ body:has(.finish-page) {
 
 /* Fabric name under image */
 .fabric-row-name {
-  margin: 1.5vh 0 0 0;
+  position: absolute;
+  bottom: 2vh;
+  left: 2vh;
+  margin: 0;
   font-size: 1.6vh;
-  color: #7b3f3f;
+  color: #333;
   font-weight: 600;
   text-align: left;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.8vh 1.5vh;
+  border-radius: 0.8vh;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .fabric-row-card.active .fabric-row-name {
@@ -2581,7 +2590,7 @@ body:has(.finish-page) {
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 40px;
   background: #faf8f7;
   border-bottom: 1px solid rgba(0,0,0,0.05);
   z-index: 1000;
