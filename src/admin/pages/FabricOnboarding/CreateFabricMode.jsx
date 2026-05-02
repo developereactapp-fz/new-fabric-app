@@ -80,6 +80,10 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
     if (!form.color) newErrors.color = "Color is required";
     if (!form.material) newErrors.material = "Material is required";
+    if (!form.pattern) newErrors.pattern = "Pattern is required";
+    if (!form.season) newErrors.season = "Season is required";
+    if (!form.gsm) newErrors.gsm = "GSM is required";
+    if (form.price === "" || form.price === null) newErrors.price = "Price is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -227,9 +231,9 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
               <AddableDropdown label="Color" value={form.color} onChange={(val) => { setField("color", val); if (errors.color) setErrors(prev => ({...prev, color: undefined})); }} options={colorOptions} attrName="Color" required error={errors.color} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "color", val)} />
               <AddableDropdown label="Material" value={form.material} onChange={(val) => { setField("material", val); if (errors.material) setErrors(prev => ({...prev, material: undefined})); }} options={materialOptions} attrName="Material" required error={errors.material} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "material", val)} />
               <AddableDropdown label="Sub Material" value={form.subMaterial} onChange={(val) => setField("subMaterial", val)} options={subMaterialOptions} attrName="Sub Material" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "subMaterial", val)} />
-              <AddableDropdown label="Pattern" value={form.pattern} onChange={(val) => setField("pattern", val)} options={patternOptions} attrName="Pattern" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "pattern", val)} />
+              <AddableDropdown label="Pattern" value={form.pattern} onChange={(val) => { setField("pattern", val); if (errors.pattern) setErrors(prev => ({...prev, pattern: undefined})); }} options={patternOptions} attrName="Pattern" required error={errors.pattern} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "pattern", val)} />
               <AddableDropdown label="Weave Pattern" value={form.weavePattern} onChange={(val) => setField("weavePattern", val)} options={weavePatternOptions} attrName="Weave Pattern" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "weavePattern", val)} />
-              <AddableDropdown label="Season" value={form.season} onChange={(val) => setField("season", val)} options={seasonOptions} attrName="Season" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "season", val)} />
+              <AddableDropdown label="Season" value={form.season} onChange={(val) => { setField("season", val); if (errors.season) setErrors(prev => ({...prev, season: undefined})); }} options={seasonOptions} attrName="Season" required error={errors.season} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "season", val)} />
             </div>
           </div>
 
@@ -238,28 +242,30 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
             <h4 className="fo-section-title">Technical Details</h4>
             <div className="fo-field-grid">
               <div className="fo-field">
-                <label className="admin-label">GSM</label>
+                <label className="admin-label">GSM <span className="fo-required">*</span></label>
                 <input
-                  className="admin-input"
+                  className={`admin-input ${errors.gsm ? "error" : ""}`}
                   type="number"
                   min="80"
                   max="300"
                   value={form.gsm}
-                  onChange={(e) => setField("gsm", e.target.value)}
+                  onChange={(e) => { setField("gsm", e.target.value); if(errors.gsm) setErrors(prev => ({...prev, gsm: undefined})) }}
                   placeholder="80 – 300"
                 />
+                {errors.gsm && <span className="fo-error-text" style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>{errors.gsm}</span>}
               </div>
               <div className="fo-field">
-                <label className="admin-label">Price (₹ per meter)</label>
+                <label className="admin-label">Price (₹ per meter) <span className="fo-required">*</span></label>
                 <input
-                  className="admin-input"
+                  className={`admin-input ${errors.price ? "error" : ""}`}
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.price}
-                  onChange={(e) => setField("price", e.target.value)}
+                  onChange={(e) => { setField("price", e.target.value); if(errors.price) setErrors(prev => ({...prev, price: undefined})) }}
                   placeholder="e.g. 450.00"
                 />
+                {errors.price && <span className="fo-error-text" style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>{errors.price}</span>}
               </div>
               <div className="fo-field">
                 <label className="admin-label">Stock (units)</label>

@@ -6,6 +6,7 @@ const quickLinks = [
   { path: "/admin/category-configurator", label: "Category & Components", desc: "Create categories and components", color: "#8b5cf6" },
   { path: "/admin/fabric-onboarding", label: "Fabric Onboarding", desc: "Create and import fabrics", color: "#06b6d4" },
   { path: "/admin/materials-panel", label: "Materials Panel", desc: "View all fabric cards", color: "#10b981" },
+  { path: "/admin/components-panel", label: "Components Panel", desc: "View all component cards", color: "#ec4899" },
   { path: "/admin/category-components", label: "Category Components", desc: "Map components to fabrics", color: "#f59e0b" },
   { path: "/admin/custom-shirt", label: "Custom Shirt Form", desc: "Shirt-specific mappings", color: "#ef4444" },
 ];

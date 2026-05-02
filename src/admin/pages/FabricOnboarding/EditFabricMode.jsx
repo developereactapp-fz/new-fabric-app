@@ -140,11 +140,11 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const nameDup = form?.fabricName?.trim()
     ? isDuplicate(form.fabricName.trim(), state.fabrics.filter((f) => f.id !== selectedFabricId).map((f) => f.fabricName))
     : false;
-  const isValid = form && form.fabricName.trim() && !nameDup && form.color && form.material;
+  const isValid = form && form.fabricName.trim() && !nameDup && form.color && form.material && form.pattern && form.season && form.gsm && (form.price !== "" && form.price !== null);
 
-  const renderDropdown = (label, field, options) => (
+  const renderDropdown = (label, field, options, required = false) => (
     <div className="fo-field">
-      <label className="admin-label">{label}</label>
+      <label className="admin-label">{label} {required && <span className="fo-required">*</span>}</label>
       <select className="admin-select" value={form[field]} onChange={(e) => setField(field, e.target.value)}>
         <option value="">Select {label}</option>
         {options.map((opt) => (
@@ -232,12 +232,12 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
               <div className="fo-section">
                 <h4 className="fo-section-title">Attributes</h4>
                 <div className="fo-field-grid">
-                  {renderDropdown("Color", "color", colorOptions)}
-                  {renderDropdown("Material", "material", materialOptions)}
+                  {renderDropdown("Color", "color", colorOptions, true)}
+                  {renderDropdown("Material", "material", materialOptions, true)}
                   {renderDropdown("Sub Material", "subMaterial", subMaterialOptions)}
-                  {renderDropdown("Pattern", "pattern", patternOptions)}
+                  {renderDropdown("Pattern", "pattern", patternOptions, true)}
                   {renderDropdown("Weave Pattern", "weavePattern", weavePatternOptions)}
-                  {renderDropdown("Season", "season", seasonOptions)}
+                  {renderDropdown("Season", "season", seasonOptions, true)}
                 </div>
               </div>
 
@@ -246,11 +246,11 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
                 <h4 className="fo-section-title">Technical & Features</h4>
                 <div className="fo-field-grid">
                   <div className="fo-field">
-                    <label className="admin-label">GSM</label>
+                    <label className="admin-label">GSM <span className="fo-required">*</span></label>
                     <input className="admin-input" type="number" value={form.gsm} onChange={(e) => setField("gsm", e.target.value)} />
                   </div>
                   <div className="fo-field">
-                    <label className="admin-label">Price (₹ per meter)</label>
+                    <label className="admin-label">Price (₹ per meter) <span className="fo-required">*</span></label>
                     <input className="admin-input" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setField("price", e.target.value)} placeholder="e.g. 450.00" />
                   </div>
                   <div className="fo-field">

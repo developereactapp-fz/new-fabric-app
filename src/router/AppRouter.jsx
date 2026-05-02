@@ -29,6 +29,7 @@ import FabricConfiguratorPage from "../admin/pages/FabricConfigurator/FabricConf
 import CategoryConfiguratorPage from "../admin/pages/CategoryConfigurator/CategoryConfiguratorPage";
 import FabricOnboardingPage from "../admin/pages/FabricOnboarding/FabricOnboardingPage";
 import MaterialsPanelPage from "../admin/pages/MaterialsPanel/MaterialsPanelPage";
+import ComponentsPanelPage from "../admin/pages/ComponentsPanel/ComponentsPanelPage";
 import CategoryComponentsPage from "../admin/pages/CategoryComponents/CategoryComponentsPage";
 import CustomShirtPage from "../admin/pages/CustomShirt/CustomShirtPage";
 import FabricDetailPage from "../admin/pages/FabricDetail/FabricDetailPage";
@@ -47,6 +48,7 @@ export default function AppRouter() {
           <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
           <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
           <Route path="materials-panel" element={<MaterialsPanelPage />} />
+          <Route path="components-panel" element={<ComponentsPanelPage />} />
           <Route path="category-components" element={<CategoryComponentsPage />} />
           <Route path="custom-shirt" element={<CustomShirtPage />} />
           <Route path="fabric-detail" element={<FabricDetailPage />} />

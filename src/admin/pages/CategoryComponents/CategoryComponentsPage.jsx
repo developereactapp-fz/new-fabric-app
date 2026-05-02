@@ -65,12 +65,42 @@ export default function CategoryComponentsPage() {
     );
   }, [state.components, selectedCategoryId]);
 
-  // ── Validation via hook ──
-  const { validationIssues, stats } = useMappingValidation(
-    loaded,
-    mappingState,
-    categoryComponents
-  );
+  // ── Progress / Stats ──
+  const stats = useMemo(() => {
+    let totalChecked = 0;
+    let totalImages = 0;
+
+    categoryComponents.forEach((comp) => {
+      const compMap = mappingState[comp.id] || {};
+      const checked = Object.values(compMap).filter((v) => v.checked);
+      const withImages = checked.filter((v) => v.image);
+
+      totalChecked += checked.length;
+      totalImages += withImages.length;
+    });
+
+    return { totalChecked, totalImages };
+  }, [mappingState, categoryComponents]);
+
+  // ── Validation ──
+  const validationIssues = useMemo(() => {
+    if (!loaded) return [];
+    const issues = [];
+    categoryComponents.forEach((comp) => {
+      const compMap = mappingState[comp.id] || {};
+      const checked = Object.entries(compMap).filter(([, v]) => v.checked);
+      if (checked.length === 0) return;
+
+      const missing = checked.filter(([, v]) => !v.image);
+      if (missing.length > 0) {
+        issues.push(`${comp.name}: ${missing.length} option(s) missing images`);
+      }
+      if (!checked.some(([, v]) => v.isDefault)) {
+        issues.push(`${comp.name}: No default value selected`);
+      }
+    });
+    return issues;
+  }, [loaded, mappingState, categoryComponents]);
 
   // ── Load existing mappings when fabric is selected ──
   const handleLoad = useCallback(() => {
