@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
+
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import StatusBadge from "../../components/StatusBadge";
 import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
@@ -31,6 +34,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [previewFabricId, setPreviewFabricId] = useState(null);
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -117,24 +121,45 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     }
   }, [state.fabrics, addFabricGroupMapping]);
 
-  const handleSave = (addAnother = false) => {
+  const handleSave = async (addAnother = false) => {
     if (!validate()) return;
+    setIsSaving(true);
+
     const fabricData = {
       ...form,
       gsm: form.gsm ? Number(form.gsm) : null,
       price: form.price !== "" ? Number(form.price) : null,
       stock: form.stock !== "" ? Number(form.stock) : null,
     };
-    addFabric(fabricData);
+    delete fabricData.image;
 
-    // Map to group if selected — use ref to track pending mapping
-    if (groupId) {
-      pendingGroupMapRef.current = { fabricId: form.fabricId, groupId };
+    try {
+      const token = localStorage.getItem("token")
+      const res = await axios.post(`${API}/api/materials/fabrics`, fabricData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-slug": "test-tenant"
+        }
+      });
+
+      const newFabric = res.data?.data || res.data || fabricData;
+
+      addFabric(newFabric);
+
+      // Map to group if selected — use ref to track pending mapping
+      if (groupId) {
+        pendingGroupMapRef.current = { fabricId: newFabric.fabricId || form.fabricId, groupId };
+      }
+
+      setRecentlyAdded((prev) => [...prev, { fabricId: form.fabricId, fabricName: form.fabricName }]);
+      setForm({ ...EMPTY_FORM });
+      setErrors({});
+    } catch (err) {
+      console.error("Failed to create fabric", err);
+      alert(err.response?.data?.message || "Failed to create fabric");
+    } finally {
+      setIsSaving(false);
     }
-
-    setRecentlyAdded((prev) => [...prev, { fabricId: form.fabricId, fabricName: form.fabricName }]);
-    setForm({ ...EMPTY_FORM });
-    setErrors({});
   };
 
   const handleReset = () => {
@@ -151,7 +176,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     // Set the form field
     if (formField) {
       setField(formField, val);
-      if (errors[formField]) setErrors(prev => ({...prev, [formField]: undefined}));
+      if (errors[formField]) setErrors(prev => ({ ...prev, [formField]: undefined }));
     }
   };
 
@@ -184,7 +209,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
                 <input
                   className={`admin-input ${errors.fabricId ? "error" : ""}`}
                   value={form.fabricId}
-                  onChange={(e) => { setField("fabricId", e.target.value); if(errors.fabricId) setErrors(prev => ({...prev, fabricId: undefined})) }}
+                  onChange={(e) => { setField("fabricId", e.target.value); if (errors.fabricId) setErrors(prev => ({ ...prev, fabricId: undefined })) }}
                   placeholder="e.g. FAB001"
                 />
                 {errors.fabricId ? (
@@ -200,7 +225,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
                 <input
                   className={`admin-input ${errors.fabricName ? "error" : ""}`}
                   value={form.fabricName}
-                  onChange={(e) => { setField("fabricName", e.target.value); if(errors.fabricName) setErrors(prev => ({...prev, fabricName: undefined})) }}
+                  onChange={(e) => { setField("fabricName", e.target.value); if (errors.fabricName) setErrors(prev => ({ ...prev, fabricName: undefined })) }}
                   placeholder="e.g. White Cotton"
                 />
                 {errors.fabricName ? (
@@ -228,12 +253,12 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           <div className="fo-section">
             <h4 className="fo-section-title">Attributes</h4>
             <div className="fo-field-grid">
-              <AddableDropdown label="Color" value={form.color} onChange={(val) => { setField("color", val); if (errors.color) setErrors(prev => ({...prev, color: undefined})); }} options={colorOptions} attrName="Color" required error={errors.color} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "color", val)} />
-              <AddableDropdown label="Material" value={form.material} onChange={(val) => { setField("material", val); if (errors.material) setErrors(prev => ({...prev, material: undefined})); }} options={materialOptions} attrName="Material" required error={errors.material} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "material", val)} />
+              <AddableDropdown label="Color" value={form.color} onChange={(val) => { setField("color", val); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} options={colorOptions} attrName="Color" required error={errors.color} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "color", val)} />
+              <AddableDropdown label="Material" value={form.material} onChange={(val) => { setField("material", val); if (errors.material) setErrors(prev => ({ ...prev, material: undefined })); }} options={materialOptions} attrName="Material" required error={errors.material} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "material", val)} />
               <AddableDropdown label="Sub Material" value={form.subMaterial} onChange={(val) => setField("subMaterial", val)} options={subMaterialOptions} attrName="Sub Material" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "subMaterial", val)} />
-              <AddableDropdown label="Pattern" value={form.pattern} onChange={(val) => { setField("pattern", val); if (errors.pattern) setErrors(prev => ({...prev, pattern: undefined})); }} options={patternOptions} attrName="Pattern" required error={errors.pattern} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "pattern", val)} />
+              <AddableDropdown label="Pattern" value={form.pattern} onChange={(val) => { setField("pattern", val); if (errors.pattern) setErrors(prev => ({ ...prev, pattern: undefined })); }} options={patternOptions} attrName="Pattern" required error={errors.pattern} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "pattern", val)} />
               <AddableDropdown label="Weave Pattern" value={form.weavePattern} onChange={(val) => setField("weavePattern", val)} options={weavePatternOptions} attrName="Weave Pattern" onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "weavePattern", val)} />
-              <AddableDropdown label="Season" value={form.season} onChange={(val) => { setField("season", val); if (errors.season) setErrors(prev => ({...prev, season: undefined})); }} options={seasonOptions} attrName="Season" required error={errors.season} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "season", val)} />
+              <AddableDropdown label="Season" value={form.season} onChange={(val) => { setField("season", val); if (errors.season) setErrors(prev => ({ ...prev, season: undefined })); }} options={seasonOptions} attrName="Season" required error={errors.season} onAddNewAttr={(attrName, val) => handleAddNewAttr(attrName, "season", val)} />
             </div>
           </div>
 
@@ -249,7 +274,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
                   min="80"
                   max="300"
                   value={form.gsm}
-                  onChange={(e) => { setField("gsm", e.target.value); if(errors.gsm) setErrors(prev => ({...prev, gsm: undefined})) }}
+                  onChange={(e) => { setField("gsm", e.target.value); if (errors.gsm) setErrors(prev => ({ ...prev, gsm: undefined })) }}
                   placeholder="80 – 300"
                 />
                 {errors.gsm && <span className="fo-error-text" style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>{errors.gsm}</span>}
@@ -262,7 +287,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
                   min="0"
                   step="0.01"
                   value={form.price}
-                  onChange={(e) => { setField("price", e.target.value); if(errors.price) setErrors(prev => ({...prev, price: undefined})) }}
+                  onChange={(e) => { setField("price", e.target.value); if (errors.price) setErrors(prev => ({ ...prev, price: undefined })) }}
                   placeholder="e.g. 450.00"
                 />
                 {errors.price && <span className="fo-error-text" style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px", display: "block" }}>{errors.price}</span>}
@@ -314,13 +339,13 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
           {/* Actions */}
           <div className="fo-form-actions">
-            <button className="admin-btn admin-btn-primary" onClick={() => handleSave(false)}>
-              Save Fabric
+            <button className="admin-btn admin-btn-primary" onClick={() => handleSave(false)} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Fabric"}
             </button>
-            <button className="admin-btn admin-btn-primary admin-btn-outline" onClick={() => handleSave(true)}>
+            <button className="admin-btn admin-btn-primary admin-btn-outline" onClick={() => handleSave(true)} disabled={isSaving}>
               Save & Add Another
             </button>
-            <button className="admin-btn admin-btn-secondary" onClick={handleReset}>
+            <button className="admin-btn admin-btn-secondary" onClick={handleReset} disabled={isSaving}>
               Cancel
             </button>
           </div>

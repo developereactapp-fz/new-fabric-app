@@ -26,7 +26,7 @@ export default function ShirtCustomizePage() {
 
 
 
-  const API = "https://apperal-clothing-app-production.up.railway.app";
+  const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 
 
 

@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
+import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
+
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import StatusBadge from "../../components/StatusBadge";
 import { isDuplicate } from "../../utils/validators";
 
@@ -8,6 +11,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [selectedFabricId, setSelectedFabricId] = useState(null);
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -117,16 +121,37 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedFabricId || !form) return;
-    editFabric(selectedFabricId, {
+    setIsSaving(true);
+
+    const updateData = {
       ...form,
       gsm: form.gsm ? Number(form.gsm) : null,
       price: form.price !== "" ? Number(form.price) : null,
       stock: form.stock !== "" ? Number(form.stock) : null,
-    });
-    setSaved(true);
-    onDirty?.(false);
+    };
+    delete updateData.image;
+
+    try {
+      const token = localStorage.getItem("token")
+      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-slug": "test-tenant"
+        }
+      });
+
+      const updatedFabric = res.data?.data || res.data || updateData;
+      editFabric(selectedFabricId, updatedFabric);
+      setSaved(true);
+      onDirty?.(false);
+    } catch (err) {
+      console.error("Failed to update fabric", err);
+      alert(err.response?.data?.message || "Failed to update fabric");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -286,10 +311,10 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
 
               {/* Actions */}
               <div className="fo-form-actions">
-                <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={!isValid}>
-                  Save Changes
+                <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={!isValid || isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </button>
-                <button className="admin-btn admin-btn-secondary" onClick={handleCancel}>
+                <button className="admin-btn admin-btn-secondary" onClick={handleCancel} disabled={isSaving}>
                   Cancel
                 </button>
               </div>
