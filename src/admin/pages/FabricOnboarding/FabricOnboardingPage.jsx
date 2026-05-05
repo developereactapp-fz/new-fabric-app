@@ -41,10 +41,10 @@ export default function FabricOnboardingPage() {
     const fetchFabrics = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token")
+        const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
         const res = await axios.get(`${API}/api/materials/fabrics?limit=100`, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${getToken()}`,
             "x-tenant-slug": "test-tenant"
           }
         });

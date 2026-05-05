@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
 import ExcelUploader from "../../components/ExcelUploader";
 import StatusBadge from "../../components/StatusBadge";
@@ -6,6 +7,7 @@ import { parseExcelBuffer, extractUniqueTabValues, extractAttributesFromFabricSh
 import { findDuplicates } from "../../utils/validators";
 
 const ATTRIBUTES = ["Color", "Material", "Sub Material", "Pattern", "Weave Pattern", "Season", "Feature"];
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 
 export default function BulkUploadMode({ category }) {
   const { state, importAttributeValues } = useAdmin();
@@ -16,12 +18,21 @@ export default function BulkUploadMode({ category }) {
   const [sheets, setSheets] = useState(null);
   const [validationResults, setValidationResults] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [importError, setImportError] = useState(null);
+
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+  const authHeaders = () => ({
+    Authorization: `Bearer ${getToken()}`,
+    "x-tenant-slug": "test-tenant",
+  });
 
   // Ref to always have current state for validation inside callbacks
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const handleFileLoaded = useCallback((buffer, fileName) => {
+  const handleFileLoaded = useCallback(async (buffer, fileName) => {
     try {
       const result = parseExcelBuffer(buffer);
       setSheetNames(result.sheetNames);
@@ -45,7 +56,7 @@ export default function BulkUploadMode({ category }) {
         setExtractedValues(values);
         setSelectedSheet(usedSheet);
         setStep("preview");
-        runValidation(values);
+        await runValidation(values);
       }
     } catch (err) {
       console.error("Excel parse error:", err);
@@ -53,42 +64,61 @@ export default function BulkUploadMode({ category }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
-  const runValidation = (values) => {
+  const runValidation = async (values) => {
+    setIsValidating(true);
     const results = {};
-    const existingAttrs = stateRef.current.attributes[category] || {};
+    const existingAttrs = {};
 
-    ATTRIBUTES.forEach((attr) => {
-      const vals = values[attr] || [];
-      const existingVals = (existingAttrs[attr] || []).map((v) => v.value);
-      const duplicatesInternal = findDuplicates(vals);
-      const alreadyExist = vals.filter((v) =>
-        existingVals.some((ev) => ev.toLowerCase() === v.toLowerCase())
-      );
-      const newValues = vals.filter(
-        (v) =>
-          !alreadyExist.some((ae) => ae.toLowerCase() === v.toLowerCase()) &&
-          !duplicatesInternal.some((d) => d.toLowerCase() === v.toLowerCase())
-      );
+    try {
+      await Promise.all(ATTRIBUTES.map(async (attr) => {
+        try {
+          const res = await axios.get(`${API}/api/attributes`, {
+            params: { category: attr },
+            headers: authHeaders()
+          });
+          const raw = res.data?.data || res.data || [];
+          existingAttrs[attr] = Array.isArray(raw) ? raw : [];
+        } catch (err) {
+          console.error(`Failed to fetch existing ${attr}`, err);
+          existingAttrs[attr] = [];
+        }
+      }));
 
-      results[attr] = {
-        total: vals.length,
-        duplicates: duplicatesInternal,
-        alreadyExist,
-        newValues,
-        valid: duplicatesInternal.length === 0,
-      };
-    });
+      ATTRIBUTES.forEach((attr) => {
+        const vals = values[attr] || [];
+        const existingVals = (existingAttrs[attr] || []).map((v) => v.value);
+        const duplicatesInternal = findDuplicates(vals);
+        const alreadyExist = vals.filter((v) =>
+          existingVals.some((ev) => ev.toLowerCase() === v.toLowerCase())
+        );
+        const newValues = vals.filter(
+          (v) =>
+            !alreadyExist.some((ae) => ae.toLowerCase() === v.toLowerCase()) &&
+            !duplicatesInternal.some((d) => d.toLowerCase() === v.toLowerCase())
+        );
 
-    setValidationResults(results);
-    setStep("validated");
+        results[attr] = {
+          total: vals.length,
+          duplicates: duplicatesInternal,
+          alreadyExist,
+          newValues,
+          valid: duplicatesInternal.length === 0,
+        };
+      });
+
+      setValidationResults(results);
+      setStep("validated");
+    } finally {
+      setIsValidating(false);
+    }
   };
 
-  const handleImport = () => {
+  // ── POST all new values to server, then sync local store ──────────
+  const handleImport = async () => {
     if (!extractedValues) return;
 
     const attributeMap = {};
     let count = 0;
-
     ATTRIBUTES.forEach((attr) => {
       const result = validationResults?.[attr];
       if (result && result.newValues.length > 0) {
@@ -97,9 +127,40 @@ export default function BulkUploadMode({ category }) {
       }
     });
 
-    importAttributeValues(category, attributeMap);
-    setImportedCount(count);
-    setStep("imported");
+    if (count === 0) return;
+
+    setIsImporting(true);
+    setImportError(null);
+
+    try {
+      // Fire all POST /api/attributes requests in parallel
+      const requests = [];
+      Object.entries(attributeMap).forEach(([attr, values]) => {
+        values.forEach((value) => {
+          requests.push(
+            axios.post(
+              `${API}/api/attributes`,
+              { category: attr, value, isActive: true },
+              { headers: authHeaders() }
+            )
+          );
+        });
+      });
+
+      await Promise.all(requests);
+
+      // Only update local store after server confirms success
+      importAttributeValues(category, attributeMap);
+      setImportedCount(count);
+      setStep("imported");
+    } catch (err) {
+      console.error("Bulk import failed:", err);
+      setImportError(
+        err.response?.data?.message || "Some values failed to save. Please try again."
+      );
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleSheetChange = (sheetName) => {
@@ -220,7 +281,11 @@ export default function BulkUploadMode({ category }) {
           </div>
 
           {/* Validation Results */}
-          {validationResults && (
+          {isValidating ? (
+            <div className="admin-card" style={{ marginBottom: 16, padding: 32, textAlign: "center", color: "#64748b" }}>
+              <p>Validating attributes against server...</p>
+            </div>
+          ) : validationResults && (
             <div className="admin-card" style={{ marginBottom: 16 }}>
               <div className="admin-card-header">
                 <div>
@@ -251,12 +316,25 @@ export default function BulkUploadMode({ category }) {
           )}
 
           {/* Actions */}
+          {importError && (
+            <p style={{ color: "#ef4444", fontSize: 13, marginBottom: 8 }}>
+              ⚠ {importError}
+            </p>
+          )}
           <div className="fc-actions">
-            <button className="admin-btn admin-btn-secondary" onClick={() => { setStep("upload"); setExtractedValues(null); setValidationResults(null); }}>
+            <button
+              className="admin-btn admin-btn-secondary"
+              onClick={() => { setStep("upload"); setExtractedValues(null); setValidationResults(null); setImportError(null); }}
+              disabled={isImporting || isValidating}
+            >
               Cancel
             </button>
-            <button className="admin-btn admin-btn-primary" onClick={handleImport}>
-              Import to Master List
+            <button
+              className="admin-btn admin-btn-primary"
+              onClick={handleImport}
+              disabled={isImporting || isValidating}
+            >
+              {isImporting ? "Saving to server…" : "Import to Master List"}
             </button>
           </div>
         </>

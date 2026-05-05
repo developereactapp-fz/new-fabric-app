@@ -43,16 +43,6 @@ const defaultInitialState = {
 };
 
 const getInitialState = () => {
-  try {
-    const saved = localStorage.getItem("adminStoreState");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure all arrays/objects exist in case of old state format
-      return { ...defaultInitialState, ...parsed };
-    }
-  } catch (err) {
-    console.error("Failed to load state from localStorage:", err);
-  }
   return defaultInitialState;
 };
 
@@ -60,6 +50,8 @@ const getInitialState = () => {
 const ACTIONS = {
   // Attributes
   SET_ATTRIBUTES: "SET_ATTRIBUTES",
+  MERGE_CATEGORY_ATTRIBUTES: "MERGE_CATEGORY_ATTRIBUTES",
+  SET_ATTRIBUTE_VALUES: "SET_ATTRIBUTE_VALUES",
   ADD_ATTRIBUTE_VALUE: "ADD_ATTRIBUTE_VALUE",
   EDIT_ATTRIBUTE_VALUE: "EDIT_ATTRIBUTE_VALUE",
   DELETE_ATTRIBUTE_VALUE: "DELETE_ATTRIBUTE_VALUE",
@@ -138,6 +130,23 @@ function adminReducer(state, action) {
     // ── Attributes ──
     case ACTIONS.SET_ATTRIBUTES:
       return { ...state, attributes: action.payload };
+
+    // Merges a single category's attribute map without touching other categories
+    case ACTIONS.MERGE_CATEGORY_ATTRIBUTES: {
+      const { category, attrMap } = action.payload;
+      return {
+        ...state,
+        attributes: { ...state.attributes, [category]: attrMap },
+      };
+    }
+
+    // Sets values for ONE attribute within a category (safest granular merge)
+    case ACTIONS.SET_ATTRIBUTE_VALUES: {
+      const { category, attribute, values } = action.payload;
+      const catAttrs = { ...(state.attributes[category] || {}) };
+      catAttrs[attribute] = values;
+      return { ...state, attributes: { ...state.attributes, [category]: catAttrs } };
+    }
 
     case ACTIONS.ADD_ATTRIBUTE_VALUE: {
       const { category, attribute, value } = action.payload;
@@ -457,14 +466,7 @@ const AdminContext = createContext(null);
 export function AdminProvider({ children }) {
   const [state, dispatch] = useReducer(adminReducer, defaultInitialState, getInitialState);
 
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem("adminStoreState", JSON.stringify(state));
-    } catch (err) {
-      console.error("Failed to save state to localStorage:", err);
-    }
-  }, [state]);
+
 
   // Convenience dispatchers
   const actions = {

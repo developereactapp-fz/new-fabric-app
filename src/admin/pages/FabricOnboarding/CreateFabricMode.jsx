@@ -35,6 +35,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const [previewFabricId, setPreviewFabricId] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [serverAttributes, setServerAttributes] = useState([]);
+  const [queuedFabrics, setQueuedFabrics] = useState([]);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -48,25 +50,53 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const authHeaders = () => ({
+    Authorization: `Bearer ${getToken()}`,
+    "x-tenant-slug": "test-tenant",
+  });
+
+
+  // One request — fetch all attributes, then group by category from the response
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const res = await axios.get(`${API}/api/attributes`, {
+          headers: authHeaders(),
+        });
+        const raw = res.data?.data || res.data || [];
+        const items = Array.isArray(raw) ? raw : [];
+        setServerAttributes(items);
+      } catch (err) {
+        console.error("Failed to fetch attributes", err);
+      }
+    };
+    fetchAttributes();
+  }, []);
+
   // Get attribute options from the store (global category)
   const getAttrValues = (attr) => {
+    const serverVals = serverAttributes
+      .filter(a => a.category === attr && a.isActive)
+      .map(a => a.value);
+
     const allCats = Object.values(state.attributes);
-    const merged = [];
+    const localVals = [];
     allCats.forEach((catAttrs) => {
       (catAttrs[attr] || []).forEach((v) => {
-        if (v.status === "active" && !merged.includes(v.value)) merged.push(v.value);
+        if (v.status === "active" && !localVals.includes(v.value)) localVals.push(v.value);
       });
     });
-    return merged;
+
+    return [...new Set([...serverVals, ...localVals])];
   };
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes]);
+  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes]);
 
   const existingIds = state.fabrics.map((f) => f.fabricId);
   const existingNames = state.fabrics.map((f) => f.fabricName);
@@ -108,50 +138,115 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   };
 
   // Ref to track pending group mappings by fabricId string
-  const pendingGroupMapRef = useRef(null);
+  const pendingGroupMapRef = useRef([]);
 
   // Effect to watch state.fabrics for newly-added fabric and map to group
   useEffect(() => {
-    if (!pendingGroupMapRef.current) return;
-    const { fabricId: pendingFabricId, groupId: pendingGroupId } = pendingGroupMapRef.current;
-    const newFab = state.fabrics.find((f) => f.fabricId === pendingFabricId);
-    if (newFab) {
-      addFabricGroupMapping(newFab.id, pendingGroupId);
-      pendingGroupMapRef.current = null;
-    }
+    if (pendingGroupMapRef.current.length === 0) return;
+
+    const remaining = [];
+    pendingGroupMapRef.current.forEach(({ fabricId: pendingFabricId, groupId: pendingGroupId }) => {
+      const newFab = state.fabrics.find((f) => f.fabricId === pendingFabricId || f.code === pendingFabricId);
+      if (newFab) {
+        addFabricGroupMapping(newFab.id, pendingGroupId);
+      } else {
+        remaining.push({ fabricId: pendingFabricId, groupId: pendingGroupId });
+      }
+    });
+
+    pendingGroupMapRef.current = remaining;
   }, [state.fabrics, addFabricGroupMapping]);
 
   const handleSave = async (addAnother = false) => {
-    if (!validate()) return;
+    const isFormEmpty = !form.fabricId && !form.fabricName;
+    let currentFabric = null;
+
+    if (!isFormEmpty || addAnother) {
+      if (!validate()) return;
+      const gsmNum = form.gsm ? Number(form.gsm) : null;
+      currentFabric = {
+        name: form.fabricName,
+        code: form.fabricId,
+        type: form.material,
+        color: form.color,
+        colorHex: "#111111", // Placeholder
+        pattern: form.pattern,
+        weavePattern: form.weavePattern,
+        subMaterial: form.subMaterial,
+        gsm: gsmNum,
+        season: form.season,
+        features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
+        weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
+        price: form.price !== "" ? Number(form.price) : null,
+        isRecommended: false,
+        assetId: "123e4567-e89b-12d3-a456-426614174000" // Placeholder
+      };
+    }
+
+    if (addAnother) {
+      if (currentFabric) {
+        setQueuedFabrics(prev => [...prev, currentFabric]);
+        setRecentlyAdded(prev => [...prev, { fabricId: form.fabricId, fabricName: form.fabricName, status: "queued" }]);
+        setForm({ ...EMPTY_FORM });
+        setErrors({});
+      }
+      return;
+    }
+
+    const allFabricsToSave = [...queuedFabrics];
+    if (currentFabric) {
+      allFabricsToSave.push(currentFabric);
+    }
+
+    if (allFabricsToSave.length === 0) {
+      alert("No fabrics to save.");
+      return;
+    }
+
     setIsSaving(true);
 
-    const fabricData = {
-      ...form,
-      gsm: form.gsm ? Number(form.gsm) : null,
-      price: form.price !== "" ? Number(form.price) : null,
-      stock: form.stock !== "" ? Number(form.stock) : null,
-    };
-    delete fabricData.image;
-
     try {
-      const token = localStorage.getItem("token")
-      const res = await axios.post(`${API}/api/materials/fabrics`, fabricData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-slug": "test-tenant"
+      if (allFabricsToSave.length === 1) {
+        const res = await axios.post(`${API}/api/materials/fabrics`, allFabricsToSave[0], {
+          headers: authHeaders(),
+        });
+
+        const newFabric = res.data?.data || res.data || allFabricsToSave[0];
+        addFabric(newFabric);
+
+        if (groupId) {
+          pendingGroupMapRef.current.push({ fabricId: newFabric.fabricId || newFabric.code || form.fabricId, groupId });
         }
-      });
 
-      const newFabric = res.data?.data || res.data || fabricData;
+        setRecentlyAdded((prev) => {
+          const nonQueued = prev.filter(p => p.status !== "queued");
+          return [...nonQueued, { fabricId: newFabric.fabricId || newFabric.code || form.fabricId, fabricName: newFabric.fabricName || newFabric.name }];
+        });
+      } else {
+        const res = await axios.post(`${API}/api/materials/fabrics/bulk`, allFabricsToSave, {
+          headers: authHeaders(),
+        });
 
-      addFabric(newFabric);
+        const newFabrics = res.data?.data || res.data || allFabricsToSave;
+        const fabricsArray = Array.isArray(newFabrics) ? newFabrics : allFabricsToSave;
 
-      // Map to group if selected — use ref to track pending mapping
-      if (groupId) {
-        pendingGroupMapRef.current = { fabricId: newFabric.fabricId || form.fabricId, groupId };
+        fabricsArray.forEach(f => {
+          addFabric(f);
+          if (groupId) {
+            pendingGroupMapRef.current.push({ fabricId: f.fabricId || f.code, groupId });
+          }
+        });
+
+        setRecentlyAdded((prev) => {
+          const nonQueued = prev.filter(p => p.status !== "queued");
+          return [
+            ...nonQueued,
+            ...fabricsArray.map(f => ({ fabricId: f.fabricId || f.code, fabricName: f.fabricName || f.name }))
+          ];
+        });
       }
 
-      setRecentlyAdded((prev) => [...prev, { fabricId: form.fabricId, fabricName: form.fabricName }]);
+      setQueuedFabrics([]);
       setForm({ ...EMPTY_FORM });
       setErrors({});
     } catch (err) {
@@ -167,12 +262,28 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     setErrors({});
   };
 
-  const handleAddNewAttr = (attrName, formField, val) => {
+  const handleAddNewAttr = async (attrName, formField, val) => {
     if (!val) return;
-    // Add to global attributes under a default category
-    // Features all share the "Feature" attribute key in the store
     const storeAttrName = attrName.startsWith("Feature") ? "Feature" : attrName;
-    addAttributeValue("Custom Shirt", storeAttrName, val);
+
+    try {
+      const res = await axios.post(`${API}/api/attributes`, {
+        category: storeAttrName,
+        value: val,
+        isActive: true
+      }, {
+        headers: authHeaders(),
+      });
+      // Add to server attributes locally so it appears immediately
+      const newAttr = res.data?.data || res.data || { category: storeAttrName, value: val, isActive: true };
+      setServerAttributes((prev) => [...prev, newAttr]);
+
+      // Keep store updated just in case
+      addAttributeValue(storeAttrName, storeAttrName, val);
+    } catch (err) {
+      console.error("Failed to add attribute to server", err);
+    }
+
     // Set the form field
     if (formField) {
       setField(formField, val);

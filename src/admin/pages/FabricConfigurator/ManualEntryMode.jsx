@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import axios from "axios";
-import { useAdmin } from "../../store/adminStore.jsx";
+import { useAdmin, ACTIONS } from "../../store/adminStore.jsx";
 
 const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import SearchInput from "../../components/SearchInput";
@@ -11,7 +11,7 @@ import { isDuplicate, validateName } from "../../utils/validators";
 import { ATTRIBUTES } from "../../config/appConfig";
 
 export default function ManualEntryMode({ category }) {
-  const { state, addAttributeValue, editAttributeValue, deleteAttributeValue } = useAdmin();
+  const { state, dispatch, addAttributeValue, editAttributeValue, deleteAttributeValue } = useAdmin();
   const [selectedAttr, setSelectedAttr] = useState(ATTRIBUTES[0]);
   const [search, setSearch] = useState("");
   const [newValue, setNewValue] = useState("");
@@ -22,6 +22,48 @@ export default function ManualEntryMode({ category }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Stable token getter — never changes reference
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;  // Keep a stable ref so callbacks don't regenerate on every render
+  const authHeaders = () => ({ Authorization: `Bearer ${getToken()}`, "x-tenant-slug": "test-tenant" });
+
+  // ── GET: fetch values for the currently selected attribute from server ──
+  // Runs on mount and whenever category or selectedAttr changes (one request each time).
+  const fetchAttributes = useCallback(async (attr, signal) => {
+    setIsLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/attributes`, {
+        params: { category: attr },
+        headers: authHeaders(),
+        signal, // AbortController signal — cancels stale requests
+      });
+      const raw = res.data?.data || res.data || [];
+      const items = Array.isArray(raw) ? raw : [];
+      const values = items.map((item) => ({
+        id: item.id,
+        value: item.value,
+        // API returns isActive (boolean), normalise to status string
+        status: item.isActive !== undefined
+          ? (item.isActive ? "active" : "inactive")
+          : (item.status || "active"),
+      }));
+      dispatch({
+        type: ACTIONS.SET_ATTRIBUTE_VALUES,
+        payload: { category, attribute: attr, values },
+      });
+    } catch (err) {
+      if (axios.isCancel(err)) return; // ignore aborted requests
+      console.error("Failed to fetch attributes", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [category, dispatch]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAttributes(selectedAttr, controller.signal);
+  }, [fetchAttributes, selectedAttr]);
 
   const catAttrs = state.attributes[category] || {};
   const attrValues = catAttrs[selectedAttr] || [];
@@ -34,7 +76,7 @@ export default function ManualEntryMode({ category }) {
 
   const existingNames = attrValues.map((v) => v.value);
 
-  // Add value
+  // ── POST: Add value ──
   const handleAdd = async () => {
     const trimmed = newValue.trim();
     if (!trimmed) return;
@@ -42,43 +84,30 @@ export default function ManualEntryMode({ category }) {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("token")
-      await axios.post(`${API}/api/attributes`, {
-        name: trimmed,
-        value: trimmed,
-        attribute: selectedAttr,
-        category: category,
-        status: newStatus
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-slug": "test-tenant"
-        }
-      });
+      const res = await axios.post(
+        `${API}/api/attributes`,
+        { category: selectedAttr, value: trimmed, isActive: newStatus === "active" },
+        { headers: authHeaders() }
+      );
+      // Use server-returned id so DELETE/PATCH work correctly
+      const created = res.data?.data || res.data;
+      const serverId = created?.id;
+      const catAttrs = { ...(state.attributes[category] || {}) };
+      const existing = catAttrs[selectedAttr] || [];
+      catAttrs[selectedAttr] = [
+        ...existing,
+        { id: serverId || String(Date.now()), value: trimmed, status: newStatus },
+      ];
+      dispatch({ type: ACTIONS.SET_ATTRIBUTES, payload: { ...state.attributes, [category]: catAttrs } });
+      setRecentlyAdded((prev) => [trimmed, ...prev].slice(0, 5));
+      setNewValue("");
+      setNewStatus("active");
     } catch (err) {
       console.error("Failed to save attribute to server", err);
       alert(err.response?.data?.message || "Failed to save attribute to server");
+    } finally {
       setIsSaving(false);
-      return;
     }
-    setIsSaving(false);
-
-    addAttributeValue(category, selectedAttr, trimmed);
-    // If user selected "inactive" status, update the newly-added value
-    if (newStatus === "inactive") {
-      // The new value was just appended to the end of the attribute array
-      // We need to find it after the next render, so we use a microtask
-      setTimeout(() => {
-        const updatedVals = state.attributes[category]?.[selectedAttr] || [];
-        const lastVal = updatedVals[updatedVals.length - 1];
-        if (lastVal && lastVal.value === trimmed) {
-          editAttributeValue(category, selectedAttr, lastVal.id, { status: "inactive" });
-        }
-      }, 0);
-    }
-    setRecentlyAdded((prev) => [trimmed, ...prev].slice(0, 5));
-    setNewValue("");
-    setNewStatus("active");
   };
 
   // Start edit
@@ -88,31 +117,47 @@ export default function ManualEntryMode({ category }) {
     setEditStatus(item.status);
   };
 
-  // Save edit
-  const saveEdit = () => {
+  // ── PATCH: Save edit ──
+  const saveEdit = async () => {
     if (!editName.trim()) return;
     const otherNames = attrValues.filter((v) => v.id !== editingId).map((v) => v.value);
     if (isDuplicate(editName.trim(), otherNames)) return;
 
-    editAttributeValue(category, selectedAttr, editingId, {
-      value: editName.trim(),
-      status: editStatus,
-    });
-    setEditingId(null);
+    const updates = { value: editName.trim(), status: editStatus };
+    const apiUpdates = { value: editName.trim(), isActive: editStatus === "active" };
+    try {
+      await axios.patch(`${API}/api/attributes/${editingId}`, apiUpdates, { headers: authHeaders() });
+      editAttributeValue(category, selectedAttr, editingId, updates);
+      setEditingId(null);
+    } catch (err) {
+      console.error("Failed to update attribute", err);
+      alert(err.response?.data?.message || "Failed to update attribute");
+    }
   };
 
-  // Delete
-  const handleDelete = () => {
+  // ── DELETE: Remove attribute value ──
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    deleteAttributeValue(category, selectedAttr, deleteTarget.id);
-    setDeleteTarget(null);
+    try {
+      await axios.delete(`${API}/api/attributes/${deleteTarget.id}`, { headers: authHeaders() });
+      deleteAttributeValue(category, selectedAttr, deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error("Failed to delete attribute", err);
+      alert(err.response?.data?.message || "Failed to delete attribute");
+    }
   };
 
-  // Toggle status
-  const toggleItemStatus = (item) => {
-    editAttributeValue(category, selectedAttr, item.id, {
-      status: item.status === "active" ? "inactive" : "active",
-    });
+  // ── PATCH: Toggle status ──
+  const toggleItemStatus = async (item) => {
+    const newSt = item.status === "active" ? "inactive" : "active";
+    try {
+      await axios.patch(`${API}/api/attributes/${item.id}`, { isActive: newSt === "active" }, { headers: authHeaders() });
+      editAttributeValue(category, selectedAttr, item.id, { status: newSt });
+    } catch (err) {
+      console.error("Failed to toggle attribute status", err);
+      alert(err.response?.data?.message || "Failed to update attribute status");
+    }
   };
 
   // Validation for new value
@@ -129,6 +174,14 @@ export default function ManualEntryMode({ category }) {
               <h3 className="admin-card-title">Attribute Manager</h3>
               <p className="admin-card-subtitle">Select an attribute to manage its values</p>
             </div>
+            <button
+              className="admin-btn admin-btn-ghost admin-btn-sm"
+              onClick={() => { const ctrl = new AbortController(); fetchAttributes(selectedAttr, ctrl.signal); }}
+              disabled={isLoading}
+              title="Refresh from server"
+            >
+              {isLoading ? "↻ Loading…" : "↻ Refresh"}
+            </button>
           </div>
 
           <div className="admin-form-group">
@@ -151,7 +204,11 @@ export default function ManualEntryMode({ category }) {
           </div>
 
           <div className="fc-values-list">
-            {filteredValues.length === 0 ? (
+            {isLoading ? (
+              <div className="admin-empty" style={{ padding: 24 }}>
+                <p style={{ color: "#9ca3af" }}>Loading attributes…</p>
+              </div>
+            ) : filteredValues.length === 0 ? (
               <div className="admin-empty" style={{ padding: 24 }}>
                 <p>No values found</p>
               </div>

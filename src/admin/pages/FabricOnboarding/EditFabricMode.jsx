@@ -134,10 +134,9 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     delete updateData.image;
 
     try {
-      const token = localStorage.getItem("token")
-      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
+      const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${getToken}`,
           "x-tenant-slug": "test-tenant"
         }
       });
