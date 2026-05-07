@@ -12,6 +12,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [serverAttributes, setServerAttributes] = useState([]);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -25,25 +26,86 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     };
   }, [imagePreviewUrl]);
 
-  // Get attribute options from the store
-  const getAttrValues = (attr) => {
-    const allCats = Object.values(state.attributes);
-    const merged = [];
-    allCats.forEach((catAttrs) => {
-      (catAttrs[attr] || []).forEach((v) => {
-        if (v.status === "active" && !merged.includes(v.value)) merged.push(v.value);
-      });
-    });
-    return merged;
+  // Fetch attributes from API on mount
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+        const res = await axios.get(`${API}/api/attributes`, {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "x-tenant-slug": "test-tenant"
+          }
+        });
+        const raw = res.data?.data || res.data || [];
+        const items = Array.isArray(raw) ? raw : [];
+        setServerAttributes(items);
+      } catch (err) {
+        console.error("EditFabricMode: Failed to fetch attributes", err);
+      }
+    };
+    fetchAttributes();
+  }, []);
+
+  // Map attribute names to the fabric object field(s) they correspond to
+  const attrToFabricField = {
+    "Color": "color",
+    "Material": ["material", "type"],
+    "Sub Material": "subMaterial",
+    "Pattern": "pattern",
+    "Weave Pattern": "weavePattern",
+    "Season": "season",
+    "Feature": "features",
   };
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes]);
+  // Get attribute options from server attributes, local store, AND existing fabrics
+  const getAttrValues = (attr) => {
+    // 1. From /api/attributes endpoint
+    const serverVals = serverAttributes
+      .filter(a => a.category === attr && a.isActive)
+      .map(a => a.value);
+
+    // 2. From local store
+    const allCats = Object.values(state.attributes);
+    const localVals = [];
+    allCats.forEach((catAttrs) => {
+      (catAttrs[attr] || []).forEach((v) => {
+        if (v.status === "active" && !localVals.includes(v.value)) localVals.push(v.value);
+      });
+    });
+
+    // 3. From existing fabrics in state
+    const fabricVals = [];
+    const fields = attrToFabricField[attr];
+    if (fields) {
+      state.fabrics.forEach((f) => {
+        if (Array.isArray(fields)) {
+          fields.forEach((field) => {
+            const val = f[field];
+            if (val && !fabricVals.includes(val)) fabricVals.push(val);
+          });
+        } else if (fields === "features") {
+          const arr = f.features || [];
+          arr.forEach((val) => {
+            if (val && !fabricVals.includes(val)) fabricVals.push(val);
+          });
+        } else {
+          const val = f[fields];
+          if (val && !fabricVals.includes(val)) fabricVals.push(val);
+        }
+      });
+    }
+
+    return [...new Set([...serverVals, ...localVals, ...fabricVals])];
+  };
+
+  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes, state.fabrics]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes, state.fabrics]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes, state.fabrics]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes, state.fabrics]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes, state.fabrics]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes, state.fabrics]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes, state.fabrics]);
 
   // Fabrics filtered by group
   const fabrics = useMemo(() => {

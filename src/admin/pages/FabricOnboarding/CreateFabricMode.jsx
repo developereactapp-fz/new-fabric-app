@@ -73,12 +73,25 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     fetchAttributes();
   }, []);
 
-  // Get attribute options from the store (global category)
+  // Map attribute names to the fabric object field(s) they correspond to
+  const attrToFabricField = {
+    "Color": "color",
+    "Material": ["material", "type"],
+    "Sub Material": "subMaterial",
+    "Pattern": "pattern",
+    "Weave Pattern": "weavePattern",
+    "Season": "season",
+    "Feature": "features",
+  };
+
+  // Get attribute options from server attributes, local store, AND existing fabrics
   const getAttrValues = (attr) => {
+    // 1. From /api/attributes endpoint
     const serverVals = serverAttributes
       .filter(a => a.category === attr && a.isActive)
       .map(a => a.value);
 
+    // 2. From local store
     const allCats = Object.values(state.attributes);
     const localVals = [];
     allCats.forEach((catAttrs) => {
@@ -87,16 +100,40 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       });
     });
 
-    return [...new Set([...serverVals, ...localVals])];
+    // 3. From existing fabrics in state
+    const fabricVals = [];
+    const fields = attrToFabricField[attr];
+    if (fields) {
+      state.fabrics.forEach((f) => {
+        if (Array.isArray(fields)) {
+          // Multiple possible field names (e.g. material / type)
+          fields.forEach((field) => {
+            const val = f[field];
+            if (val && !fabricVals.includes(val)) fabricVals.push(val);
+          });
+        } else if (fields === "features") {
+          // Features is an array field
+          const arr = f.features || [];
+          arr.forEach((val) => {
+            if (val && !fabricVals.includes(val)) fabricVals.push(val);
+          });
+        } else {
+          const val = f[fields];
+          if (val && !fabricVals.includes(val)) fabricVals.push(val);
+        }
+      });
+    }
+
+    return [...new Set([...serverVals, ...localVals, ...fabricVals])];
   };
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes]);
+  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes, state.fabrics]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes, state.fabrics]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes, state.fabrics]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes, state.fabrics]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes, state.fabrics]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes, state.fabrics]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes, state.fabrics]);
 
   const existingIds = state.fabrics.map((f) => f.fabricId);
   const existingNames = state.fabrics.map((f) => f.fabricName);
@@ -178,8 +215,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
         weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
         price: form.price !== "" ? Number(form.price) : null,
-        isRecommended: false,
-        assetId: "123e4567-e89b-12d3-a456-426614174000" // Placeholder
+        isRecommended: false
       };
     }
 
@@ -211,7 +247,15 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           headers: authHeaders(),
         });
 
-        const newFabric = res.data?.data || res.data || allFabricsToSave[0];
+        const rawFabric = res.data?.data || res.data || allFabricsToSave[0];
+        const newFabric = {
+          ...rawFabric,
+          fabricId: rawFabric.fabricId || rawFabric.code || "",
+          fabricName: rawFabric.fabricName || rawFabric.name || "",
+          material: rawFabric.material || rawFabric.type || "",
+          status: rawFabric.status || (rawFabric.isActive === false ? "inactive" : "active"),
+          image: rawFabric.image || rawFabric.imageUrl || null,
+        };
         addFabric(newFabric);
 
         if (groupId) {
@@ -228,7 +272,14 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         });
 
         const newFabrics = res.data?.data || res.data || allFabricsToSave;
-        const fabricsArray = Array.isArray(newFabrics) ? newFabrics : allFabricsToSave;
+        const fabricsArray = (Array.isArray(newFabrics) ? newFabrics : allFabricsToSave).map(raw => ({
+          ...raw,
+          fabricId: raw.fabricId || raw.code || "",
+          fabricName: raw.fabricName || raw.name || "",
+          material: raw.material || raw.type || "",
+          status: raw.status || (raw.isActive === false ? "inactive" : "active"),
+          image: raw.image || raw.imageUrl || null,
+        }));
 
         fabricsArray.forEach(f => {
           addFabric(f);
