@@ -37,6 +37,17 @@ export default function FabricOnboardingPage() {
     }
   };
 
+
+  // Normalize server fabric response to frontend field names
+  const normalizeFabric = (f) => ({
+    ...f,
+    fabricId: f.fabricId || f.code || "",
+    fabricName: f.fabricName || f.name || "",
+    material: f.material || f.type || "",
+    status: f.status || (f.isActive === false ? "inactive" : "active"),
+    image: f.image || f.imageUrl || null,
+  });
+
   useEffect(() => {
     const fetchFabrics = async () => {
       setLoading(true);
@@ -50,7 +61,7 @@ export default function FabricOnboardingPage() {
         });
         const data = res.data?.data || res.data;
         if (Array.isArray(data)) {
-          setFabrics(data);
+          setFabrics(data.map(normalizeFabric));
         }
       } catch (err) {
         console.error("Failed to fetch fabrics", err);
