@@ -37,6 +37,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const [isSaving, setIsSaving] = useState(false);
   const [serverAttributes, setServerAttributes] = useState([]);
   const [queuedFabrics, setQueuedFabrics] = useState([]);
+  const [uploadedAsset, setUploadedAsset] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -167,10 +169,33 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
   const setField = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setField("image", file);
+    if (!file) return;
+    setField("image", file);
+
+    // Upload to /api/assets/upload
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "FABRIC");
+
+      const res = await axios.post(`${API}/api/assets/upload`, formData, {
+        headers: {
+          ...authHeaders(),
+        },
+      });
+
+      const asset = res.data?.data || res.data;
+      setUploadedAsset(asset);
+      console.log("Asset uploaded:", asset);
+    } catch (err) {
+      console.error("Failed to upload asset", err);
+      alert(err.response?.data?.message || "Failed to upload image");
+      setUploadedAsset(null);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -215,7 +240,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
         weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
         price: form.price !== "" ? Number(form.price) : null,
-        isRecommended: false
+        isRecommended: false,
+        ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
       };
     }
 
@@ -298,6 +324,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       }
 
       setQueuedFabrics([]);
+      setUploadedAsset(null);
       setForm({ ...EMPTY_FORM });
       setErrors({});
     } catch (err) {
@@ -484,7 +511,11 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
             <div className="fo-field-grid">
               <div className="fo-field fo-field-full">
                 <label className="admin-label">Fabric Image</label>
-                <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} />
+                <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} disabled={isUploading} />
+                {isUploading && <span style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⏳ Uploading image...</span>}
+                {uploadedAsset && (
+                  <span style={{ color: "#4ade80", fontSize: 13, marginTop: 4 }}>✅ Uploaded: {uploadedAsset.fileName || "Image ready"}</span>
+                )}
               </div>
             </div>
             <div className="fo-status-row" style={{ marginTop: 16 }}>
@@ -523,8 +554,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           </div>
           <div className="fo-preview-card-inner">
             <div className="fo-preview-image">
-              {imagePreviewUrl ? (
-                <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+              {(imagePreviewUrl || uploadedAsset?.url) ? (
+                <img src={imagePreviewUrl || uploadedAsset?.url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
               ) : (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" />

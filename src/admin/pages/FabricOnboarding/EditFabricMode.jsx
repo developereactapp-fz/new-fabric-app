@@ -13,6 +13,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [serverAttributes, setServerAttributes] = useState([]);
+  const [uploadedAsset, setUploadedAsset] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const authHeaders = () => ({
+    Authorization: `Bearer ${import.meta.env.VITE_AUTH_TOKEN}`,
+    "x-tenant-slug": "test-tenant"
+  });
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -116,6 +123,22 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     return state.fabrics.filter((f) => mappedIds.includes(f.id));
   }, [groupId, state.fabrics, state.fabricGroupMappings]);
 
+  // Fetch asset details by assetId
+  const fetchAsset = async (assetId) => {
+    if (!assetId) return;
+    try {
+      const res = await axios.get(`${API}/api/assets/${assetId}`, {
+        headers: authHeaders()
+      });
+      const asset = res.data?.data || res.data;
+      if (asset) {
+        setUploadedAsset(asset);
+      }
+    } catch (err) {
+      console.error("Failed to fetch asset", err);
+    }
+  };
+
   useEffect(() => {
     if (preselectedEditId) {
       setSelectedFabricId(preselectedEditId);
@@ -136,11 +159,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
           feature1: fab.feature1 || "",
           feature2: fab.feature2 || "",
           feature3: fab.feature3 || "",
-          image: fab.image || null,
+          image: fab.image || fab.imageUrl || fab.asset?.url || null,
           status: fab.status || "active",
         });
         setSaved(false);
         onDirty?.(true);
+        // Fetch existing asset for preview
+        if (fab.assetId) fetchAsset(fab.assetId);
       }
     }
   }, [preselectedEditId, state.fabrics]);
@@ -163,11 +188,14 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       feature1: fab.feature1 || "",
       feature2: fab.feature2 || "",
       feature3: fab.feature3 || "",
-      image: fab.image || null,
+      image: fab.image || fab.imageUrl || fab.asset?.url || null,
       status: fab.status || "active",
     });
     setSaved(false);
+    setUploadedAsset(null);
     onDirty?.(true);
+    // Fetch existing asset for preview
+    if (fab.assetId) fetchAsset(fab.assetId);
   };
 
   const setField = (key, val) => {
@@ -176,10 +204,33 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     onDirty?.(true);
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setField("image", file);
+    if (!file) return;
+    setField("image", file);
+
+    // Upload to /api/assets/upload
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "FABRIC");
+
+      const res = await axios.post(`${API}/api/assets/upload`, formData, {
+        headers: {
+          ...authHeaders(),
+        },
+      });
+
+      const asset = res.data?.data || res.data;
+      setUploadedAsset(asset);
+      console.log("Asset uploaded:", asset);
+    } catch (err) {
+      console.error("Failed to upload asset", err);
+      alert(err.response?.data?.message || "Failed to upload image");
+      setUploadedAsset(null);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -192,15 +243,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       gsm: form.gsm ? Number(form.gsm) : null,
       price: form.price !== "" ? Number(form.price) : null,
       stock: form.stock !== "" ? Number(form.stock) : null,
+      ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
     };
     delete updateData.image;
 
     try {
-      const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
-        headers: {
-          Authorization: `Bearer ${getToken}`,
-          "x-tenant-slug": "test-tenant"
-        }
+      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
+        headers: authHeaders()
       });
 
       const updatedFabric = res.data?.data || res.data || updateData;
@@ -219,6 +268,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     setForm(null);
     setSelectedFabricId(null);
     setSaved(false);
+    setUploadedAsset(null);
     onDirty?.(false);
   };
 
@@ -355,7 +405,11 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
                 <div className="fo-field-grid">
                   <div className="fo-field fo-field-full">
                     <label className="admin-label">Fabric Image</label>
-                    <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} />
+                    <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} disabled={isUploading} />
+                    {isUploading && <span style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⏳ Uploading image...</span>}
+                    {uploadedAsset && (
+                      <span style={{ color: "#4ade80", fontSize: 13, marginTop: 4 }}>✅ Uploaded: {uploadedAsset.fileName || "Image ready"}</span>
+                    )}
                   </div>
                 </div>
                 <div className="fo-status-row" style={{ marginTop: 16 }}>
@@ -390,8 +444,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
               </div>
               <div className="fo-preview-card-inner">
                 <div className="fo-preview-image">
-                  {imagePreviewUrl ? (
-                    <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                  {(imagePreviewUrl || uploadedAsset?.url || (typeof form.image === "string" && form.image)) ? (
+                    <img src={imagePreviewUrl || uploadedAsset?.url || form.image} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
                   ) : (
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                       <rect x="3" y="3" width="18" height="18" rx="2" />
