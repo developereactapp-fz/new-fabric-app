@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore.jsx";
 
 const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
@@ -17,13 +18,23 @@ const MODES = [
 ];
 
 export default function FabricOnboardingPage() {
+  const location = useLocation();
   const { state, setFabrics } = useAdmin();
-  const [mode, setMode] = useState("create");
+  
+  const initialMode = location.state?.editFabricId ? "edit" : "create";
+  const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
-  const [preselectedEditId, setPreselectedEditId] = useState(null);
+  const [preselectedEditId, setPreselectedEditId] = useState(location.state?.editFabricId || null);
+
+  useEffect(() => {
+    if (location.state?.editFabricId) {
+      setMode("edit");
+      setPreselectedEditId(location.state.editFabricId);
+    }
+  }, [location.state?.editFabricId]);
 
   const selectedGroup = state.fabricGroups.find((g) => g.id === selectedGroupId);
 
@@ -45,7 +56,7 @@ export default function FabricOnboardingPage() {
     fabricName: f.fabricName || f.name || "",
     material: f.material || f.type || "",
     status: f.status || (f.isActive === false ? "inactive" : "active"),
-    image: f.image || f.imageUrl || null,
+    image: f.image || f.imageUrl || f.asset?.url || null,
   });
 
   useEffect(() => {
