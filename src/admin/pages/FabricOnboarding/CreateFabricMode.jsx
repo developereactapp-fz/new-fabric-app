@@ -1,19 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
-
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import StatusBadge from "../../components/StatusBadge";
 import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
-
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
-
-const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-const authHeaders = () => ({
-  Authorization: `Bearer ${getToken()}`,
-  "x-tenant-slug": "test-tenant",
-});
+import { adminService } from "../../../services/adminService";
+import { toast } from "sonner";
 
 const EMPTY_FORM = {
   fabricId: "",
@@ -60,7 +52,10 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const authHeaders = () => ({
+  const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; 
+  const authHeaders = () => ({
     Authorization: `Bearer ${getToken()}`,
     "x-tenant-slug": "test-tenant",
   });

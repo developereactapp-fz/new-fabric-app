@@ -11,10 +11,6 @@ import { isDuplicate } from "../../utils/validators";
 
 import { ATTRIBUTES } from "../../config/appConfig";
 
-// Stable token getter
-const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-const authHeaders = () => ({ Authorization: `Bearer ${getToken()}`, "x-tenant-slug": "test-tenant" });
-
 export default function ManualEntryMode({ category }) {
   const { state, dispatch, editAttributeValue, deleteAttributeValue } = useAdmin();
   const [selectedAttr, setSelectedAttr] = useState(ATTRIBUTES[0]);
@@ -31,7 +27,7 @@ export default function ManualEntryMode({ category }) {
 
   // ── GET: fetch values for the currently selected attribute from server ──
   // Runs on mount and whenever category or selectedAttr changes (one request each time).
-  const fetchAttributes = useCallback(async (attr, signal) => {
+  const fetchAttributes = useCallback(async (attr) => {
     setIsLoading(true);
     try {
       const res = await adminService.getAttributes({ category: attr });
@@ -62,10 +58,11 @@ export default function ManualEntryMode({ category }) {
     fetchAttributes(selectedAttr, controller.signal);
   }, [fetchAttributes, selectedAttr]);
 
+  const catAttrs = state.attributes[category] || {};
+  
   const attrValues = useMemo(() => {
-    const catAttrs = state.attributes[category] || {};
     return catAttrs[selectedAttr] || [];
-  }, [state.attributes, category, selectedAttr]);
+  }, [catAttrs, selectedAttr]);
 
   const filteredValues = useMemo(() => {
     if (!search) return attrValues;

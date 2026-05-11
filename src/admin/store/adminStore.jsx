@@ -1,5 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useReducer, useCallback } from "react";
+import { createContext, useContext, useReducer, useCallback, useEffect } from "react";
+import { adminService } from "../../services/adminService";
+
+const genId = () => Math.random().toString(36).substr(2, 9);
 
 // ─── Initial State ───────────────────────────────────────────────
 const defaultInitialState = {
@@ -18,10 +21,6 @@ const defaultInitialState = {
   builderGroups: [],
   contrastMappings: [],
   contrastMappingItems: [],
-};
-
-const getInitialState = () => {
-  return defaultInitialState;
 };
 
 // ─── Action Types ────────────────────────────────────────────────
@@ -476,11 +475,14 @@ export function AdminProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAdmin() {
   const ctx = useContext(AdminContext);
   if (!ctx) throw new Error("useAdmin must be used within AdminProvider");
   return ctx;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { A as ACTIONS };
+// eslint-disable-next-line react-refresh/only-export-components
 export default AdminContext;
