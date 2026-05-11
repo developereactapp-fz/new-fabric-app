@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import axios from "axios";
+import { toast } from "sonner";
+import { adminService } from "../../../services/adminService";
 import { useAdmin, ACTIONS } from "../../store/adminStore.jsx";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 import SearchInput from "../../components/SearchInput";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -24,20 +25,14 @@ export default function ManualEntryMode({ category }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Stable token getter — never changes reference
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;  // Keep a stable ref so callbacks don't regenerate on every render
-  const authHeaders = () => ({ Authorization: `Bearer ${getToken()}`, "x-tenant-slug": "test-tenant" });
+
 
   // ── GET: fetch values for the currently selected attribute from server ──
   // Runs on mount and whenever category or selectedAttr changes (one request each time).
   const fetchAttributes = useCallback(async (attr, signal) => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`${API}/api/attributes`, {
-        params: { category: attr },
-        headers: authHeaders(),
-        signal, // AbortController signal — cancels stale requests
-      });
+      const res = await adminService.getAttributes({ category: attr });
       const raw = res.data?.data || res.data || [];
       const items = Array.isArray(raw) ? raw : [];
       const values = items.map((item) => ({
@@ -53,7 +48,7 @@ export default function ManualEntryMode({ category }) {
         payload: { category, attribute: attr, values },
       });
     } catch (err) {
-      if (axios.isCancel(err)) return; // ignore aborted requests
+      if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return; // ignore aborted requests
       console.error("Failed to fetch attributes", err);
     } finally {
       setIsLoading(false);
@@ -84,10 +79,8 @@ export default function ManualEntryMode({ category }) {
 
     setIsSaving(true);
     try {
-      const res = await axios.post(
-        `${API}/api/attributes`,
-        { category: selectedAttr, value: trimmed, isActive: newStatus === "active" },
-        { headers: authHeaders() }
+      const res = await adminService.createAttribute(
+        { category: selectedAttr, value: trimmed, isActive: newStatus === "active" }
       );
       // Use server-returned id so DELETE/PATCH work correctly
       const created = res.data?.data || res.data;
@@ -104,7 +97,7 @@ export default function ManualEntryMode({ category }) {
       setNewStatus("active");
     } catch (err) {
       console.error("Failed to save attribute to server", err);
-      alert(err.response?.data?.message || "Failed to save attribute to server");
+      toast.error(err.response?.data?.message || "Failed to save attribute to server");
     } finally {
       setIsSaving(false);
     }
@@ -126,12 +119,12 @@ export default function ManualEntryMode({ category }) {
     const updates = { value: editName.trim(), status: editStatus };
     const apiUpdates = { value: editName.trim(), isActive: editStatus === "active" };
     try {
-      await axios.patch(`${API}/api/attributes/${editingId}`, apiUpdates, { headers: authHeaders() });
+      await adminService.updateAttribute(editingId, apiUpdates);
       editAttributeValue(category, selectedAttr, editingId, updates);
       setEditingId(null);
     } catch (err) {
       console.error("Failed to update attribute", err);
-      alert(err.response?.data?.message || "Failed to update attribute");
+      toast.error(err.response?.data?.message || "Failed to update attribute");
     }
   };
 
@@ -139,12 +132,12 @@ export default function ManualEntryMode({ category }) {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await axios.delete(`${API}/api/attributes/${deleteTarget.id}`, { headers: authHeaders() });
+      await adminService.deleteAttribute(deleteTarget.id);
       deleteAttributeValue(category, selectedAttr, deleteTarget.id);
       setDeleteTarget(null);
     } catch (err) {
       console.error("Failed to delete attribute", err);
-      alert(err.response?.data?.message || "Failed to delete attribute");
+      toast.error(err.response?.data?.message || "Failed to delete attribute");
     }
   };
 
@@ -152,11 +145,11 @@ export default function ManualEntryMode({ category }) {
   const toggleItemStatus = async (item) => {
     const newSt = item.status === "active" ? "inactive" : "active";
     try {
-      await axios.patch(`${API}/api/attributes/${item.id}`, { isActive: newSt === "active" }, { headers: authHeaders() });
+      await adminService.updateAttribute(item.id, { isActive: newSt === "active" });
       editAttributeValue(category, selectedAttr, item.id, { status: newSt });
     } catch (err) {
       console.error("Failed to toggle attribute status", err);
-      alert(err.response?.data?.message || "Failed to update attribute status");
+      toast.error(err.response?.data?.message || "Failed to update attribute status");
     }
   };
 

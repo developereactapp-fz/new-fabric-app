@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
-import axios from "axios";
+import { toast } from "sonner";
+import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 import { useNavigate } from "react-router-dom";
 import useFilteredList from "../../hooks/useFilteredList";
@@ -11,7 +12,7 @@ import SummaryCards from "./SummaryCards";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import "./MaterialsPanel.css";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 
 const normalizeFabric = (f) => ({
   ...f,
@@ -36,13 +37,7 @@ export default function MaterialsPanelPage() {
     const fetchFabrics = async () => {
       setLoading(true);
       try {
-        const token = import.meta.env.VITE_AUTH_TOKEN;
-        const res = await axios.get(`${API}/api/materials/fabrics?limit=100`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-slug": "test-tenant",
-          },
-        });
+        const res = await adminService.getFabrics({ limit: 100 });
         const data = res.data?.data || res.data;
         if (Array.isArray(data)) {
           setFabrics(data.map(normalizeFabric));
@@ -93,18 +88,12 @@ export default function MaterialsPanelPage() {
     toggleStatus("fabrics", fabricId);
     
     try {
-      const token = import.meta.env.VITE_AUTH_TOKEN;
-      await axios.patch(`${API}/api/materials/fabrics/${fabricId}`, { status: newStatus }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-slug": "test-tenant"
-        }
-      });
+      await adminService.updateFabric(fabricId, { status: newStatus });
     } catch (error) {
       console.error("Failed to toggle fabric status", error);
       // Revert optimistic update
       toggleStatus("fabrics", fabricId);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     }
   };
 
@@ -127,16 +116,10 @@ export default function MaterialsPanelPage() {
       setDeleteTarget(null);
 
       try {
-        const token = import.meta.env.VITE_AUTH_TOKEN;
-        await axios.delete(`${API}/api/materials/fabrics/${targetId}/deactivate`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-slug": "test-tenant"
-          }
-        });
+        await adminService.deactivateFabric(targetId);
       } catch (error) {
         console.error("Failed to delete fabric", error);
-        alert(error.response?.data?.message || "Failed to delete fabric. Refreshing page to sync state...");
+        toast.error(error.response?.data?.message || "Failed to delete fabric. Refreshing page to sync state...");
         window.location.reload();
       }
     }

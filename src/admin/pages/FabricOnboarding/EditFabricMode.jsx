@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
-import axios from "axios";
+import { toast } from "sonner";
+import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 import StatusBadge from "../../components/StatusBadge";
 import { isDuplicate } from "../../utils/validators";
 
@@ -16,10 +17,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [uploadedAsset, setUploadedAsset] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const authHeaders = () => ({
-    Authorization: `Bearer ${import.meta.env.VITE_AUTH_TOKEN}`,
-    "x-tenant-slug": "test-tenant"
-  });
+
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -37,13 +35,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-        const res = await axios.get(`${API}/api/attributes`, {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "x-tenant-slug": "test-tenant"
-          }
-        });
+        const res = await adminService.getAttributes();
         const raw = res.data?.data || res.data || [];
         const items = Array.isArray(raw) ? raw : [];
         setServerAttributes(items);
@@ -127,9 +119,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const fetchAsset = async (assetId) => {
     if (!assetId) return;
     try {
-      const res = await axios.get(`${API}/api/assets/${assetId}`, {
-        headers: authHeaders()
-      });
+      const res = await adminService.getAsset(assetId);
       const asset = res.data?.data || res.data;
       if (asset) {
         setUploadedAsset(asset);
@@ -207,6 +197,19 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit. Please upload a smaller image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Invalid file type. Please upload an image file (e.g., PNG, JPEG).");
+      e.target.value = "";
+      return;
+    }
+
     setField("image", file);
 
     // Upload to /api/assets/upload
@@ -216,18 +219,14 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       formData.append("file", file);
       formData.append("category", "FABRIC");
 
-      const res = await axios.post(`${API}/api/assets/upload`, formData, {
-        headers: {
-          ...authHeaders(),
-        },
-      });
+      const res = await adminService.uploadAsset(formData);
 
       const asset = res.data?.data || res.data;
       setUploadedAsset(asset);
       console.log("Asset uploaded:", asset);
     } catch (err) {
       console.error("Failed to upload asset", err);
-      alert(err.response?.data?.message || "Failed to upload image");
+      toast.error(err.response?.data?.message || "Failed to upload image");
       setUploadedAsset(null);
     } finally {
       setIsUploading(false);
@@ -248,9 +247,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     delete updateData.image;
 
     try {
-      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
-        headers: authHeaders()
-      });
+      const res = await adminService.updateFabric(selectedFabricId, updateData);
 
       const updatedFabric = res.data?.data || res.data || updateData;
       editFabric(selectedFabricId, updatedFabric);
@@ -258,7 +255,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       onDirty?.(false);
     } catch (err) {
       console.error("Failed to update fabric", err);
-      alert(err.response?.data?.message || "Failed to update fabric");
+      toast.error(err.response?.data?.message || "Failed to update fabric");
     } finally {
       setIsSaving(false);
     }

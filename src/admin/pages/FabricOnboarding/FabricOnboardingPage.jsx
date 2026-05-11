@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { adminService } from "../../../services/adminService";
 import { useLocation } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore.jsx";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 import FabricGroupManager from "./FabricGroupManager";
 import CreateFabricMode from "./CreateFabricMode";
 import ImportFabricMode from "./ImportFabricMode";
@@ -63,13 +63,7 @@ export default function FabricOnboardingPage() {
     const fetchFabrics = async () => {
       setLoading(true);
       try {
-        const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-        const res = await axios.get(`${API}/api/materials/fabrics?limit=100`, {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "x-tenant-slug": "test-tenant"
-          }
-        });
+        const res = await adminService.getFabrics({ limit: 100 });
         const data = res.data?.data || res.data;
         if (Array.isArray(data)) {
           setFabrics(data.map(normalizeFabric));

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore";
 import PageHeader from "../../components/PageHeader";
@@ -42,7 +43,7 @@ export default function FabricDetailPage() {
 
   const handleEditFabric = () => {
     // In a real app, pass the ID to the onboarding page
-    alert("Navigating to Edit Fabric: " + selectedFabric.fabricName);
+    toast.info("Navigating to Edit Fabric: " + selectedFabric.fabricName);
   };
 
   const handleEditMappings = () => {
