@@ -25,3 +25,6 @@ dist-ssr
 context.md
 output_final_names_1_example.xlsx
 .env
+api.md
+unimplemented_apis.md
+implemented_apis.md

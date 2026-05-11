@@ -172,6 +172,19 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit. Please upload a smaller image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Invalid file type. Please upload an image file (e.g., PNG, JPEG).");
+      e.target.value = "";
+      return;
+    }
+
     setField("image", file);
 
     // Upload to /api/assets/upload
