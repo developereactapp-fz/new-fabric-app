@@ -73,6 +73,7 @@ const A = {
   EDIT_ATTR_VALUE: "EDIT_ATTR_VALUE",
   DELETE_ATTR_VALUE: "DELETE_ATTR_VALUE",
   IMPORT_ATTR_VALUES: "IMPORT_ATTR_VALUES",
+  SET_ATTRIBUTE_VALUES: "SET_ATTRIBUTE_VALUES",
   // Mappings
   BULK_SAVE_MAPPINGS: "BULK_SAVE_MAPPINGS",
 };
@@ -218,6 +219,12 @@ function adminReducer(state, action) {
       const catAttrs = { ...(state.attributes[cat] || {}) };
       catAttrs[payload.attrName] = (catAttrs[payload.attrName] || []).filter(v => v.id !== payload.valId);
       return { ...state, attributes: { ...state.attributes, [cat]: catAttrs } };
+    }
+    case A.SET_ATTRIBUTE_VALUES: {
+      const { category: svCat, attribute: svAttr, values: svVals } = payload;
+      const catA = { ...(state.attributes[svCat] || {}) };
+      catA[svAttr] = svVals;
+      return { ...state, attributes: { ...state.attributes, [svCat]: catA } };
     }
     case A.IMPORT_ATTR_VALUES: {
       const newAttrs = { ...state.attributes };

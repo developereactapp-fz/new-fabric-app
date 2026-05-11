@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import axios from "axios";
+import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 import StatusBadge from "../../components/StatusBadge";
 import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
@@ -52,19 +52,14 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const authHeaders = () => ({
-    Authorization: `Bearer ${getToken()}`,
-    "x-tenant-slug": "test-tenant",
-  });
+
 
 
   // One request — fetch all attributes, then group by category from the response
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const res = await axios.get(`${API}/api/attributes`, {
-          headers: authHeaders(),
-        });
+        const res = await adminService.getAttributes();
         const raw = res.data?.data || res.data || [];
         const items = Array.isArray(raw) ? raw : [];
         setServerAttributes(items);
@@ -194,11 +189,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       formData.append("file", file);
       formData.append("category", "FABRIC");
 
-      const res = await axios.post(`${API}/api/assets/upload`, formData, {
-        headers: {
-          ...authHeaders(),
-        },
-      });
+      const res = await adminService.uploadAsset(formData);
 
       const asset = res.data?.data || res.data;
       setUploadedAsset(asset);
@@ -282,9 +273,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
     try {
       if (allFabricsToSave.length === 1) {
-        const res = await axios.post(`${API}/api/materials/fabrics`, allFabricsToSave[0], {
-          headers: authHeaders(),
-        });
+        const res = await adminService.createFabric(allFabricsToSave[0]);
 
         const rawFabric = res.data?.data || res.data || allFabricsToSave[0];
         const newFabric = {
@@ -306,9 +295,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           return [...nonQueued, { fabricId: newFabric.fabricId || newFabric.code || form.fabricId, fabricName: newFabric.fabricName || newFabric.name }];
         });
       } else {
-        const res = await axios.post(`${API}/api/materials/fabrics/bulk`, allFabricsToSave, {
-          headers: authHeaders(),
-        });
+        const res = await adminService.createFabricsBulk(allFabricsToSave);
 
         const newFabrics = res.data?.data || res.data || allFabricsToSave;
         const fabricsArray = (Array.isArray(newFabrics) ? newFabrics : allFabricsToSave).map(raw => ({

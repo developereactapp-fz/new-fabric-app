@@ -48,6 +48,7 @@ export const adminService = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   getAssets: () => apiClient.get('/api/assets'),
+  getAsset: (id) => apiClient.get(`/api/assets/${id}`),
   deleteAsset: (id) => apiClient.delete(`/api/assets/${id}`),
 
   // ── Admin Settings / General ──
