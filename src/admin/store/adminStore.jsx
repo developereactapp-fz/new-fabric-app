@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useCallback, useEffect } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useReducer, useCallback } from "react";
 
 // ─── Initial State ───────────────────────────────────────────────
 const defaultInitialState = {
@@ -38,7 +39,6 @@ const defaultInitialState = {
 
   // Contrast mappings
   contrastMappings: [],
-  contrastMappingItems: [],
   contrastMappingItems: [],
 };
 

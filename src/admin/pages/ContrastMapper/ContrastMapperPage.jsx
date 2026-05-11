@@ -26,7 +26,7 @@ export default function ContrastMapperPage() {
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
 
-  const builderGroups = state.builderGroups || [];
+  const builderGroups = useMemo(() => state.builderGroups || [], [state.builderGroups]);
 
   // Find the default mapping for this component to auto-detect default fabric
   const defaultFabricMapping = useMemo(() => {

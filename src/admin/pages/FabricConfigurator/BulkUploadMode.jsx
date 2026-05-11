@@ -32,7 +32,7 @@ export default function BulkUploadMode({ category }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const handleFileLoaded = useCallback(async (buffer, fileName) => {
+  const handleFileLoaded = useCallback(async (buffer) => {
     try {
       const result = parseExcelBuffer(buffer);
       setSheetNames(result.sheetNames);

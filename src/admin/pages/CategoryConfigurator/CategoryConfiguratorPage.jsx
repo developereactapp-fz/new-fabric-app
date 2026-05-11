@@ -11,7 +11,7 @@ export default function CategoryConfiguratorPage() {
   const [selectedComponentId, setSelectedComponentId] = useState(null);
 
   const selectedCategory = state.categories.find((c) => c.id === selectedCategoryId);
-  const categoryComponents = selectedCategoryId ? (state.components[selectedCategoryId] || []) : [];
+
 
   return (
     <div className="cc-page">

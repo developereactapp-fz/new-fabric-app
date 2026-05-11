@@ -26,7 +26,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   }, [imagePreviewUrl]);
 
   // Get attribute options from the store
-  const getAttrValues = (attr) => {
+  const getAttrValues = useCallback((attr) => {
     const allCats = Object.values(state.attributes);
     const merged = [];
     allCats.forEach((catAttrs) => {
@@ -35,15 +35,15 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       });
     });
     return merged;
-  };
+  }, [state.attributes]);
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes]);
+  const colorOptions = useMemo(() => getAttrValues("Color"), [getAttrValues]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [getAttrValues]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [getAttrValues]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [getAttrValues]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [getAttrValues]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [getAttrValues]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [getAttrValues]);
 
   // Fabrics filtered by group
   const fabrics = useMemo(() => {
@@ -134,9 +134,10 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     delete updateData.image;
 
     try {
-      const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
+      const getToken = () => import.meta.env.VITE_AUTH_TOKEN; 
+      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
         headers: {
-          Authorization: `Bearer ${getToken}`,
+          Authorization: `Bearer ${getToken()}`,
           "x-tenant-slug": "test-tenant"
         }
       });

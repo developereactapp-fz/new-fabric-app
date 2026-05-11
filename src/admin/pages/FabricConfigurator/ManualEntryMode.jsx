@@ -6,12 +6,16 @@ const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-produc
 import SearchInput from "../../components/SearchInput";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { isDuplicate, validateName } from "../../utils/validators";
+import { isDuplicate } from "../../utils/validators";
 
 import { ATTRIBUTES } from "../../config/appConfig";
 
+// Stable token getter
+const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+const authHeaders = () => ({ Authorization: `Bearer ${getToken()}`, "x-tenant-slug": "test-tenant" });
+
 export default function ManualEntryMode({ category }) {
-  const { state, dispatch, addAttributeValue, editAttributeValue, deleteAttributeValue } = useAdmin();
+  const { state, dispatch, editAttributeValue, deleteAttributeValue } = useAdmin();
   const [selectedAttr, setSelectedAttr] = useState(ATTRIBUTES[0]);
   const [search, setSearch] = useState("");
   const [newValue, setNewValue] = useState("");
@@ -23,10 +27,6 @@ export default function ManualEntryMode({ category }) {
   const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Stable token getter — never changes reference
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;  // Keep a stable ref so callbacks don't regenerate on every render
-  const authHeaders = () => ({ Authorization: `Bearer ${getToken()}`, "x-tenant-slug": "test-tenant" });
 
   // ── GET: fetch values for the currently selected attribute from server ──
   // Runs on mount and whenever category or selectedAttr changes (one request each time).
@@ -65,8 +65,10 @@ export default function ManualEntryMode({ category }) {
     fetchAttributes(selectedAttr, controller.signal);
   }, [fetchAttributes, selectedAttr]);
 
-  const catAttrs = state.attributes[category] || {};
-  const attrValues = catAttrs[selectedAttr] || [];
+  const attrValues = useMemo(() => {
+    const catAttrs = state.attributes[category] || {};
+    return catAttrs[selectedAttr] || [];
+  }, [state.attributes, category, selectedAttr]);
 
   const filteredValues = useMemo(() => {
     if (!search) return attrValues;
@@ -160,8 +162,7 @@ export default function ManualEntryMode({ category }) {
     }
   };
 
-  // Validation for new value
-  const newValValidation = validateName(newValue);
+
   const dupCheck = newValue.trim() ? isDuplicate(newValue.trim(), existingNames) : false;
 
   return (

@@ -60,7 +60,7 @@ export default function useMappingValidation(mappings = [], fabrics = [], compon
       isValid: errors.length === 0,
       hasWarnings: warnings.length > 0,
     };
-  }, [mappings, fabrics, componentValues]);
+  }, [mappings, fabrics]);
 
   return validation;
 }

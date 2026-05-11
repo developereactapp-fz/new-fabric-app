@@ -1,11 +1,17 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
-
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import StatusBadge from "../../components/StatusBadge";
 import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
+
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
+const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+const authHeaders = () => ({
+  Authorization: `Bearer ${getToken()}`,
+  "x-tenant-slug": "test-tenant",
+});
 
 const EMPTY_FORM = {
   fabricId: "",
@@ -50,12 +56,6 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const authHeaders = () => ({
-    Authorization: `Bearer ${getToken()}`,
-    "x-tenant-slug": "test-tenant",
-  });
-
-
   // One request — fetch all attributes, then group by category from the response
   useEffect(() => {
     const fetchAttributes = async () => {
@@ -74,7 +74,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   }, []);
 
   // Get attribute options from the store (global category)
-  const getAttrValues = (attr) => {
+  const getAttrValues = useCallback((attr) => {
     const serverVals = serverAttributes
       .filter(a => a.category === attr && a.isActive)
       .map(a => a.value);
@@ -88,15 +88,15 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     });
 
     return [...new Set([...serverVals, ...localVals])];
-  };
+  }, [state.attributes, serverAttributes]);
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes]);
+  const colorOptions = useMemo(() => getAttrValues("Color"), [getAttrValues]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [getAttrValues]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [getAttrValues]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [getAttrValues]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [getAttrValues]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [getAttrValues]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [getAttrValues]);
 
   const existingIds = state.fabrics.map((f) => f.fabricId);
   const existingNames = state.fabrics.map((f) => f.fabricName);

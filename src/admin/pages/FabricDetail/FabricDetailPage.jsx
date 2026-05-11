@@ -14,19 +14,16 @@ export default function FabricDetailPage() {
 
   const [selectedFabricId, setSelectedFabricId] = useState("");
 
-  const fabrics = state.fabrics || [];
-  const mappings = state.fabricMappings || [];
-
   // Derived selected fabric
   const selectedFabric = useMemo(() => {
-    return fabrics.find((f) => f.id === selectedFabricId) || null;
-  }, [fabrics, selectedFabricId]);
+    return (state.fabrics || []).find((f) => f.id === selectedFabricId) || null;
+  }, [state.fabrics, selectedFabricId]);
 
   // Derived mappings for this fabric
   const fabricMappings = useMemo(() => {
     if (!selectedFabric) return [];
-    return mappings.filter((m) => m.fabricId === selectedFabric.id);
-  }, [mappings, selectedFabric]);
+    return (state.fabricMappings || []).filter((m) => m.fabricId === selectedFabric.id);
+  }, [state.fabricMappings, selectedFabric]);
 
   // Group mappings by category
   const mappingsByCategory = useMemo(() => {
