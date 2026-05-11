@@ -3,41 +3,19 @@ import { createContext, useContext, useReducer, useCallback } from "react";
 
 // ─── Initial State ───────────────────────────────────────────────
 const defaultInitialState = {
-  // Master attribute values keyed by category → attribute → [values]
-  // e.g. { "Custom Shirt": { Color: [{ id, value, status }], Material: [...] } }
+  isLoading: false,
+  error: null,
   attributes: {},
-
-  // Categories: [{ id, name, status, createdAt, updatedAt }]
   categories: [],
-
-  // Components keyed by categoryId: { [categoryId]: [{ id, categoryId, name, status }] }
   components: {},
-
-  // Component values keyed by componentId: { [componentId]: [{ id, componentId, valueName, isDefault, status }] }
   componentValues: {},
-
-  // Sub-categories keyed by componentId
   subCategories: {},
-
-  // Sub-category values keyed by subCategoryId
   subCategoryValues: {},
-
-  // Fabrics: [{ id, fabricId, fabricName, description, color, material, subMaterial, pattern, weavePattern, season, gsm, feature1, feature2, feature3, image, status, availability, createdAt }]
   fabrics: [],
-
-  // Fabric groups: [{ id, groupName, categoryId, status, isActive }]
   fabricGroups: [],
-
-  // Fabric-to-group mapping: [{ fabricId, groupId }]
   fabricGroupMappings: [],
-
-  // Fabric component mappings: [{ id, fabricId, categoryId, fabricGroupId, componentId, componentValueId, image, isAvailable, isDefault, status }]
   fabricMappings: [],
-
-  // Group builder groups: [{ id, groupId, groupName, targetCategories, sourceCategory, componentId, componentValueId, items: [], status }]
   builderGroups: [],
-
-  // Contrast mappings
   contrastMappings: [],
   contrastMappingItems: [],
 };
@@ -47,413 +25,223 @@ const getInitialState = () => {
 };
 
 // ─── Action Types ────────────────────────────────────────────────
-const ACTIONS = {
-  // Attributes
+const A = {
+  SET_LOADING: "SET_LOADING",
+  SET_ERROR: "SET_ERROR",
+  SET_CATEGORIES: "SET_CATEGORIES",
+  SET_FABRIC_PARTS: "SET_FABRIC_PARTS",
+  SET_GROUPS: "SET_GROUPS",
+  SET_FABRICS: "SET_FABRICS",
+  SET_MAPPINGS: "SET_MAPPINGS",
   SET_ATTRIBUTES: "SET_ATTRIBUTES",
-  MERGE_CATEGORY_ATTRIBUTES: "MERGE_CATEGORY_ATTRIBUTES",
-  SET_ATTRIBUTE_VALUES: "SET_ATTRIBUTE_VALUES",
-  ADD_ATTRIBUTE_VALUE: "ADD_ATTRIBUTE_VALUE",
-  EDIT_ATTRIBUTE_VALUE: "EDIT_ATTRIBUTE_VALUE",
-  DELETE_ATTRIBUTE_VALUE: "DELETE_ATTRIBUTE_VALUE",
-  IMPORT_ATTRIBUTE_VALUES: "IMPORT_ATTRIBUTE_VALUES",
-
-  // Categories
+  // Category
   ADD_CATEGORY: "ADD_CATEGORY",
   EDIT_CATEGORY: "EDIT_CATEGORY",
   DELETE_CATEGORY: "DELETE_CATEGORY",
-
-  // Components
+  // Component (fabric part)
   ADD_COMPONENT: "ADD_COMPONENT",
   EDIT_COMPONENT: "EDIT_COMPONENT",
   DELETE_COMPONENT: "DELETE_COMPONENT",
-
-  // Component Values
-  ADD_COMPONENT_VALUE: "ADD_COMPONENT_VALUE",
-  EDIT_COMPONENT_VALUE: "EDIT_COMPONENT_VALUE",
-  DELETE_COMPONENT_VALUE: "DELETE_COMPONENT_VALUE",
+  // Component values
+  ADD_COMP_VALUE: "ADD_COMP_VALUE",
+  EDIT_COMP_VALUE: "EDIT_COMP_VALUE",
+  DELETE_COMP_VALUE: "DELETE_COMP_VALUE",
   SET_DEFAULT_VALUE: "SET_DEFAULT_VALUE",
-
-  // Sub Categories
-  ADD_SUB_CATEGORY: "ADD_SUB_CATEGORY",
-  EDIT_SUB_CATEGORY: "EDIT_SUB_CATEGORY",
-  DELETE_SUB_CATEGORY: "DELETE_SUB_CATEGORY",
-
-  // Sub Category Values
-  ADD_SUB_CATEGORY_VALUE: "ADD_SUB_CATEGORY_VALUE",
-  EDIT_SUB_CATEGORY_VALUE: "EDIT_SUB_CATEGORY_VALUE",
-  DELETE_SUB_CATEGORY_VALUE: "DELETE_SUB_CATEGORY_VALUE",
-
+  // Sub-categories
+  ADD_SUBCATEGORY: "ADD_SUBCATEGORY",
+  EDIT_SUBCATEGORY: "EDIT_SUBCATEGORY",
+  DELETE_SUBCATEGORY: "DELETE_SUBCATEGORY",
+  ADD_SUBCAT_VALUE: "ADD_SUBCAT_VALUE",
+  EDIT_SUBCAT_VALUE: "EDIT_SUBCAT_VALUE",
+  DELETE_SUBCAT_VALUE: "DELETE_SUBCAT_VALUE",
   // Fabrics
-  SET_FABRICS: "SET_FABRICS",
   ADD_FABRIC: "ADD_FABRIC",
   EDIT_FABRIC: "EDIT_FABRIC",
   DELETE_FABRIC: "DELETE_FABRIC",
-  IMPORT_FABRICS: "IMPORT_FABRICS",
-
-  // Fabric Groups
+  TOGGLE_STATUS: "TOGGLE_STATUS",
+  // Fabric groups
   ADD_FABRIC_GROUP: "ADD_FABRIC_GROUP",
   EDIT_FABRIC_GROUP: "EDIT_FABRIC_GROUP",
   DELETE_FABRIC_GROUP: "DELETE_FABRIC_GROUP",
   TOGGLE_FABRIC_GROUP: "TOGGLE_FABRIC_GROUP",
-
-  // Fabric Group Mappings
-  ADD_FABRIC_GROUP_MAPPING: "ADD_FABRIC_GROUP_MAPPING",
-  REMOVE_FABRIC_GROUP_MAPPING: "REMOVE_FABRIC_GROUP_MAPPING",
-
-  // Fabric Mappings
-  ADD_FABRIC_MAPPING: "ADD_FABRIC_MAPPING",
-  EDIT_FABRIC_MAPPING: "EDIT_FABRIC_MAPPING",
-  DELETE_FABRIC_MAPPING: "DELETE_FABRIC_MAPPING",
-  BULK_SAVE_FABRIC_MAPPINGS: "BULK_SAVE_FABRIC_MAPPINGS",
-
-  // Builder Groups
+  // Fabric group mappings
+  ADD_FG_MAPPING: "ADD_FG_MAPPING",
+  REMOVE_FG_MAPPING: "REMOVE_FG_MAPPING",
+  // Builder groups
   ADD_BUILDER_GROUP: "ADD_BUILDER_GROUP",
-  EDIT_BUILDER_GROUP: "EDIT_BUILDER_GROUP",
-  DELETE_BUILDER_GROUP: "DELETE_BUILDER_GROUP",
-
-  // Contrast
-  ADD_CONTRAST_MAPPING: "ADD_CONTRAST_MAPPING",
-  EDIT_CONTRAST_MAPPING: "EDIT_CONTRAST_MAPPING",
-  DELETE_CONTRAST_MAPPING: "DELETE_CONTRAST_MAPPING",
-
-  // Global
-  TOGGLE_STATUS: "TOGGLE_STATUS",
+  // Attributes
+  ADD_ATTR_VALUE: "ADD_ATTR_VALUE",
+  EDIT_ATTR_VALUE: "EDIT_ATTR_VALUE",
+  DELETE_ATTR_VALUE: "DELETE_ATTR_VALUE",
+  IMPORT_ATTR_VALUES: "IMPORT_ATTR_VALUES",
+  SET_ATTRIBUTE_VALUES: "SET_ATTRIBUTE_VALUES",
+  // Mappings
+  BULK_SAVE_MAPPINGS: "BULK_SAVE_MAPPINGS",
 };
-
-// ─── Helpers ─────────────────────────────────────────────────────
-let _nextId = Date.now();
-const genId = () => String(_nextId++);
 
 // ─── Reducer ─────────────────────────────────────────────────────
 function adminReducer(state, action) {
-  switch (action.type) {
-    // ── Attributes ──
-    case ACTIONS.SET_ATTRIBUTES:
-      return { ...state, attributes: action.payload };
+  const { type, payload } = action;
+  switch (type) {
+    // Global
+    case A.SET_LOADING: return { ...state, isLoading: payload };
+    case A.SET_ERROR: return { ...state, error: payload };
 
-    // Merges a single category's attribute map without touching other categories
-    case ACTIONS.MERGE_CATEGORY_ATTRIBUTES: {
-      const { category, attrMap } = action.payload;
-      return {
-        ...state,
-        attributes: { ...state.attributes, [category]: attrMap },
-      };
-    }
-
-    // Sets values for ONE attribute within a category (safest granular merge)
-    case ACTIONS.SET_ATTRIBUTE_VALUES: {
-      const { category, attribute, values } = action.payload;
-      const catAttrs = { ...(state.attributes[category] || {}) };
-      catAttrs[attribute] = values;
-      return { ...state, attributes: { ...state.attributes, [category]: catAttrs } };
-    }
-
-    case ACTIONS.ADD_ATTRIBUTE_VALUE: {
-      const { category, attribute, value } = action.payload;
-      const catAttrs = { ...(state.attributes[category] || {}) };
-      const existing = catAttrs[attribute] || [];
-      catAttrs[attribute] = [...existing, { id: genId(), value, status: "active" }];
-      return { ...state, attributes: { ...state.attributes, [category]: catAttrs } };
-    }
-
-    case ACTIONS.EDIT_ATTRIBUTE_VALUE: {
-      const { category, attribute, id, updates } = action.payload;
-      const catAttrs = { ...(state.attributes[category] || {}) };
-      catAttrs[attribute] = (catAttrs[attribute] || []).map((v) =>
-        v.id === id ? { ...v, ...updates } : v
-      );
-      return { ...state, attributes: { ...state.attributes, [category]: catAttrs } };
-    }
-
-    case ACTIONS.DELETE_ATTRIBUTE_VALUE: {
-      const { category, attribute, id } = action.payload;
-      const catAttrs = { ...(state.attributes[category] || {}) };
-      catAttrs[attribute] = (catAttrs[attribute] || []).filter((v) => v.id !== id);
-      return { ...state, attributes: { ...state.attributes, [category]: catAttrs } };
-    }
-
-    case ACTIONS.IMPORT_ATTRIBUTE_VALUES: {
-      const { category, attributeMap } = action.payload;
-      const catAttrs = { ...(state.attributes[category] || {}) };
-      Object.entries(attributeMap).forEach(([attr, values]) => {
-        const existing = catAttrs[attr] || [];
-        const existingLower = existing.map((v) => v.value.toLowerCase());
-        const newVals = values
-          .filter((v) => v && !existingLower.includes(v.toLowerCase()))
-          .map((v) => ({ id: genId(), value: v, status: "active" }));
-        catAttrs[attr] = [...existing, ...newVals];
-      });
-      return { ...state, attributes: { ...state.attributes, [category]: catAttrs } };
-    }
+    // Bulk setters
+    case A.SET_CATEGORIES: return { ...state, categories: payload };
+    case A.SET_FABRIC_PARTS: return { ...state, fabricPartsFlat: payload };
+    case A.SET_GROUPS: return { ...state, fabricGroups: payload, builderGroups: payload };
+    case A.SET_FABRICS: return { ...state, fabrics: payload };
+    case A.SET_MAPPINGS: return { ...state, fabricMappings: payload };
+    case A.SET_ATTRIBUTES: return { ...state, attributes: payload };
 
     // ── Categories ──
-    case ACTIONS.ADD_CATEGORY:
-      return {
-        ...state,
-        categories: [
-          ...state.categories,
-          { id: genId(), name: action.payload.name, status: action.payload.status || "active", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-        ],
-      };
-
-    case ACTIONS.EDIT_CATEGORY:
-      return {
-        ...state,
-        categories: state.categories.map((c) =>
-          c.id === action.payload.id ? { ...c, ...action.payload.updates, updatedAt: new Date().toISOString() } : c
-        ),
-      };
-
-    case ACTIONS.DELETE_CATEGORY:
-      return { ...state, categories: state.categories.filter((c) => c.id !== action.payload.id) };
+    case A.ADD_CATEGORY:
+      return { ...state, categories: [...state.categories, payload] };
+    case A.EDIT_CATEGORY:
+      return { ...state, categories: state.categories.map(c => c.id === payload.id ? { ...c, ...payload.updates } : c) };
+    case A.DELETE_CATEGORY: {
+      const newComps = { ...state.components };
+      delete newComps[payload];
+      return { ...state, categories: state.categories.filter(c => c.id !== payload), components: newComps };
+    }
 
     // ── Components ──
-    case ACTIONS.ADD_COMPONENT: {
-      const { categoryId, name } = action.payload;
-      const catComps = [...(state.components[categoryId] || [])];
-      catComps.push({ id: genId(), categoryId, name, status: "active", createdAt: new Date().toISOString() });
-      return { ...state, components: { ...state.components, [categoryId]: catComps } };
+    case A.ADD_COMPONENT: {
+      const list = state.components[payload.categoryId] || [];
+      return { ...state, components: { ...state.components, [payload.categoryId]: [...list, payload.comp] } };
     }
-
-    case ACTIONS.EDIT_COMPONENT: {
-      const { categoryId, id, updates } = action.payload;
-      const catComps = (state.components[categoryId] || []).map((c) =>
-        c.id === id ? { ...c, ...updates } : c
-      );
-      return { ...state, components: { ...state.components, [categoryId]: catComps } };
+    case A.EDIT_COMPONENT: {
+      const list = (state.components[payload.categoryId] || []).map(c => c.id === payload.compId ? { ...c, ...payload.updates } : c);
+      return { ...state, components: { ...state.components, [payload.categoryId]: list } };
     }
-
-    case ACTIONS.DELETE_COMPONENT: {
-      const { categoryId, id } = action.payload;
-      const catComps = (state.components[categoryId] || []).filter((c) => c.id !== id);
-      return { ...state, components: { ...state.components, [categoryId]: catComps } };
+    case A.DELETE_COMPONENT: {
+      const list = (state.components[payload.categoryId] || []).filter(c => c.id !== payload.compId);
+      const newCV = { ...state.componentValues }; delete newCV[payload.compId];
+      return { ...state, components: { ...state.components, [payload.categoryId]: list }, componentValues: newCV };
     }
 
     // ── Component Values ──
-    case ACTIONS.ADD_COMPONENT_VALUE: {
-      const { componentId, valueName, isDefault } = action.payload;
-      const vals = [...(state.componentValues[componentId] || [])];
-      // If setting as default, un-default others
-      const updated = isDefault ? vals.map((v) => ({ ...v, isDefault: false })) : vals;
-      updated.push({ id: genId(), componentId, valueName, isDefault: !!isDefault, status: "active" });
-      return { ...state, componentValues: { ...state.componentValues, [componentId]: updated } };
+    case A.ADD_COMP_VALUE: {
+      const vals = state.componentValues[payload.compId] || [];
+      return { ...state, componentValues: { ...state.componentValues, [payload.compId]: [...vals, payload.val] } };
+    }
+    case A.EDIT_COMP_VALUE: {
+      const vals = (state.componentValues[payload.compId] || []).map(v => v.id === payload.valId ? { ...v, ...payload.updates } : v);
+      return { ...state, componentValues: { ...state.componentValues, [payload.compId]: vals } };
+    }
+    case A.DELETE_COMP_VALUE: {
+      const vals = (state.componentValues[payload.compId] || []).filter(v => v.id !== payload.valId);
+      return { ...state, componentValues: { ...state.componentValues, [payload.compId]: vals } };
+    }
+    case A.SET_DEFAULT_VALUE: {
+      const vals = (state.componentValues[payload.compId] || []).map(v => ({ ...v, isDefault: v.id === payload.valId }));
+      return { ...state, componentValues: { ...state.componentValues, [payload.compId]: vals } };
     }
 
-    case ACTIONS.EDIT_COMPONENT_VALUE: {
-      const { componentId, id, updates } = action.payload;
-      const vals = (state.componentValues[componentId] || []).map((v) =>
-        v.id === id ? { ...v, ...updates } : v
-      );
-      return { ...state, componentValues: { ...state.componentValues, [componentId]: vals } };
+    // ── Sub-Categories ──
+    case A.ADD_SUBCATEGORY: {
+      const subs = state.subCategories[payload.compId] || [];
+      return { ...state, subCategories: { ...state.subCategories, [payload.compId]: [...subs, payload.sub] } };
     }
-
-    case ACTIONS.DELETE_COMPONENT_VALUE: {
-      const { componentId, id } = action.payload;
-      const vals = (state.componentValues[componentId] || []).filter((v) => v.id !== id);
-      return { ...state, componentValues: { ...state.componentValues, [componentId]: vals } };
+    case A.EDIT_SUBCATEGORY: {
+      const subs = (state.subCategories[payload.compId] || []).map(s => s.id === payload.subId ? { ...s, ...payload.updates } : s);
+      return { ...state, subCategories: { ...state.subCategories, [payload.compId]: subs } };
     }
-
-    case ACTIONS.SET_DEFAULT_VALUE: {
-      const { componentId, id } = action.payload;
-      const vals = (state.componentValues[componentId] || []).map((v) => ({
-        ...v,
-        isDefault: v.id === id,
-      }));
-      return { ...state, componentValues: { ...state.componentValues, [componentId]: vals } };
+    case A.DELETE_SUBCATEGORY: {
+      const subs = (state.subCategories[payload.compId] || []).filter(s => s.id !== payload.subId);
+      const newSV = { ...state.subCategoryValues }; delete newSV[payload.subId];
+      return { ...state, subCategories: { ...state.subCategories, [payload.compId]: subs }, subCategoryValues: newSV };
     }
-
-    // ── Sub Categories ──
-    case ACTIONS.ADD_SUB_CATEGORY: {
-      const { componentId, name, type, dependsOn, level } = action.payload;
-      const subs = [...(state.subCategories[componentId] || [])];
-      subs.push({ id: genId(), componentId, name, type: type || "independent", dependsOn: dependsOn || null, level: level || 1, status: "active" });
-      return { ...state, subCategories: { ...state.subCategories, [componentId]: subs } };
+    case A.ADD_SUBCAT_VALUE: {
+      const vals = state.subCategoryValues[payload.subId] || [];
+      return { ...state, subCategoryValues: { ...state.subCategoryValues, [payload.subId]: [...vals, payload.val] } };
     }
-
-    case ACTIONS.EDIT_SUB_CATEGORY: {
-      const { componentId, id, updates } = action.payload;
-      const subs = (state.subCategories[componentId] || []).map((s) =>
-        s.id === id ? { ...s, ...updates } : s
-      );
-      return { ...state, subCategories: { ...state.subCategories, [componentId]: subs } };
+    case A.EDIT_SUBCAT_VALUE: {
+      const vals = (state.subCategoryValues[payload.subId] || []).map(v => v.id === payload.valId ? { ...v, ...payload.updates } : v);
+      return { ...state, subCategoryValues: { ...state.subCategoryValues, [payload.subId]: vals } };
     }
-
-    case ACTIONS.DELETE_SUB_CATEGORY: {
-      const { componentId, id } = action.payload;
-      const subs = (state.subCategories[componentId] || []).filter((s) => s.id !== id);
-      return { ...state, subCategories: { ...state.subCategories, [componentId]: subs } };
-    }
-
-    // ── Sub Category Values ──
-    case ACTIONS.ADD_SUB_CATEGORY_VALUE: {
-      const { subCategoryId, parentValueId, valueName, isDefault } = action.payload;
-      const vals = [...(state.subCategoryValues[subCategoryId] || [])];
-      const key = parentValueId || "__global__";
-      vals.push({ id: genId(), subCategoryId, parentValueId: parentValueId || null, valueName, isDefault: !!isDefault, status: "active", _groupKey: key });
-      return { ...state, subCategoryValues: { ...state.subCategoryValues, [subCategoryId]: vals } };
-    }
-
-    case ACTIONS.EDIT_SUB_CATEGORY_VALUE: {
-      const { subCategoryId, id, updates } = action.payload;
-      const vals = (state.subCategoryValues[subCategoryId] || []).map((v) =>
-        v.id === id ? { ...v, ...updates } : v
-      );
-      return { ...state, subCategoryValues: { ...state.subCategoryValues, [subCategoryId]: vals } };
-    }
-
-    case ACTIONS.DELETE_SUB_CATEGORY_VALUE: {
-      const { subCategoryId, id } = action.payload;
-      const vals = (state.subCategoryValues[subCategoryId] || []).filter((v) => v.id !== id);
-      return { ...state, subCategoryValues: { ...state.subCategoryValues, [subCategoryId]: vals } };
+    case A.DELETE_SUBCAT_VALUE: {
+      const vals = (state.subCategoryValues[payload.subId] || []).filter(v => v.id !== payload.valId);
+      return { ...state, subCategoryValues: { ...state.subCategoryValues, [payload.subId]: vals } };
     }
 
     // ── Fabrics ──
-    case ACTIONS.SET_FABRICS:
-      return { ...state, fabrics: action.payload };
-
-    case ACTIONS.ADD_FABRIC:
-      return {
-        ...state,
-        fabrics: [
-          ...state.fabrics,
-          { id: action.payload.id || genId(), ...action.payload, createdAt: action.payload.createdAt || new Date().toISOString(), updatedAt: action.payload.updatedAt || new Date().toISOString() },
-        ],
-      };
-
-    case ACTIONS.EDIT_FABRIC:
-      return {
-        ...state,
-        fabrics: state.fabrics.map((f) =>
-          f.id === action.payload.id ? { ...f, ...action.payload.updates, updatedAt: new Date().toISOString() } : f
-        ),
-      };
-
-    case ACTIONS.DELETE_FABRIC:
-      return {
-        ...state,
-        fabrics: state.fabrics.filter((f) => f.id !== action.payload.id),
-        fabricGroupMappings: state.fabricGroupMappings.filter((m) => m.fabricId !== action.payload.id),
-        fabricMappings: state.fabricMappings.filter((m) => m.fabricId !== action.payload.id),
-      };
-
-    case ACTIONS.IMPORT_FABRICS:
-      return { ...state, fabrics: [...state.fabrics, ...action.payload.fabrics.map((f) => ({ id: f.id || genId(), ...f, createdAt: f.createdAt || new Date().toISOString(), updatedAt: f.updatedAt || new Date().toISOString() }))] };
+    case A.ADD_FABRIC:
+      return { ...state, fabrics: [...state.fabrics, { id: payload.id || genId(), ...payload }] };
+    case A.EDIT_FABRIC:
+      return { ...state, fabrics: state.fabrics.map(f => f.id === payload.id ? { ...f, ...payload.updates } : f) };
+    case A.DELETE_FABRIC:
+      return { ...state, fabrics: state.fabrics.filter(f => f.id !== payload) };
+    case A.TOGGLE_STATUS: {
+      const { collection, itemId } = payload;
+      if (collection === "fabrics") {
+        return { ...state, fabrics: state.fabrics.map(f => f.id === itemId ? { ...f, status: f.status === "active" ? "inactive" : "active" } : f) };
+      }
+      return state;
+    }
 
     // ── Fabric Groups ──
-    case ACTIONS.ADD_FABRIC_GROUP:
-      return {
-        ...state,
-        fabricGroups: [
-          ...state.fabricGroups,
-          { id: genId(), ...action.payload, status: "active", isActive: true, createdAt: new Date().toISOString() },
-        ],
-      };
-
-    case ACTIONS.EDIT_FABRIC_GROUP:
-      return {
-        ...state,
-        fabricGroups: state.fabricGroups.map((g) =>
-          g.id === action.payload.id ? { ...g, ...action.payload.updates } : g
-        ),
-      };
-
-    case ACTIONS.DELETE_FABRIC_GROUP:
-      return {
-        ...state,
-        fabricGroups: state.fabricGroups.filter((g) => g.id !== action.payload.id),
-        fabricGroupMappings: state.fabricGroupMappings.filter((m) => m.groupId !== action.payload.id),
-      };
-
-    case ACTIONS.TOGGLE_FABRIC_GROUP:
-      return {
-        ...state,
-        fabricGroups: state.fabricGroups.map((g) =>
-          g.id === action.payload.id ? { ...g, isActive: !g.isActive } : g
-        ),
-      };
+    case A.ADD_FABRIC_GROUP:
+      return { ...state, fabricGroups: [...state.fabricGroups, { id: genId(), isActive: true, ...payload }] };
+    case A.EDIT_FABRIC_GROUP:
+      return { ...state, fabricGroups: state.fabricGroups.map(g => g.id === payload.id ? { ...g, ...payload.updates } : g) };
+    case A.DELETE_FABRIC_GROUP:
+      return { ...state, fabricGroups: state.fabricGroups.filter(g => g.id !== payload), fabricGroupMappings: state.fabricGroupMappings.filter(m => m.groupId !== payload) };
+    case A.TOGGLE_FABRIC_GROUP:
+      return { ...state, fabricGroups: state.fabricGroups.map(g => g.id === payload ? { ...g, isActive: !g.isActive } : g) };
 
     // ── Fabric Group Mappings ──
-    case ACTIONS.ADD_FABRIC_GROUP_MAPPING:
-      return { ...state, fabricGroupMappings: [...state.fabricGroupMappings, action.payload] };
-
-    case ACTIONS.REMOVE_FABRIC_GROUP_MAPPING:
-      return {
-        ...state,
-        fabricGroupMappings: state.fabricGroupMappings.filter(
-          (m) => !(m.fabricId === action.payload.fabricId && m.groupId === action.payload.groupId)
-        ),
-      };
-
-    // ── Fabric Mappings ──
-    case ACTIONS.ADD_FABRIC_MAPPING:
-      return { ...state, fabricMappings: [...state.fabricMappings, { id: genId(), ...action.payload }] };
-
-    case ACTIONS.EDIT_FABRIC_MAPPING:
-      return {
-        ...state,
-        fabricMappings: state.fabricMappings.map((m) =>
-          m.id === action.payload.id ? { ...m, ...action.payload.updates } : m
-        ),
-      };
-
-    case ACTIONS.DELETE_FABRIC_MAPPING:
-      return { ...state, fabricMappings: state.fabricMappings.filter((m) => m.id !== action.payload.id) };
-
-    case ACTIONS.BULK_SAVE_FABRIC_MAPPINGS: {
-      const { fabricId, categoryId, mappings } = action.payload;
-      const filtered = state.fabricMappings.filter(
-        (m) => !(m.fabricId === fabricId && m.categoryId === categoryId)
-      );
-      const newMappings = mappings.map((m) => ({ id: genId(), fabricId, categoryId, ...m }));
-      return { ...state, fabricMappings: [...filtered, ...newMappings] };
-    }
+    case A.ADD_FG_MAPPING:
+      return { ...state, fabricGroupMappings: [...state.fabricGroupMappings, { id: genId(), ...payload }] };
+    case A.REMOVE_FG_MAPPING:
+      return { ...state, fabricGroupMappings: state.fabricGroupMappings.filter(m => !(m.fabricId === payload.fabricId && m.groupId === payload.groupId)) };
 
     // ── Builder Groups ──
-    case ACTIONS.ADD_BUILDER_GROUP:
-      return { ...state, builderGroups: [...state.builderGroups, { id: genId(), ...action.payload }] };
+    case A.ADD_BUILDER_GROUP:
+      return { ...state, builderGroups: [...state.builderGroups, { id: genId(), ...payload }] };
 
-    case ACTIONS.EDIT_BUILDER_GROUP:
-      return {
-        ...state,
-        builderGroups: state.builderGroups.map((g) =>
-          g.id === action.payload.id ? { ...g, ...action.payload.updates } : g
-        ),
-      };
-
-    case ACTIONS.DELETE_BUILDER_GROUP:
-      return { ...state, builderGroups: state.builderGroups.filter((g) => g.id !== action.payload.id) };
-
-    // ── Contrast Mappings ──
-    case ACTIONS.ADD_CONTRAST_MAPPING:
-      return { ...state, contrastMappings: [...state.contrastMappings, { id: genId(), ...action.payload }] };
-
-    case ACTIONS.EDIT_CONTRAST_MAPPING:
-      return {
-        ...state,
-        contrastMappings: state.contrastMappings.map((m) =>
-          m.id === action.payload.id ? { ...m, ...action.payload.updates } : m
-        ),
-      };
-
-    case ACTIONS.DELETE_CONTRAST_MAPPING:
-      return { ...state, contrastMappings: state.contrastMappings.filter((m) => m.id !== action.payload.id) };
-
-    // ── Global Toggle ──
-    case ACTIONS.TOGGLE_STATUS: {
-      const { entity, id, entityKey } = action.payload;
-      if (entityKey) {
-        // For nested entities like components[categoryId]
-        const items = (state[entity][entityKey] || []).map((item) =>
-          item.id === id ? { ...item, status: item.status === "active" ? "inactive" : "active" } : item
-        );
-        return { ...state, [entity]: { ...state[entity], [entityKey]: items } };
-      }
-      // For flat arrays
-      const items = state[entity].map((item) =>
-        item.id === id ? { ...item, status: item.status === "active" ? "inactive" : "active" } : item
-      );
-      return { ...state, [entity]: items };
+    // ── Attributes ──
+    case A.ADD_ATTR_VALUE: {
+      const cat = payload.category;
+      const catAttrs = { ...(state.attributes[cat] || {}) };
+      const attrList = catAttrs[payload.attrName] || [];
+      catAttrs[payload.attrName] = [...attrList, { id: genId(), value: payload.value, status: "active" }];
+      return { ...state, attributes: { ...state.attributes, [cat]: catAttrs } };
     }
+    case A.EDIT_ATTR_VALUE: {
+      const cat = payload.category;
+      const catAttrs = { ...(state.attributes[cat] || {}) };
+      catAttrs[payload.attrName] = (catAttrs[payload.attrName] || []).map(v => v.id === payload.valId ? { ...v, ...payload.updates } : v);
+      return { ...state, attributes: { ...state.attributes, [cat]: catAttrs } };
+    }
+    case A.DELETE_ATTR_VALUE: {
+      const cat = payload.category;
+      const catAttrs = { ...(state.attributes[cat] || {}) };
+      catAttrs[payload.attrName] = (catAttrs[payload.attrName] || []).filter(v => v.id !== payload.valId);
+      return { ...state, attributes: { ...state.attributes, [cat]: catAttrs } };
+    }
+    case A.SET_ATTRIBUTE_VALUES: {
+      const { category: svCat, attribute: svAttr, values: svVals } = payload;
+      const catA = { ...(state.attributes[svCat] || {}) };
+      catA[svAttr] = svVals;
+      return { ...state, attributes: { ...state.attributes, [svCat]: catA } };
+    }
+    case A.IMPORT_ATTR_VALUES: {
+      const newAttrs = { ...state.attributes };
+      const { category, attrName, values } = payload;
+      const catAttrs = { ...(newAttrs[category] || {}) };
+      const existing = catAttrs[attrName] || [];
+      const existingVals = existing.map(v => v.value);
+      const toAdd = values.filter(v => !existingVals.includes(v)).map(v => ({ id: genId(), value: v, status: "active" }));
+      catAttrs[attrName] = [...existing, ...toAdd];
+      newAttrs[category] = catAttrs;
+      return { ...state, attributes: newAttrs };
+    }
+
+    // ── Fabric Mappings ──
+    case A.BULK_SAVE_MAPPINGS:
+      return { ...state, fabricMappings: [...state.fabricMappings, ...payload] };
 
     default:
       return state;
@@ -464,125 +252,225 @@ function adminReducer(state, action) {
 const AdminContext = createContext(null);
 
 export function AdminProvider({ children }) {
-  const [state, dispatch] = useReducer(adminReducer, defaultInitialState, getInitialState);
+  const [state, dispatch] = useReducer(adminReducer, defaultInitialState);
 
+  // ── Initialize data on mount ──
+  useEffect(() => {
+    const init = async () => {
+      dispatch({ type: A.SET_LOADING, payload: true });
+      try {
+        const [catRes, grpRes, partsRes] = await Promise.allSettled([
+          adminService.getCategories(),
+          adminService.getGroups(),
+          adminService.getFabricParts(),
+        ]);
+        if (catRes.status === "fulfilled") dispatch({ type: A.SET_CATEGORIES, payload: catRes.value.data?.data || catRes.value.data || [] });
+        if (grpRes.status === "fulfilled") dispatch({ type: A.SET_GROUPS, payload: grpRes.value.data?.data || grpRes.value.data || [] });
+        if (partsRes.status === "fulfilled") dispatch({ type: A.SET_FABRIC_PARTS, payload: partsRes.value.data?.data || partsRes.value.data || [] });
+      } catch (err) {
+        console.error("Init fetch failed:", err);
+        dispatch({ type: A.SET_ERROR, payload: err.message });
+      } finally {
+        dispatch({ type: A.SET_LOADING, payload: false });
+      }
+    };
+    init();
+  }, []);
 
+  // ─── Actions (async with local fallback) ─────────────────────
 
-  // Convenience dispatchers
+  // -- Categories --
+  const addCategory = useCallback(async (name, status = "active") => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    try {
+      const res = await adminService.createCategory({ name, status });
+      dispatch({ type: A.ADD_CATEGORY, payload: res.data?.data || res.data });
+    } catch { dispatch({ type: A.ADD_CATEGORY, payload: { id: genId(), name, status } }); }
+    finally { dispatch({ type: A.SET_LOADING, payload: false }); }
+  }, []);
+
+  const editCategory = useCallback(async (id, updates) => {
+    try { await adminService.updateCategory(id, updates); } catch { /* silent */ }
+    dispatch({ type: A.EDIT_CATEGORY, payload: { id, updates } });
+  }, []);
+
+  const deleteCategory = useCallback(async (id) => {
+    try { await adminService.deleteCategory(id); } catch { /* silent */ }
+    dispatch({ type: A.DELETE_CATEGORY, payload: id });
+  }, []);
+
+  // -- Components (Fabric Parts) --
+  const addComponent = useCallback(async (categoryId, name) => {
+    const comp = { id: genId(), categoryId, name, status: "active" };
+    try {
+      const res = await adminService.createFabricPart({ categoryId, name });
+      dispatch({ type: A.ADD_COMPONENT, payload: { categoryId, comp: res.data?.data || res.data || comp } });
+    } catch { dispatch({ type: A.ADD_COMPONENT, payload: { categoryId, comp } }); }
+  }, []);
+
+  const editComponent = useCallback(async (categoryId, compId, updates) => {
+    try { await adminService.updateFabricPart(compId, updates); } catch { /* silent */ }
+    dispatch({ type: A.EDIT_COMPONENT, payload: { categoryId, compId, updates } });
+  }, []);
+
+  const updateComponent = editComponent; // alias used by ComponentsPanelPage
+
+  const deleteComponent = useCallback(async (categoryId, compId) => {
+    try { await adminService.deleteFabricPart(compId); } catch { /* silent */ }
+    dispatch({ type: A.DELETE_COMPONENT, payload: { categoryId, compId } });
+  }, []);
+
+  // -- Component Values --
+  const addComponentValue = useCallback((compId, valueName, isDefault = false) => {
+    const val = { id: genId(), valueName, isDefault, status: "active" };
+    dispatch({ type: A.ADD_COMP_VALUE, payload: { compId, val } });
+  }, []);
+
+  const editComponentValue = useCallback((compId, valId, updates) => {
+    dispatch({ type: A.EDIT_COMP_VALUE, payload: { compId, valId, updates } });
+  }, []);
+
+  const deleteComponentValue = useCallback((compId, valId) => {
+    dispatch({ type: A.DELETE_COMP_VALUE, payload: { compId, valId } });
+  }, []);
+
+  const setDefaultValue = useCallback((compId, valId) => {
+    dispatch({ type: A.SET_DEFAULT_VALUE, payload: { compId, valId } });
+  }, []);
+
+  // -- Sub-Categories --
+  const addSubCategory = useCallback((compId, name, type = "independent", parentRef = null, order = 1) => {
+    const sub = { id: genId(), name, type, parentRef, order, status: "active" };
+    dispatch({ type: A.ADD_SUBCATEGORY, payload: { compId, sub } });
+  }, []);
+
+  const editSubCategory = useCallback((compId, subId, updates) => {
+    dispatch({ type: A.EDIT_SUBCATEGORY, payload: { compId, subId, updates } });
+  }, []);
+
+  const deleteSubCategory = useCallback((compId, subId) => {
+    dispatch({ type: A.DELETE_SUBCATEGORY, payload: { compId, subId } });
+  }, []);
+
+  const addSubCategoryValue = useCallback((subId, parentValueId, valueName, isDefault = false) => {
+    const val = { id: genId(), parentValueId, valueName, isDefault, status: "active" };
+    dispatch({ type: A.ADD_SUBCAT_VALUE, payload: { subId, val } });
+  }, []);
+
+  const editSubCategoryValue = useCallback((subId, valId, updates) => {
+    dispatch({ type: A.EDIT_SUBCAT_VALUE, payload: { subId, valId, updates } });
+  }, []);
+
+  const deleteSubCategoryValue = useCallback((subId, valId) => {
+    dispatch({ type: A.DELETE_SUBCAT_VALUE, payload: { subId, valId } });
+  }, []);
+
+  // -- Fabrics --
+  const addFabric = useCallback((fabricData) => {
+    dispatch({ type: A.ADD_FABRIC, payload: fabricData });
+  }, []);
+
+  const editFabric = useCallback(async (id, updates) => {
+    try { await adminService.updateFabric(id, updates); } catch { /* silent */ }
+    dispatch({ type: A.EDIT_FABRIC, payload: { id, updates } });
+  }, []);
+
+  const deleteFabric = useCallback((id) => {
+    dispatch({ type: A.DELETE_FABRIC, payload: id });
+  }, []);
+
+  const setFabrics = useCallback((fabrics) => {
+    dispatch({ type: A.SET_FABRICS, payload: fabrics });
+  }, []);
+
+  const toggleStatus = useCallback((collection, itemId) => {
+    dispatch({ type: A.TOGGLE_STATUS, payload: { collection, itemId } });
+  }, []);
+
+  // -- Fabric Groups --
+  const addFabricGroup = useCallback(async (groupData) => {
+    try {
+      const res = await adminService.createGroup(groupData);
+      dispatch({ type: A.ADD_FABRIC_GROUP, payload: res.data?.data || res.data || groupData });
+    } catch { dispatch({ type: A.ADD_FABRIC_GROUP, payload: groupData }); }
+  }, []);
+
+  const editFabricGroup = useCallback(async (id, updates) => {
+    try { await adminService.updateGroup(id, updates); } catch { /* silent */ }
+    dispatch({ type: A.EDIT_FABRIC_GROUP, payload: { id, updates } });
+  }, []);
+
+  const deleteFabricGroup = useCallback(async (id) => {
+    try { await adminService.deleteGroup(id); } catch { /* silent */ }
+    dispatch({ type: A.DELETE_FABRIC_GROUP, payload: id });
+  }, []);
+
+  const toggleFabricGroup = useCallback((id) => {
+    dispatch({ type: A.TOGGLE_FABRIC_GROUP, payload: id });
+  }, []);
+
+  // -- Fabric Group Mappings --
+  const addFabricGroupMapping = useCallback((fabricId, groupId) => {
+    dispatch({ type: A.ADD_FG_MAPPING, payload: { fabricId, groupId } });
+  }, []);
+
+  const removeFabricGroupMapping = useCallback((fabricId, groupId) => {
+    dispatch({ type: A.REMOVE_FG_MAPPING, payload: { fabricId, groupId } });
+  }, []);
+
+  // -- Builder Groups --
+  const addBuilderGroup = useCallback(async (groupData) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    try {
+      const res = await adminService.createGroup(groupData);
+      const grpRes = await adminService.getGroups();
+      dispatch({ type: A.SET_GROUPS, payload: grpRes.data?.data || grpRes.data || [] });
+      return res.data;
+    } catch { dispatch({ type: A.ADD_BUILDER_GROUP, payload: groupData }); }
+    finally { dispatch({ type: A.SET_LOADING, payload: false }); }
+  }, []);
+
+  // -- Attributes --
+  const addAttributeValue = useCallback(async (category, attrName, value) => {
+    try { await adminService.createAttribute({ category: attrName, value, isActive: true }); } catch { /* silent */ }
+    dispatch({ type: A.ADD_ATTR_VALUE, payload: { category, attrName, value } });
+  }, []);
+
+  const editAttributeValue = useCallback((category, attrName, valId, updates) => {
+    dispatch({ type: A.EDIT_ATTR_VALUE, payload: { category, attrName, valId, updates } });
+  }, []);
+
+  const deleteAttributeValue = useCallback((category, attrName, valId) => {
+    dispatch({ type: A.DELETE_ATTR_VALUE, payload: { category, attrName, valId } });
+  }, []);
+
+  const importAttributeValues = useCallback((category, attrName, values) => {
+    dispatch({ type: A.IMPORT_ATTR_VALUES, payload: { category, attrName, values } });
+  }, []);
+
+  // -- Fabric Mappings --
+  const bulkSaveFabricMappings = useCallback((mappings) => {
+    dispatch({ type: A.BULK_SAVE_MAPPINGS, payload: mappings });
+  }, []);
+
+  // ─── Build context value ───────────────────────────────────────
   const actions = {
-    // Attributes
-    addAttributeValue: useCallback((category, attribute, value) =>
-      dispatch({ type: ACTIONS.ADD_ATTRIBUTE_VALUE, payload: { category, attribute, value } }), []),
-    editAttributeValue: useCallback((category, attribute, id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_ATTRIBUTE_VALUE, payload: { category, attribute, id, updates } }), []),
-    deleteAttributeValue: useCallback((category, attribute, id) =>
-      dispatch({ type: ACTIONS.DELETE_ATTRIBUTE_VALUE, payload: { category, attribute, id } }), []),
-    importAttributeValues: useCallback((category, attributeMap) =>
-      dispatch({ type: ACTIONS.IMPORT_ATTRIBUTE_VALUES, payload: { category, attributeMap } }), []),
-
-    // Categories
-    addCategory: useCallback((name, status) =>
-      dispatch({ type: ACTIONS.ADD_CATEGORY, payload: { name, status } }), []),
-    editCategory: useCallback((id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_CATEGORY, payload: { id, updates } }), []),
-    deleteCategory: useCallback((id) =>
-      dispatch({ type: ACTIONS.DELETE_CATEGORY, payload: { id } }), []),
-
-    // Components
-    addComponent: useCallback((categoryId, name) =>
-      dispatch({ type: ACTIONS.ADD_COMPONENT, payload: { categoryId, name } }), []),
-    editComponent: useCallback((categoryId, id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_COMPONENT, payload: { categoryId, id, updates } }), []),
-    deleteComponent: useCallback((categoryId, id) =>
-      dispatch({ type: ACTIONS.DELETE_COMPONENT, payload: { categoryId, id } }), []),
-
-    // Component Values
-    addComponentValue: useCallback((componentId, valueName, isDefault) =>
-      dispatch({ type: ACTIONS.ADD_COMPONENT_VALUE, payload: { componentId, valueName, isDefault } }), []),
-    editComponentValue: useCallback((componentId, id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_COMPONENT_VALUE, payload: { componentId, id, updates } }), []),
-    deleteComponentValue: useCallback((componentId, id) =>
-      dispatch({ type: ACTIONS.DELETE_COMPONENT_VALUE, payload: { componentId, id } }), []),
-    setDefaultValue: useCallback((componentId, id) =>
-      dispatch({ type: ACTIONS.SET_DEFAULT_VALUE, payload: { componentId, id } }), []),
-
-    // Sub Categories
-    addSubCategory: useCallback((componentId, name, type, dependsOn, level) =>
-      dispatch({ type: ACTIONS.ADD_SUB_CATEGORY, payload: { componentId, name, type, dependsOn, level } }), []),
-    editSubCategory: useCallback((componentId, id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_SUB_CATEGORY, payload: { componentId, id, updates } }), []),
-    deleteSubCategory: useCallback((componentId, id) =>
-      dispatch({ type: ACTIONS.DELETE_SUB_CATEGORY, payload: { componentId, id } }), []),
-
-    // Sub Category Values
-    addSubCategoryValue: useCallback((subCategoryId, parentValueId, valueName, isDefault) =>
-      dispatch({ type: ACTIONS.ADD_SUB_CATEGORY_VALUE, payload: { subCategoryId, parentValueId, valueName, isDefault } }), []),
-    editSubCategoryValue: useCallback((subCategoryId, id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_SUB_CATEGORY_VALUE, payload: { subCategoryId, id, updates } }), []),
-    deleteSubCategoryValue: useCallback((subCategoryId, id) =>
-      dispatch({ type: ACTIONS.DELETE_SUB_CATEGORY_VALUE, payload: { subCategoryId, id } }), []),
-
-    // Fabrics
-    setFabrics: useCallback((fabrics) =>
-      dispatch({ type: ACTIONS.SET_FABRICS, payload: fabrics }), []),
-    addFabric: useCallback((fabricData) =>
-      dispatch({ type: ACTIONS.ADD_FABRIC, payload: fabricData }), []),
-    editFabric: useCallback((id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_FABRIC, payload: { id, updates } }), []),
-    deleteFabric: useCallback((id) =>
-      dispatch({ type: ACTIONS.DELETE_FABRIC, payload: { id } }), []),
-    importFabrics: useCallback((fabrics) =>
-      dispatch({ type: ACTIONS.IMPORT_FABRICS, payload: { fabrics } }), []),
-
-    // Fabric Groups
-    addFabricGroup: useCallback((groupData) =>
-      dispatch({ type: ACTIONS.ADD_FABRIC_GROUP, payload: groupData }), []),
-    editFabricGroup: useCallback((id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_FABRIC_GROUP, payload: { id, updates } }), []),
-    deleteFabricGroup: useCallback((id) =>
-      dispatch({ type: ACTIONS.DELETE_FABRIC_GROUP, payload: { id } }), []),
-    toggleFabricGroup: useCallback((id) =>
-      dispatch({ type: ACTIONS.TOGGLE_FABRIC_GROUP, payload: { id } }), []),
-
-    // Fabric Group Mappings
-    addFabricGroupMapping: useCallback((fabricId, groupId) =>
-      dispatch({ type: ACTIONS.ADD_FABRIC_GROUP_MAPPING, payload: { fabricId, groupId } }), []),
-    removeFabricGroupMapping: useCallback((fabricId, groupId) =>
-      dispatch({ type: ACTIONS.REMOVE_FABRIC_GROUP_MAPPING, payload: { fabricId, groupId } }), []),
-
-    // Fabric Mappings
-    addFabricMapping: useCallback((mappingData) =>
-      dispatch({ type: ACTIONS.ADD_FABRIC_MAPPING, payload: mappingData }), []),
-    editFabricMapping: useCallback((id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_FABRIC_MAPPING, payload: { id, updates } }), []),
-    deleteFabricMapping: useCallback((id) =>
-      dispatch({ type: ACTIONS.DELETE_FABRIC_MAPPING, payload: { id } }), []),
-    bulkSaveFabricMappings: useCallback((fabricId, categoryId, mappings) =>
-      dispatch({ type: ACTIONS.BULK_SAVE_FABRIC_MAPPINGS, payload: { fabricId, categoryId, mappings } }), []),
-
-    // Builder Groups
-    addBuilderGroup: useCallback((groupData) =>
-      dispatch({ type: ACTIONS.ADD_BUILDER_GROUP, payload: groupData }), []),
-    editBuilderGroup: useCallback((id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_BUILDER_GROUP, payload: { id, updates } }), []),
-    deleteBuilderGroup: useCallback((id) =>
-      dispatch({ type: ACTIONS.DELETE_BUILDER_GROUP, payload: { id } }), []),
-
-    // Contrast
-    addContrastMapping: useCallback((data) =>
-      dispatch({ type: ACTIONS.ADD_CONTRAST_MAPPING, payload: data }), []),
-    editContrastMapping: useCallback((id, updates) =>
-      dispatch({ type: ACTIONS.EDIT_CONTRAST_MAPPING, payload: { id, updates } }), []),
-    deleteContrastMapping: useCallback((id) =>
-      dispatch({ type: ACTIONS.DELETE_CONTRAST_MAPPING, payload: { id } }), []),
-
-    // Global
-    toggleStatus: useCallback((entity, id, entityKey) =>
-      dispatch({ type: ACTIONS.TOGGLE_STATUS, payload: { entity, id, entityKey } }), []),
+    addCategory, editCategory, deleteCategory,
+    addComponent, editComponent, updateComponent, deleteComponent,
+    addComponentValue, editComponentValue, deleteComponentValue, setDefaultValue,
+    addSubCategory, editSubCategory, deleteSubCategory,
+    addSubCategoryValue, editSubCategoryValue, deleteSubCategoryValue,
+    addFabric, editFabric, deleteFabric, setFabrics, toggleStatus,
+    addFabricGroup, editFabricGroup, deleteFabricGroup, toggleFabricGroup,
+    addFabricGroupMapping, removeFabricGroupMapping,
+    addBuilderGroup,
+    addAttributeValue, editAttributeValue, deleteAttributeValue, importAttributeValues,
+    bulkSaveFabricMappings,
   };
 
+  // Spread actions at top level for pages that destructure directly from useAdmin()
   return (
-    <AdminContext.Provider value={{ state, dispatch, ...actions }}>
+    <AdminContext.Provider value={{ state, dispatch, actions, ...actions }}>
       {children}
     </AdminContext.Provider>
   );
@@ -594,5 +482,5 @@ export function useAdmin() {
   return ctx;
 }
 
-export { ACTIONS };
+export { A as ACTIONS };
 export default AdminContext;

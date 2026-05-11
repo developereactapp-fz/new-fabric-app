@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
-import axios from "axios";
+import { toast } from "sonner";
+import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 import StatusBadge from "../../components/StatusBadge";
 import { isDuplicate } from "../../utils/validators";
 
@@ -12,6 +13,11 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [serverAttributes, setServerAttributes] = useState([]);
+  const [uploadedAsset, setUploadedAsset] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -28,10 +34,10 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   // Get attribute options from the store
   const getAttrValues = useCallback((attr) => {
     const allCats = Object.values(state.attributes);
-    const merged = [];
+    const localVals = [];
     allCats.forEach((catAttrs) => {
       (catAttrs[attr] || []).forEach((v) => {
-        if (v.status === "active" && !merged.includes(v.value)) merged.push(v.value);
+        if (v.status === "active" && !localVals.includes(v.value)) localVals.push(v.value);
       });
     });
     return merged;
@@ -54,6 +60,20 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     return state.fabrics.filter((f) => mappedIds.includes(f.id));
   }, [groupId, state.fabrics, state.fabricGroupMappings]);
 
+  // Fetch asset details by assetId
+  const fetchAsset = async (assetId) => {
+    if (!assetId) return;
+    try {
+      const res = await adminService.getAsset(assetId);
+      const asset = res.data?.data || res.data;
+      if (asset) {
+        setUploadedAsset(asset);
+      }
+    } catch (err) {
+      console.error("Failed to fetch asset", err);
+    }
+  };
+
   useEffect(() => {
     if (preselectedEditId) {
       setSelectedFabricId(preselectedEditId);
@@ -74,11 +94,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
           feature1: fab.feature1 || "",
           feature2: fab.feature2 || "",
           feature3: fab.feature3 || "",
-          image: fab.image || null,
+          image: fab.image || fab.imageUrl || fab.asset?.url || null,
           status: fab.status || "active",
         });
         setSaved(false);
         onDirty?.(true);
+        // Fetch existing asset for preview
+        if (fab.assetId) fetchAsset(fab.assetId);
       }
     }
   }, [preselectedEditId, state.fabrics]);
@@ -101,11 +123,14 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       feature1: fab.feature1 || "",
       feature2: fab.feature2 || "",
       feature3: fab.feature3 || "",
-      image: fab.image || null,
+      image: fab.image || fab.imageUrl || fab.asset?.url || null,
       status: fab.status || "active",
     });
     setSaved(false);
+    setUploadedAsset(null);
     onDirty?.(true);
+    // Fetch existing asset for preview
+    if (fab.assetId) fetchAsset(fab.assetId);
   };
 
   const setField = (key, val) => {
@@ -114,10 +139,42 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     onDirty?.(true);
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setField("image", file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit. Please upload a smaller image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Invalid file type. Please upload an image file (e.g., PNG, JPEG).");
+      e.target.value = "";
+      return;
+    }
+
+    setField("image", file);
+
+    // Upload to /api/assets/upload
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "FABRIC");
+
+      const res = await adminService.uploadAsset(formData);
+
+      const asset = res.data?.data || res.data;
+      setUploadedAsset(asset);
+      console.log("Asset uploaded:", asset);
+    } catch (err) {
+      console.error("Failed to upload asset", err);
+      toast.error(err.response?.data?.message || "Failed to upload image");
+      setUploadedAsset(null);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -130,6 +187,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       gsm: form.gsm ? Number(form.gsm) : null,
       price: form.price !== "" ? Number(form.price) : null,
       stock: form.stock !== "" ? Number(form.stock) : null,
+      ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
     };
     delete updateData.image;
 
@@ -148,7 +206,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       onDirty?.(false);
     } catch (err) {
       console.error("Failed to update fabric", err);
-      alert(err.response?.data?.message || "Failed to update fabric");
+      toast.error(err.response?.data?.message || "Failed to update fabric");
     } finally {
       setIsSaving(false);
     }
@@ -158,6 +216,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     setForm(null);
     setSelectedFabricId(null);
     setSaved(false);
+    setUploadedAsset(null);
     onDirty?.(false);
   };
 
@@ -294,7 +353,11 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
                 <div className="fo-field-grid">
                   <div className="fo-field fo-field-full">
                     <label className="admin-label">Fabric Image</label>
-                    <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} />
+                    <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} disabled={isUploading} />
+                    {isUploading && <span style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⏳ Uploading image...</span>}
+                    {uploadedAsset && (
+                      <span style={{ color: "#4ade80", fontSize: 13, marginTop: 4 }}>✅ Uploaded: {uploadedAsset.fileName || "Image ready"}</span>
+                    )}
                   </div>
                 </div>
                 <div className="fo-status-row" style={{ marginTop: 16 }}>
@@ -329,8 +392,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
               </div>
               <div className="fo-preview-card-inner">
                 <div className="fo-preview-image">
-                  {imagePreviewUrl ? (
-                    <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                  {(imagePreviewUrl || uploadedAsset?.url || (typeof form.image === "string" && form.image)) ? (
+                    <img src={imagePreviewUrl || uploadedAsset?.url || form.image} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
                   ) : (
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                       <rect x="3" y="3" width="18" height="18" rx="2" />

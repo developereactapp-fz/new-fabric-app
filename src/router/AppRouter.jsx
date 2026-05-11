@@ -1,3 +1,4 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Header from "../components/layout/Header";
@@ -21,45 +22,54 @@ import VerificationSuccess from "../features/verification/VerificationSuccess";
 import SavedDesigns from "../features/save/SavedDesigns";
 import SavedDesignDetails from "../features/save/SavedDesignDetails";
 
-// Admin imports
-import AdminLayout from "../admin/AdminLayout";
-import AdminDashboard from "../admin/pages/AdminDashboard";
-import PlaceholderPage from "../admin/pages/PlaceholderPage";
-import FabricConfiguratorPage from "../admin/pages/FabricConfigurator/FabricConfiguratorPage";
-import CategoryConfiguratorPage from "../admin/pages/CategoryConfigurator/CategoryConfiguratorPage";
-import FabricOnboardingPage from "../admin/pages/FabricOnboarding/FabricOnboardingPage";
-import MaterialsPanelPage from "../admin/pages/MaterialsPanel/MaterialsPanelPage";
-import ComponentsPanelPage from "../admin/pages/ComponentsPanel/ComponentsPanelPage";
-import CategoryComponentsPage from "../admin/pages/CategoryComponents/CategoryComponentsPage";
-import CustomShirtPage from "../admin/pages/CustomShirt/CustomShirtPage";
-import FabricDetailPage from "../admin/pages/FabricDetail/FabricDetailPage";
-import ComponentActivePage from "../admin/pages/ComponentActive/ComponentActivePage";
-import GroupBuilderPage from "../admin/pages/GroupBuilder/GroupBuilderPage";
-import ContrastMapperPage from "../admin/pages/ContrastMapper/ContrastMapperPage";
+// Admin imports (Lazy Loaded)
+const AdminLayout = lazy(() => import("../admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("../admin/pages/AdminDashboard"));
+const PlaceholderPage = lazy(() => import("../admin/pages/PlaceholderPage"));
+const FabricConfiguratorPage = lazy(() => import("../admin/pages/FabricConfigurator/FabricConfiguratorPage"));
+const CategoryConfiguratorPage = lazy(() => import("../admin/pages/CategoryConfigurator/CategoryConfiguratorPage"));
+const FabricOnboardingPage = lazy(() => import("../admin/pages/FabricOnboarding/FabricOnboardingPage"));
+const MaterialsPanelPage = lazy(() => import("../admin/pages/MaterialsPanel/MaterialsPanelPage"));
+const ComponentsPanelPage = lazy(() => import("../admin/pages/ComponentsPanel/ComponentsPanelPage"));
+const CategoryComponentsPage = lazy(() => import("../admin/pages/CategoryComponents/CategoryComponentsPage"));
+const CustomShirtPage = lazy(() => import("../admin/pages/CustomShirt/CustomShirtPage"));
+const FabricDetailPage = lazy(() => import("../admin/pages/FabricDetail/FabricDetailPage"));
+const ComponentActivePage = lazy(() => import("../admin/pages/ComponentActive/ComponentActivePage"));
+const GroupBuilderPage = lazy(() => import("../admin/pages/GroupBuilder/GroupBuilderPage"));
+const ContrastMapperPage = lazy(() => import("../admin/pages/ContrastMapper/ContrastMapperPage"));
+
+// Loading fallback for Suspense
+const AdminLoader = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc' }}>
+    <p style={{ fontSize: '18px', color: '#64748b' }}>Loading Admin Portal...</p>
+  </div>
+);
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* ═══════ Admin Routes ═══════ */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="fabric-configurator" element={<FabricConfiguratorPage />} />
-          <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
-          <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
-          <Route path="materials-panel" element={<MaterialsPanelPage />} />
-          <Route path="components-panel" element={<ComponentsPanelPage />} />
-          <Route path="category-components" element={<CategoryComponentsPage />} />
-          <Route path="custom-shirt" element={<CustomShirtPage />} />
-          <Route path="fabric-detail" element={<FabricDetailPage />} />
-          <Route path="component-active" element={<ComponentActivePage />} />
-          <Route path="group-builder" element={<GroupBuilderPage />} />
-          <Route path="contrast-mapper" element={<ContrastMapperPage />} />
-        </Route>
+      <Suspense fallback={<AdminLoader />}>
+        <Routes>
+          {/* ═══════ Admin Routes ═══════ */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="fabric-configurator" element={<FabricConfiguratorPage />} />
+            <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
+            <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
+            <Route path="materials-panel" element={<MaterialsPanelPage />} />
+            <Route path="components-panel" element={<ComponentsPanelPage />} />
+            <Route path="category-components" element={<CategoryComponentsPage />} />
+            <Route path="custom-shirt" element={<CustomShirtPage />} />
+            <Route path="fabric-detail" element={<FabricDetailPage />} />
+            <Route path="component-active" element={<ComponentActivePage />} />
+            <Route path="group-builder" element={<GroupBuilderPage />} />
+            <Route path="contrast-mapper" element={<ContrastMapperPage />} />
+          </Route>
 
-        {/* ═══════ Customer Routes ═══════ */}
-        <Route path="/*" element={<CustomerApp />} />
-      </Routes>
+          {/* ═══════ Customer Routes ═══════ */}
+          <Route path="/*" element={<CustomerApp />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

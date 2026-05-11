@@ -4,7 +4,7 @@ import StatusBadge from "../../components/StatusBadge";
 import SearchInput from "../../components/SearchInput";
 
 export default function ImportFabricMode({ groupId, groupName }) {
-  const { state, addFabricGroupMapping, removeFabricGroupMapping } = useAdmin();
+  const { state, addFabricGroupMapping } = useAdmin();
   const [sourceGroupId, setSourceGroupId] = useState("");
   const [search, setSearch] = useState("");
   const [selectedFabricIds, setSelectedFabricIds] = useState(new Set());

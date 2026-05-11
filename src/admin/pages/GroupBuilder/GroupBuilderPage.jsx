@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useAdmin } from "../../store/adminStore";
 import useCascadingSelection from "../../hooks/useCascadingSelection";
 import PageHeader from "../../components/PageHeader";
@@ -79,12 +80,12 @@ export default function GroupBuilderPage() {
 
   const handleSaveGroup = () => {
     if (!groupName || !groupId || targetCategories.length === 0 || !sourceCategory || !selectedComponentId || !selectedComponentValueId) {
-      alert("Please fill out all required fields and selections.");
+      toast.error("Please fill out all required fields and selections.");
       return;
     }
     
     if (selectedFabrics.length === 0) {
-      alert("Please select at least one fabric for the group.");
+      toast.error("Please select at least one fabric for the group.");
       return;
     }
 
@@ -93,7 +94,7 @@ export default function GroupBuilderPage() {
     );
 
     if (missingImages.length > 0) {
-      alert(`Validation Error: ${missingImages.length} selected fabric(s) are missing images for this component. Mapped images are mandatory for group items.`);
+      toast.error(`Validation Error: ${missingImages.length} selected fabric(s) are missing images for this component. Mapped images are mandatory for group items.`);
       return;
     }
 
@@ -110,8 +111,9 @@ export default function GroupBuilderPage() {
 
     if(actions.addBuilderGroup) {
       actions.addBuilderGroup(payload);
+      toast.success("Group saved successfully!");
     } else {
-       alert("Group saved successfully! (Simulated)");
+       toast.success("Group saved successfully! (Simulated)");
     }
 
     setGroupName("");

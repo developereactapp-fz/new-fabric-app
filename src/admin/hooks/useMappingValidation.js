@@ -6,7 +6,7 @@ import { useMemo } from "react";
  * Usage:
  *   const { errors, warnings, isValid } = useMappingValidation(mappings, fabrics, components);
  */
-export default function useMappingValidation(mappings = [], fabrics = [], componentValues = {}) {
+export default function useMappingValidation(mappings = [], fabrics = []) {
   const validation = useMemo(() => {
     const errors = [];
     const warnings = [];
