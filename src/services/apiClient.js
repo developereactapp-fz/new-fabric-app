@@ -1,4 +1,5 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 
 // Get base URL from environment or fallback
 const baseURL = import.meta.env.VITE_API_URL || 'https://apperal-clothing-app-production.up.railway.app';
@@ -8,6 +9,15 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+axiosRetry(apiClient, { 
+  retries: 3, 
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    // Retry on network errors or 5xx status codes
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status >= 500;
+  }
 });
 
 // Request interceptor to attach JWT + tenant slug

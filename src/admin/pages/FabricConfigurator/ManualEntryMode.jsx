@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { adminService } from "../../../services/adminService";
 import { useAdmin, ACTIONS } from "../../store/adminStore.jsx";
 
@@ -96,7 +97,7 @@ export default function ManualEntryMode({ category }) {
       setNewStatus("active");
     } catch (err) {
       console.error("Failed to save attribute to server", err);
-      alert(err.response?.data?.message || "Failed to save attribute to server");
+      toast.error(err.response?.data?.message || "Failed to save attribute to server");
     } finally {
       setIsSaving(false);
     }
@@ -123,7 +124,7 @@ export default function ManualEntryMode({ category }) {
       setEditingId(null);
     } catch (err) {
       console.error("Failed to update attribute", err);
-      alert(err.response?.data?.message || "Failed to update attribute");
+      toast.error(err.response?.data?.message || "Failed to update attribute");
     }
   };
 
@@ -136,7 +137,7 @@ export default function ManualEntryMode({ category }) {
       setDeleteTarget(null);
     } catch (err) {
       console.error("Failed to delete attribute", err);
-      alert(err.response?.data?.message || "Failed to delete attribute");
+      toast.error(err.response?.data?.message || "Failed to delete attribute");
     }
   };
 
@@ -148,7 +149,7 @@ export default function ManualEntryMode({ category }) {
       editAttributeValue(category, selectedAttr, item.id, { status: newSt });
     } catch (err) {
       console.error("Failed to toggle attribute status", err);
-      alert(err.response?.data?.message || "Failed to update attribute status");
+      toast.error(err.response?.data?.message || "Failed to update attribute status");
     }
   };
 

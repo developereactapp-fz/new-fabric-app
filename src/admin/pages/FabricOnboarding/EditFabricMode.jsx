@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 
@@ -198,13 +199,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size exceeds 5MB limit. Please upload a smaller image.");
+      toast.error("File size exceeds 5MB limit. Please upload a smaller image.");
       e.target.value = "";
       return;
     }
 
     if (!file.type.startsWith("image/")) {
-      alert("Invalid file type. Please upload an image file (e.g., PNG, JPEG).");
+      toast.error("Invalid file type. Please upload an image file (e.g., PNG, JPEG).");
       e.target.value = "";
       return;
     }
@@ -225,7 +226,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       console.log("Asset uploaded:", asset);
     } catch (err) {
       console.error("Failed to upload asset", err);
-      alert(err.response?.data?.message || "Failed to upload image");
+      toast.error(err.response?.data?.message || "Failed to upload image");
       setUploadedAsset(null);
     } finally {
       setIsUploading(false);
@@ -254,7 +255,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       onDirty?.(false);
     } catch (err) {
       console.error("Failed to update fabric", err);
-      alert(err.response?.data?.message || "Failed to update fabric");
+      toast.error(err.response?.data?.message || "Failed to update fabric");
     } finally {
       setIsSaving(false);
     }

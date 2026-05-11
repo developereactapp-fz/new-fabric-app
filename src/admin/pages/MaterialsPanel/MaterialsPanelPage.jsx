@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { toast } from "sonner";
 import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 import { useNavigate } from "react-router-dom";
@@ -92,7 +93,7 @@ export default function MaterialsPanelPage() {
       console.error("Failed to toggle fabric status", error);
       // Revert optimistic update
       toggleStatus("fabrics", fabricId);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     }
   };
 
@@ -118,7 +119,7 @@ export default function MaterialsPanelPage() {
         await adminService.deactivateFabric(targetId);
       } catch (error) {
         console.error("Failed to delete fabric", error);
-        alert(error.response?.data?.message || "Failed to delete fabric. Refreshing page to sync state...");
+        toast.error(error.response?.data?.message || "Failed to delete fabric. Refreshing page to sync state...");
         window.location.reload();
       }
     }
