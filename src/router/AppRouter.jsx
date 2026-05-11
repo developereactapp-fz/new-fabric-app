@@ -20,6 +20,7 @@ import FinishPage from "../features/finish/FinishPage";
 import VerificationSuccess from "../features/verification/VerificationSuccess";
 import SavedDesigns from "../features/save/SavedDesigns";
 import SavedDesignDetails from "../features/save/SavedDesignDetails";
+import UserEnquiryPage from "../features/userEnquiry/UserEnquiryPage";
 
 export default function AppRouter() {
   return (
@@ -60,6 +61,7 @@ export default function AppRouter() {
           <Route path="/saved-designs" element={<SavedDesigns />} />
           <Route path="/saved-customization" element={<SavedDesignDetails />} />
           <Route path="/saved-designs/:id" element={<SavedDesignDetails />} />
+          <Route path="/enquiry" element={<UserEnquiryPage />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

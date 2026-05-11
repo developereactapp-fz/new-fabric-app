@@ -876,46 +876,48 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
 
         <p className="fabric-panel-subtitle">Select from our premium collection</p>
 
+        {selected && (
+          <div className="current-selection-card">
+            <span className="current-selection-label">CURRENT SELECTION</span>
+            <span className="current-selection-name">{selected.name}</span>
+          </div>
+        )}
 
-
-        <div className="fabric-tabs">
-
+        <div className="fabric-tabs-container">
+          <div 
+            className="fabric-tabs-slider" 
+            style={{ 
+              transform: `translateX(${activeTab === "fabric" ? "0%" : activeTab === "customize" ? "100%" : "200%"})`,
+              width: "33.33%"
+            }}
+          />
           <button
-
             className={`fabric-tab ${activeTab === "fabric" ? "active" : ""}`}
-
             onClick={() => setActiveTab("fabric")}
-
           >
-
             Fabric
-
           </button>
-
           <button
-
             className={`fabric-tab ${activeTab === "customize" ? "active" : ""}`}
-
             onClick={() => setActiveTab("customize")}
-
           >
-
             Customize
-
           </button>
-
           <button
-
             className={`fabric-tab ${activeTab === "finish" ? "active" : ""}`}
-
-            onClick={() => setActiveTab("finish")}
-
+            onClick={() => {
+              navigate('/finish', {
+                state: {
+                  garmentType,
+                  fabric: selected,
+                  styleName: styleNames[garmentType] || 'Classic',
+                  customizationOptions: customizationOptions[garmentType] || customizationOptions.shirt
+                }
+              });
+            }}
           >
-
             Finish
-
           </button>
-
         </div>
 
 
@@ -961,8 +963,6 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
 
                 </svg>
 
-                Filter
-
               </button>
 
             </div>
@@ -990,63 +990,37 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
                   <div className="fabric-row-border"></div>
 
                   <div className="fabric-row-content">
-
                     <div className="fabric-row-image-wrapper">
-
                       {fabric.thumbnail ? (
-
                         <img src={fabric.thumbnail} alt={fabric.name} className="fabric-thumbnail" />
-
                       ) : (
-
                         <div
-
                           className="fabric-color-swatch"
-
                           style={{ backgroundColor: fabric.color || "#ccc" }}
-
                         >
-
                           {fabric.pattern === "stripe" && <div className="fabric-pattern stripe" />}
-
                         </div>
-
                       )}
 
                       {selected?.id === fabric.id && (
-
                         <div className="fabric-row-checkmark">
-
                           <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-
                             <polyline points="20 6 9 17 4 12" />
-
                           </svg>
-
                         </div>
-
                       )}
 
                       <div className="fabric-row-info" onClick={(e) => openFabricDetail(fabric, e)}>
-
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-
                           <circle cx="12" cy="12" r="10" />
-
                           <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
-
                         </svg>
-
                       </div>
-
                     </div>
 
                     <div className="fabric-info">
-
                       <h4 className="fabric-name">{fabric.name}</h4>
-
                     </div>
-
                   </div>
 
                 </div>
@@ -1366,136 +1340,6 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
               </>
 
             )}
-
-          </div>
-
-        )}
-
-
-
-        {/* FINISH TAB CONTENT */}
-
-        {activeTab === "finish" && (
-
-          <div className="finish-panel">
-
-            {/* Selected Fabric Preview */}
-
-            <div className="finish-fabric-preview">
-
-              <h3 className="finish-panel-title">Selected Design</h3>
-
-              <div className="finish-fabric-card-small">
-
-                <div className="finish-fabric-image-small">
-
-                  {selected?.thumbnail ? (
-
-                    <img src={selected.thumbnail} alt={selected.name} />
-
-                  ) : (
-
-                    <div 
-
-                      className="finish-fabric-swatch"
-
-                      style={{ backgroundColor: selected?.color || '#ccc' }}
-
-                    >
-
-                      {selected?.pattern === 'stripe' && <div className="fabric-pattern stripe" />}
-
-                    </div>
-
-                  )}
-
-                </div>
-
-                <div className="finish-fabric-info">
-
-                  <span className="finish-fabric-name">{selected?.name || 'No fabric selected'}</span>
-
-                  <span className="finish-fabric-type">{styleNames[garmentType] || 'Classic'}</span>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-
-            {/* Full Preview */}
-
-            <div className="finish-full-preview">
-
-              <h3 className="finish-panel-title">Full Preview</h3>
-
-              <div className="finish-full-image-wrapper">
-
-                {selected?.layers?.map((layer, index) => (
-
-                  <img
-
-                    key={index}
-
-                    src={layer}
-
-                    alt={`${selected?.name} layer ${index + 1}`}
-
-                    className="finish-full-layer"
-
-                    style={{ zIndex: index }}
-
-                  />
-
-                ))}
-
-              </div>
-
-            </div>
-
-
-
-            {/* Action Button */}
-
-            <button 
-
-              className="finish-action-btn"
-
-              onClick={() => {
-
-                // Navigate to finish page with selected fabric data
-
-                navigate('/finish', {
-
-                  state: {
-
-                    garmentType,
-
-                    fabric: selected,
-
-                    styleName: styleNames[garmentType] || 'Classic',
-
-                    customizationOptions: customizationOptions[garmentType] || customizationOptions.shirt
-
-                  }
-
-                });
-
-              }}
-
-            >
-
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-
-                <polyline points="20 6 9 17 4 12" />
-
-              </svg>
-
-              <span>Complete & Review</span>
-
-            </button>
 
           </div>
 
