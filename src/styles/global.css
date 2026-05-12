@@ -1,3 +1,137 @@
+/* ================= RESPONSIVE BREAKPOINTS & UTILITIES ================= */
+@media (max-width: 1200px) {
+  .custom-body {
+    grid-template-columns: 6fr 4fr;
+  }
+  .fabric-panel-title {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 900px) {
+  .custom-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  .panel-section {
+    padding: 1vh;
+  }
+  .preview-section {
+    min-height: 40vh;
+  }
+  .fabric-panel-title {
+    font-size: 18px;
+  }
+  .footer {
+    min-height: 12vh;
+    padding: 1vh 0;
+  }
+}
+
+@media (max-width: 600px) {
+  html, body, #root {
+    font-size: 14px;
+  }
+  .app-content {
+    padding-top: 20px;
+  }
+  .header {
+    height: 7vh;
+    font-size: 16px;
+  }
+  .title {
+    font-size: 18px;
+    gap: 0.5vh;
+  }
+  .title-icon {
+    width: 4vh;
+    height: 4vh;
+  }
+  .custom-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    min-height: 0;
+  }
+  .panel-section {
+    padding: 0.5vh;
+  }
+  .preview-section {
+    min-height: 30vh;
+  }
+  .preview-fabric {
+    height: 45vh;
+    max-height: 300px;
+  }
+  .fabric {
+    height: 35vh;
+  }
+  .footer {
+    min-height: 8vh;
+    padding: 0.5vh 0;
+    gap: 1vh;
+  }
+  .btn, .toggle button, .confirm-order-btn {
+    font-size: 13px;
+    padding: 1vh 2vh;
+    min-width: 8vh;
+  }
+  .fabric-panel-title {
+    font-size: 15px;
+  }
+  .fabric-card img {
+    height: 8vh;
+  }
+  .fabric-modal-content {
+    flex-direction: column;
+    min-height: 300px;
+  }
+  .fabric-modal-left, .fabric-modal-right {
+    padding: 1.5vh;
+  }
+  .fabric-modal-title {
+    font-size: 16px;
+  }
+  .fabric-modal-description {
+    font-size: 12px;
+  }
+  .fabric-modal-spec-item {
+    padding: 1vh;
+  }
+  .fabric-modal-select-btn {
+    padding: 1vh;
+    font-size: 1vh;
+  }
+  .finish-panel {
+    padding: 1vh;
+    border-radius: 1vh;
+  }
+  .finish-panel h3 {
+    font-size: 1.4vh;
+  }
+  .finish-panel p {
+    font-size: 1vh;
+  }
+}
+
+/* Utility: Hide on mobile */
+.hide-mobile {
+  display: none !important;
+}
+@media (min-width: 601px) {
+  .hide-mobile {
+    display: initial !important;
+  }
+}
+
+/* Utility: Hide on desktop */
+.hide-desktop {
+  display: none !important;
+}
+@media (max-width: 600px) {
+  .hide-desktop {
+    display: initial !important;
+  }
+}
 /* ================= RESET ================= */
 * {
   margin: 0;
