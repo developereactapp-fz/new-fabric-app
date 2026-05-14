@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { isDuplicate, validateName } from "../../utils/validators";
+import { isDuplicate } from "../../utils/validators";
 
 export default function CategoryManager({ selectedCategoryId, onSelectCategory }) {
   const { state, addCategory, editCategory, deleteCategory } = useAdmin();

@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
-
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 import StatusBadge from "../../components/StatusBadge";
 import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
+import { adminService } from "../../../services/adminService";
+import { toast } from "sonner";
 
 const EMPTY_FORM = {
   fabricId: "",
@@ -37,6 +37,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   const [isSaving, setIsSaving] = useState(false);
   const [serverAttributes, setServerAttributes] = useState([]);
   const [queuedFabrics, setQueuedFabrics] = useState([]);
+  const [uploadedAsset, setUploadedAsset] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -50,7 +52,13 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
+<<<<<<< HEAD
   const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+=======
+  const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; 
+>>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
   const authHeaders = () => ({
     Authorization: `Bearer ${getToken()}`,
     "x-tenant-slug": "test-tenant",
@@ -73,9 +81,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const res = await axios.get(`${API}/api/attributes`, {
-          headers: authHeaders(),
-        });
+        const res = await adminService.getAttributes();
         const raw = res.data?.data || res.data || [];
         const items = Array.isArray(raw) ? raw : [];
         setServerAttributes(items);
@@ -86,20 +92,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     fetchAttributes();
   }, []);
 
-  // Map attribute names to the fabric object field(s) they correspond to
-  const attrToFabricField = {
-    "Color": "color",
-    "Material": ["material", "type"],
-    "Sub Material": "subMaterial",
-    "Pattern": "pattern",
-    "Weave Pattern": "weavePattern",
-    "Season": "season",
-    "Feature": "features",
-  };
-
-  // Get attribute options from server attributes, local store, AND existing fabrics
+  // Get attribute options from the store (global category)
   const getAttrValues = (attr) => {
-    // 1. From /api/attributes endpoint
     const serverVals = serverAttributes
       .filter(a => a.category === attr && a.isActive)
       .map(a => a.value);
@@ -113,40 +107,16 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       });
     });
 
-    // 3. From existing fabrics in state
-    const fabricVals = [];
-    const fields = attrToFabricField[attr];
-    if (fields) {
-      state.fabrics.forEach((f) => {
-        if (Array.isArray(fields)) {
-          // Multiple possible field names (e.g. material / type)
-          fields.forEach((field) => {
-            const val = f[field];
-            if (val && !fabricVals.includes(val)) fabricVals.push(val);
-          });
-        } else if (fields === "features") {
-          // Features is an array field
-          const arr = f.features || [];
-          arr.forEach((val) => {
-            if (val && !fabricVals.includes(val)) fabricVals.push(val);
-          });
-        } else {
-          const val = f[fields];
-          if (val && !fabricVals.includes(val)) fabricVals.push(val);
-        }
-      });
-    }
-
-    return [...new Set([...serverVals, ...localVals, ...fabricVals])];
+    return [...new Set([...serverVals, ...localVals])];
   };
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes, state.fabrics]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes, state.fabrics]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes, state.fabrics]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes, state.fabrics]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes, state.fabrics]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes, state.fabrics]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes, state.fabrics]);
+  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes]);
 
   const existingIds = state.fabrics.map((f) => f.fabricId);
   const existingNames = state.fabrics.map((f) => f.fabricName);
@@ -180,10 +150,42 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
   const setField = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setField("image", file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit. Please upload a smaller image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Invalid file type. Please upload an image file (e.g., PNG, JPEG).");
+      e.target.value = "";
+      return;
+    }
+
+    setField("image", file);
+
+    // Upload to /api/assets/upload
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "FABRIC");
+
+      const res = await adminService.uploadAsset(formData);
+
+      const asset = res.data?.data || res.data;
+      setUploadedAsset(asset);
+      console.log("Asset uploaded:", asset);
+    } catch (err) {
+      console.error("Failed to upload asset", err);
+      toast.error(err.response?.data?.message || "Failed to upload image");
+      setUploadedAsset(null);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -228,10 +230,15 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
         weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
         price: form.price !== "" ? Number(form.price) : null,
+<<<<<<< HEAD
         status: form.status,
         availability: form.availability,
         image: form.image,
         isRecommended: false,
+=======
+        isRecommended: false,
+        ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
+>>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
       };
     }
 
@@ -267,7 +274,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     const preparedFabrics = await Promise.all(allFabricsToSave.map(prepareFabricForSave));
 
     if (allFabricsToSave.length === 0) {
-      alert("No fabrics to save.");
+      toast.error("No fabrics to save.");
       return;
     }
 
@@ -275,9 +282,13 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
     try {
       if (allFabricsToSave.length === 1) {
+<<<<<<< HEAD
         const res = await axios.post(`${API}/api/materials/fabrics`, preparedFabrics[0], {
           headers: authHeaders(),
         });
+=======
+        const res = await adminService.createFabric(allFabricsToSave[0]);
+>>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
 
         const rawFabric = res.data?.data || res.data || preparedFabrics[0];
         const newFabric = {
@@ -299,9 +310,13 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           return [...nonQueued, { fabricId: newFabric.fabricId || newFabric.code || form.fabricId, fabricName: newFabric.fabricName || newFabric.name }];
         });
       } else {
+<<<<<<< HEAD
         const res = await axios.post(`${API}/api/materials/fabrics/bulk`, preparedFabrics, {
           headers: authHeaders(),
         });
+=======
+        const res = await adminService.createFabricsBulk(allFabricsToSave);
+>>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
 
         const newFabrics = res.data?.data || res.data || preparedFabrics;
         const fabricsArray = (Array.isArray(newFabrics) ? newFabrics : preparedFabrics).map(raw => ({
@@ -330,11 +345,12 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       }
 
       setQueuedFabrics([]);
+      setUploadedAsset(null);
       setForm({ ...EMPTY_FORM });
       setErrors({});
     } catch (err) {
       console.error("Failed to create fabric", err);
-      alert(err.response?.data?.message || "Failed to create fabric");
+      toast.error(err.response?.data?.message || "Failed to create fabric");
     } finally {
       setIsSaving(false);
     }
@@ -516,7 +532,11 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
             <div className="fo-field-grid">
               <div className="fo-field fo-field-full">
                 <label className="admin-label">Fabric Image</label>
-                <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} />
+                <input type="file" className="admin-input" accept="image/*" onChange={handleImageChange} disabled={isUploading} />
+                {isUploading && <span style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⏳ Uploading image...</span>}
+                {uploadedAsset && (
+                  <span style={{ color: "#4ade80", fontSize: 13, marginTop: 4 }}>✅ Uploaded: {uploadedAsset.fileName || "Image ready"}</span>
+                )}
               </div>
             </div>
             <div className="fo-status-row" style={{ marginTop: 16 }}>
@@ -555,8 +575,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           </div>
           <div className="fo-preview-card-inner">
             <div className="fo-preview-image">
-              {imagePreviewUrl ? (
-                <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+              {(imagePreviewUrl || uploadedAsset?.url) ? (
+                <img src={imagePreviewUrl || uploadedAsset?.url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
               ) : (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" />

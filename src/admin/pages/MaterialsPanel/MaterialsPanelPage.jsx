@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { toast } from "sonner";
+import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 import { useNavigate } from "react-router-dom";
 import useFilteredList from "../../hooks/useFilteredList";
@@ -8,14 +10,46 @@ import EmptyState from "../../components/EmptyState";
 import FabricCard from "./FabricCard";
 import SummaryCards from "./SummaryCards";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { useState } from "react";
 import "./MaterialsPanel.css";
 
+
+
+const normalizeFabric = (f) => ({
+  ...f,
+  fabricId: f.fabricId || f.code || "",
+  fabricName: f.fabricName || f.name || "",
+  material: f.material || f.type || "",
+  status: f.status || (f.isActive === false ? "inactive" : "active"),
+  image: f.image || f.imageUrl || f.asset?.url || null,
+  colorHex: f.colorHex || null,
+  weight: f.weight || null,
+});
+
 export default function MaterialsPanelPage() {
-  const { state, toggleStatus, deleteFabric } = useAdmin();
+  const { state, toggleStatus, deleteFabric, setFabrics } = useAdmin();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("grid");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch fabrics from server on mount
+  useEffect(() => {
+    const fetchFabrics = async () => {
+      setLoading(true);
+      try {
+        const res = await adminService.getFabrics({ limit: 100 });
+        const data = res.data?.data || res.data;
+        if (Array.isArray(data)) {
+          setFabrics(data.map(normalizeFabric));
+        }
+      } catch (err) {
+        console.error("Failed to fetch fabrics for Materials Panel", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFabrics();
+  }, [setFabrics]);
 
   // Extract unique filter values
   const materials = useMemo(() => {
@@ -34,8 +68,6 @@ export default function MaterialsPanelPage() {
     setSearch,
     filterValues,
     setFilter,
-    clearFilters,
-    hasActiveFilters,
   } = useFilteredList(state.fabrics, {
     searchFields: ["fabricId", "fabricName", "material", "color", "pattern"],
     filters: {
@@ -45,8 +77,22 @@ export default function MaterialsPanelPage() {
     },
   });
 
-  const handleToggle = (fabricId) => {
+  const handleToggle = async (fabricId) => {
+    const fabric = state.fabrics.find(f => f.id === fabricId);
+    if (!fabric) return;
+    const newStatus = fabric.status === "active" ? "inactive" : "active";
+    
+    // Optimistic update
     toggleStatus("fabrics", fabricId);
+    
+    try {
+      await adminService.updateFabric(fabricId, { status: newStatus });
+    } catch (error) {
+      console.error("Failed to toggle fabric status", error);
+      // Revert optimistic update
+      toggleStatus("fabrics", fabricId);
+      toast.error("Failed to update status");
+    }
   };
 
   const handleEdit = (fabricId) => {
@@ -59,10 +105,21 @@ export default function MaterialsPanelPage() {
     setDeleteTarget({ ...fabric, inGroups, inMappings });
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteTarget) {
-      deleteFabric(deleteTarget.id);
+      const targetId = deleteTarget.id;
+      
+      // Optimistic update
+      deleteFabric(targetId);
       setDeleteTarget(null);
+
+      try {
+        await adminService.deactivateFabric(targetId);
+      } catch (error) {
+        console.error("Failed to delete fabric", error);
+        toast.error(error.response?.data?.message || "Failed to delete fabric. Refreshing page to sync state...");
+        window.location.reload();
+      }
     }
   };
 
@@ -137,7 +194,11 @@ export default function MaterialsPanelPage() {
       />
 
       {/* Fabric Cards Grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="admin-card" style={{ textAlign: "center", padding: "48px 24px", color: "#94a3b8" }}>
+          <p style={{ fontSize: 16 }}>⏳ Loading fabrics...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="admin-card">
           <EmptyState
             icon={

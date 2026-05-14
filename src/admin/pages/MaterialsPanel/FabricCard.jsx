@@ -2,9 +2,10 @@ import StatusBadge from "../../components/StatusBadge";
 
 export default function FabricCard({ fabric, onToggle, onEdit, onDelete }) {
   const isActive = fabric.status === "active";
-  const stockCount = fabric.stock ?? 0;
   const price = fabric.price != null ? Number(fabric.price).toFixed(2) : null;
-  const isAvailable = isActive && stockCount > 0;
+  const isAvailable = isActive;
+  const fabricImage = fabric.image || fabric.imageUrl || fabric.asset?.url || null;
+  const gsmValue = fabric.gsm || null;
 
   return (
     <div className={`mp-card ${!isActive ? "mp-card-inactive" : ""}`}>
@@ -13,8 +14,8 @@ export default function FabricCard({ fabric, onToggle, onEdit, onDelete }) {
         <div className="mp-card-badge">
           <StatusBadge status={fabric.status} size="xs" />
         </div>
-        {fabric.image ? (
-          <img src={fabric.image} alt={fabric.fabricName} />
+        {fabricImage ? (
+          <img src={fabricImage} alt={fabric.fabricName} />
         ) : (
           <div className="mp-card-placeholder">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
@@ -43,17 +44,24 @@ export default function FabricCard({ fabric, onToggle, onEdit, onDelete }) {
             </svg>
             <span>{price != null ? `₹${price}/m` : "—"}</span>
           </div>
-          <div className="mp-card-meta-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-            <span>{stockCount} units</span>
-          </div>
+          {gsmValue && (
+            <div className="mp-card-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span>{gsmValue} GSM</span>
+            </div>
+          )}
         </div>
 
         {/* Color chips */}
         <div className="mp-card-chips">
-          {fabric.color && <span className="mp-chip mp-chip-color">{fabric.color}</span>}
+          {fabric.color && (
+            <span className="mp-chip mp-chip-color">
+              {fabric.colorHex && <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", backgroundColor: fabric.colorHex, marginRight: 4, verticalAlign: "middle" }} />}
+              {fabric.color}
+            </span>
+          )}
           {fabric.pattern && <span className="mp-chip">{fabric.pattern}</span>}
           {fabric.season && <span className="mp-chip">{fabric.season}</span>}
         </div>

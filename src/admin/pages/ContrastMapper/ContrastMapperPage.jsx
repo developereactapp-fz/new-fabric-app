@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useAdmin } from "../../store/adminStore";
 import useCascadingSelection from "../../hooks/useCascadingSelection";
 import PageHeader from "../../components/PageHeader";
@@ -26,7 +27,7 @@ export default function ContrastMapperPage() {
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
 
-  const builderGroups = state.builderGroups || [];
+  const builderGroups = useMemo(() => state.builderGroups || [], [state.builderGroups]);
 
   // Find the default mapping for this component to auto-detect default fabric
   const defaultFabricMapping = useMemo(() => {
@@ -73,12 +74,12 @@ export default function ContrastMapperPage() {
 
   const handleSaveContrastMapping = () => {
     if (!selectedCategory || !selectedComponentId || !selectedComponentValueId || !selectedGroupId) {
-      alert("Please complete all selections.");
+      toast.error("Please complete all selections.");
       return;
     }
 
     if (validItems.length === 0) {
-      alert("The selected group has no valid items after auto-cleanup. Please select a different group.");
+      toast.error("The selected group has no valid items after auto-cleanup. Please select a different group.");
       return;
     }
 
@@ -93,7 +94,7 @@ export default function ContrastMapperPage() {
     };
 
     actions.addContrastMapping(mappingData);
-    alert("Contrast Mapping saved successfully!");
+    toast.success("Contrast Mapping saved successfully!");
     handleReset();
   };
 

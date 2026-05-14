@@ -36,7 +36,10 @@ export default function SubCategoryManager({ componentId, componentName }) {
   const subCategories = state.subCategories[componentId] || [];
   const parentValues = state.componentValues[componentId] || [];
   const selectedSub = subCategories.find((s) => s.id === selectedSubId);
-  const subValues = selectedSubId ? (state.subCategoryValues[selectedSubId] || []) : [];
+  const subValues = useMemo(
+    () => (selectedSubId ? state.subCategoryValues[selectedSubId] || [] : []),
+    [selectedSubId, state.subCategoryValues]
+  );
 
   // For dependent sub-categories, filter values by selected parent
   const filteredSubValues = useMemo(() => {

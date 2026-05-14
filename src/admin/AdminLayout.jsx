@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { Toaster } from "sonner";
 import { AdminProvider } from "./store/adminStore.jsx";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminHeader from "./components/AdminHeader";
@@ -11,6 +12,7 @@ import "./AdminLayout.css";
 export default function AdminLayout() {
   return (
     <AdminProvider>
+      <Toaster position="top-right" richColors />
       <div className="admin-shell">
         <AdminSidebar />
         <div className="admin-main">

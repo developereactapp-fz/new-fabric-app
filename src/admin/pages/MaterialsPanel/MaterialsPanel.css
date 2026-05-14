@@ -585,3 +585,24 @@
   .mp-cards-container { grid-template-columns: 1fr; }
   .mp-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Skeleton Loading ── */
+.mp-skeleton-card {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.mp-skeleton-image {
+  background: #e2e8f0;
+}
+
+.mp-skeleton-text {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+@keyframes skeletonPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}

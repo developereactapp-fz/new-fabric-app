@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import axios from "axios";
+import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 import ExcelUploader from "../../components/ExcelUploader";
 import StatusBadge from "../../components/StatusBadge";
@@ -7,7 +7,7 @@ import { parseExcelBuffer, extractUniqueTabValues, extractAttributesFromFabricSh
 import { findDuplicates } from "../../utils/validators";
 
 const ATTRIBUTES = ["Color", "Material", "Sub Material", "Pattern", "Weave Pattern", "Season", "Feature"];
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 
 export default function BulkUploadMode({ category }) {
   const { state, importAttributeValues } = useAdmin();
@@ -22,17 +22,13 @@ export default function BulkUploadMode({ category }) {
   const [isValidating, setIsValidating] = useState(false);
   const [importError, setImportError] = useState(null);
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-  const authHeaders = () => ({
-    Authorization: `Bearer ${getToken()}`,
-    "x-tenant-slug": "test-tenant",
-  });
+
 
   // Ref to always have current state for validation inside callbacks
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const handleFileLoaded = useCallback(async (buffer, fileName) => {
+  const handleFileLoaded = useCallback(async (buffer) => {
     try {
       const result = parseExcelBuffer(buffer);
       setSheetNames(result.sheetNames);
@@ -72,10 +68,7 @@ export default function BulkUploadMode({ category }) {
     try {
       await Promise.all(ATTRIBUTES.map(async (attr) => {
         try {
-          const res = await axios.get(`${API}/api/attributes`, {
-            params: { category: attr },
-            headers: authHeaders()
-          });
+          const res = await adminService.getAttributes({ category: attr });
           const raw = res.data?.data || res.data || [];
           existingAttrs[attr] = Array.isArray(raw) ? raw : [];
         } catch (err) {
@@ -138,10 +131,8 @@ export default function BulkUploadMode({ category }) {
       Object.entries(attributeMap).forEach(([attr, values]) => {
         values.forEach((value) => {
           requests.push(
-            axios.post(
-              `${API}/api/attributes`,
-              { category: attr, value, isActive: true },
-              { headers: authHeaders() }
+            adminService.createAttribute(
+              { category: attr, value, isActive: true }
             )
           );
         });

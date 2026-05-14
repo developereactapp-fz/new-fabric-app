@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
 
-const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
 import FabricGroupManager from "./FabricGroupManager";
 import CreateFabricMode from "./CreateFabricMode";
 import ImportFabricMode from "./ImportFabricMode";
@@ -17,13 +16,21 @@ const MODES = [
   { key: "edit", label: "Edit Fabric", icon: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" },
 ];
 
-  const { state, setFabrics, addFabricGroup, addAttributeValue } = useAdmin();
+export default function FabricOnboardingPage() {
+  const { state, setFabrics } = useAdmin();
   const [mode, setMode] = useState("create");
   const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
-  const [preselectedEditId, setPreselectedEditId] = useState(null);
+  const [preselectedEditId, setPreselectedEditId] = useState(location.state?.editFabricId || null);
+
+  useEffect(() => {
+    if (location.state?.editFabricId) {
+      setMode("edit");
+      setPreselectedEditId(location.state.editFabricId);
+    }
+  }, [location.state?.editFabricId]);
 
   const selectedGroup = state.fabricGroups.find((g) => g.id === selectedGroupId);
   const location = useLocation();
@@ -69,28 +76,19 @@ const MODES = [
     fabricName: f.fabricName || f.name || "",
     material: f.material || f.type || "",
     status: f.status || (f.isActive === false ? "inactive" : "active"),
-    image: f.image || f.imageUrl || null,
+    image: f.image || f.imageUrl || f.asset?.url || null,
   });
 
   useEffect(() => {
     const fetchFabrics = async () => {
-      setLoading(true);
       try {
-        const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-        const res = await axios.get(`${API}/api/materials/fabrics?limit=100`, {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "x-tenant-slug": "test-tenant"
-          }
-        });
+        const res = await adminService.getFabrics({ limit: 100 });
         const data = res.data?.data || res.data;
         if (Array.isArray(data)) {
           setFabrics(data.map(normalizeFabric));
         }
       } catch (err) {
         console.error("Failed to fetch fabrics", err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchFabrics();
@@ -203,4 +201,4 @@ const MODES = [
       />
     </div>
   );
-
+}

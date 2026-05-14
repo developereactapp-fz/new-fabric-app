@@ -1,6 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useAdmin } from "../../store/adminStore";
-import useMappingValidation from "../../hooks/useMappingValidation";
 import PageHeader from "../../components/PageHeader";
 import EmptyState from "../../components/EmptyState";
 import ActionBar from "../../components/ActionBar";
@@ -132,11 +131,6 @@ export default function CategoryComponentsPage() {
     setLoaded(true);
   }, [selectedFabricId, selectedCategoryId, categoryComponents, state.componentValues, state.fabricMappings]);
 
-  // ── Reset when selections change ──
-  useEffect(() => {
-    setLoaded(false);
-    setMappingState({});
-  }, [selectedCategoryId, selectedGroupId, selectedFabricId]);
 
   // ── Handlers ──
   const handleOptionChange = useCallback((componentId, valueId, updates) => {
@@ -205,6 +199,8 @@ export default function CategoryComponentsPage() {
               setSelectedCategoryId(e.target.value);
               setSelectedGroupId("");
               setSelectedFabricId("");
+              setLoaded(false);
+              setMappingState({});
             }}
           >
             <option value="">Select Category</option>
@@ -222,6 +218,8 @@ export default function CategoryComponentsPage() {
             onChange={(e) => {
               setSelectedGroupId(e.target.value);
               setSelectedFabricId("");
+              setLoaded(false);
+              setMappingState({});
             }}
             disabled={!selectedCategoryId}
           >
@@ -237,7 +235,11 @@ export default function CategoryComponentsPage() {
           <select
             className="admin-select"
             value={selectedFabricId}
-            onChange={(e) => setSelectedFabricId(e.target.value)}
+            onChange={(e) => {
+              setSelectedFabricId(e.target.value);
+              setLoaded(false);
+              setMappingState({});
+            }}
             disabled={!selectedGroupId}
           >
             <option value="">Select Fabric</option>

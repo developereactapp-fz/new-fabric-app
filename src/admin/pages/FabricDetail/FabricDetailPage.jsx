@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore";
 import PageHeader from "../../components/PageHeader";
@@ -14,19 +15,16 @@ export default function FabricDetailPage() {
 
   const [selectedFabricId, setSelectedFabricId] = useState("");
 
-  const fabrics = state.fabrics || [];
-  const mappings = state.fabricMappings || [];
-
   // Derived selected fabric
   const selectedFabric = useMemo(() => {
-    return fabrics.find((f) => f.id === selectedFabricId) || null;
-  }, [fabrics, selectedFabricId]);
+    return (state.fabrics || []).find((f) => f.id === selectedFabricId) || null;
+  }, [state.fabrics, selectedFabricId]);
 
   // Derived mappings for this fabric
   const fabricMappings = useMemo(() => {
     if (!selectedFabric) return [];
-    return mappings.filter((m) => m.fabricId === selectedFabric.id);
-  }, [mappings, selectedFabric]);
+    return (state.fabricMappings || []).filter((m) => m.fabricId === selectedFabric.id);
+  }, [state.fabricMappings, selectedFabric]);
 
   // Group mappings by category
   const mappingsByCategory = useMemo(() => {
@@ -42,7 +40,7 @@ export default function FabricDetailPage() {
 
   const handleEditFabric = () => {
     // In a real app, pass the ID to the onboarding page
-    alert("Navigating to Edit Fabric: " + selectedFabric.fabricName);
+    toast.info("Navigating to Edit Fabric: " + selectedFabric.fabricName);
   };
 
   const handleEditMappings = () => {
@@ -97,7 +95,7 @@ export default function FabricDetailPage() {
           onChange={(e) => setSelectedFabricId(e.target.value)}
         >
           <option value="">-- Choose a Fabric --</option>
-          {fabrics.map((f) => (
+          {state.fabrics.map((f) => (
             <option key={f.id} value={f.id}>
               {f.fabricId} - {f.fabricName}
             </option>
