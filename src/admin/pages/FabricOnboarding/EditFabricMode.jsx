@@ -16,15 +16,17 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
-    if (form?.image instanceof File) return URL.createObjectURL(form.image);
+    if (!form?.image) return null;
+    if (typeof form.image === "string") return form.image;
+    if (form.image instanceof File) return URL.createObjectURL(form.image);
     return null;
   }, [form?.image]);
 
   useEffect(() => {
     return () => {
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+      if (form?.image instanceof File && imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
     };
-  }, [imagePreviewUrl]);
+  }, [form?.image, imagePreviewUrl]);
 
   // Fetch attributes from API on mount
   useEffect(() => {
@@ -47,6 +49,25 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     fetchAttributes();
   }, []);
 
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+  const authHeaders = () => ({
+    Authorization: `Bearer ${getToken()}`,
+    "x-tenant-slug": "test-tenant",
+  });
+
+  const uploadAsset = async (file) => {
+    if (!(file instanceof File)) return null;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await axios.post(`${API}/api/assets/upload`, formData, {
+      headers: authHeaders(),
+    });
+
+    const payload = res.data?.data || res.data || {};
+    return payload.url || payload.asset?.url || payload.imageUrl || payload.image || null;
+  };
+
   // Map attribute names to the fabric object field(s) they correspond to
   const attrToFabricField = {
     "Color": "color",
@@ -57,6 +78,15 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     "Season": "season",
     "Feature": "features",
   };
+
+  const normalizeFabric = (raw) => ({
+    ...raw,
+    fabricId: raw.fabricId || raw.code || "",
+    fabricName: raw.fabricName || raw.name || "",
+    material: raw.material || raw.type || "",
+    status: raw.status || (raw.isActive === false ? "inactive" : "active"),
+    image: raw.image || raw.imageUrl || null,
+  });
 
   // Get attribute options from server attributes, local store, AND existing fabrics
   const getAttrValues = (attr) => {
@@ -193,18 +223,34 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       price: form.price !== "" ? Number(form.price) : null,
       stock: form.stock !== "" ? Number(form.stock) : null,
     };
-    delete updateData.image;
+
+    let imageUrl = form.image;
+    if (form.image instanceof File) {
+      imageUrl = await uploadAsset(form.image);
+    }
+
+    if (form.image instanceof File) {
+      delete updateData.image;
+    }
+
+    if (imageUrl) {
+      updateData.image = imageUrl;
+    }
 
     try {
-      const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
-        headers: {
-          Authorization: `Bearer ${getToken}`,
-          "x-tenant-slug": "test-tenant"
-        }
+      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
+        headers: authHeaders(),
       });
 
-      const updatedFabric = res.data?.data || res.data || updateData;
-      editFabric(selectedFabricId, updatedFabric);
+      const savedFabric = res.data?.data || res.data || updateData;
+      const imageSource = savedFabric.image || savedFabric.imageUrl || (typeof form.image === "string" ? form.image : null);
+      const normalizedFabric = normalizeFabric({
+        ...savedFabric,
+        image: imageSource,
+      });
+
+      editFabric(selectedFabricId, normalizedFabric);
+      setForm((prev) => ({ ...prev, ...normalizedFabric }));
       setSaved(true);
       onDirty?.(false);
     } catch (err) {

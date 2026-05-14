@@ -50,11 +50,24 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; const authHeaders = () => ({
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
+  const authHeaders = () => ({
     Authorization: `Bearer ${getToken()}`,
     "x-tenant-slug": "test-tenant",
   });
 
+  const uploadAsset = async (file) => {
+    if (!(file instanceof File)) return null;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await axios.post(`${API}/api/assets/upload`, formData, {
+      headers: authHeaders(),
+    });
+
+    const payload = res.data?.data || res.data || {};
+    return payload.url || payload.asset?.url || payload.imageUrl || payload.image || null;
+  };
 
   // One request — fetch all attributes, then group by category from the response
   useEffect(() => {
@@ -215,7 +228,10 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
         weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
         price: form.price !== "" ? Number(form.price) : null,
-        isRecommended: false
+        status: form.status,
+        availability: form.availability,
+        image: form.image,
+        isRecommended: false,
       };
     }
 
@@ -234,6 +250,22 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       allFabricsToSave.push(currentFabric);
     }
 
+    const prepareFabricForSave = async (fabric) => {
+      if (fabric.image instanceof File) {
+        const uploadedImage = await uploadAsset(fabric.image);
+        if (!uploadedImage) {
+          throw new Error("Image upload failed");
+        }
+        return {
+          ...fabric,
+          image: uploadedImage,
+        };
+      }
+      return fabric;
+    };
+
+    const preparedFabrics = await Promise.all(allFabricsToSave.map(prepareFabricForSave));
+
     if (allFabricsToSave.length === 0) {
       alert("No fabrics to save.");
       return;
@@ -243,11 +275,11 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
     try {
       if (allFabricsToSave.length === 1) {
-        const res = await axios.post(`${API}/api/materials/fabrics`, allFabricsToSave[0], {
+        const res = await axios.post(`${API}/api/materials/fabrics`, preparedFabrics[0], {
           headers: authHeaders(),
         });
 
-        const rawFabric = res.data?.data || res.data || allFabricsToSave[0];
+        const rawFabric = res.data?.data || res.data || preparedFabrics[0];
         const newFabric = {
           ...rawFabric,
           fabricId: rawFabric.fabricId || rawFabric.code || "",
@@ -267,12 +299,12 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           return [...nonQueued, { fabricId: newFabric.fabricId || newFabric.code || form.fabricId, fabricName: newFabric.fabricName || newFabric.name }];
         });
       } else {
-        const res = await axios.post(`${API}/api/materials/fabrics/bulk`, allFabricsToSave, {
+        const res = await axios.post(`${API}/api/materials/fabrics/bulk`, preparedFabrics, {
           headers: authHeaders(),
         });
 
-        const newFabrics = res.data?.data || res.data || allFabricsToSave;
-        const fabricsArray = (Array.isArray(newFabrics) ? newFabrics : allFabricsToSave).map(raw => ({
+        const newFabrics = res.data?.data || res.data || preparedFabrics;
+        const fabricsArray = (Array.isArray(newFabrics) ? newFabrics : preparedFabrics).map(raw => ({
           ...raw,
           fabricId: raw.fabricId || raw.code || "",
           fabricName: raw.fabricName || raw.name || "",

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
 
@@ -16,8 +17,7 @@ const MODES = [
   { key: "edit", label: "Edit Fabric", icon: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" },
 ];
 
-export default function FabricOnboardingPage() {
-  const { state, setFabrics } = useAdmin();
+  const { state, setFabrics, addFabricGroup, addAttributeValue } = useAdmin();
   const [mode, setMode] = useState("create");
   const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
@@ -26,6 +26,26 @@ export default function FabricOnboardingPage() {
   const [preselectedEditId, setPreselectedEditId] = useState(null);
 
   const selectedGroup = state.fabricGroups.find((g) => g.id === selectedGroupId);
+  const location = useLocation();
+
+  useEffect(() => {
+    const targetId = location.state?.editFabricId;
+    if (targetId) {
+      setMode("edit");
+      setPreselectedEditId(targetId);
+    }
+  }, [location.state]);
+
+
+  // Track last created fabric ID
+  const [lastCreatedFabricId, setLastCreatedFabricId] = useState(null);
+
+  // Called after a fabric is created in CreateFabricMode
+  const handleFabricCreated = (id) => {
+    setLastCreatedFabricId(id);
+    setPreselectedEditId(id);
+    setMode("edit");
+  };
 
   const handleModeSwitch = (newMode) => {
     if (hasUnsaved && newMode !== mode) {
@@ -33,6 +53,10 @@ export default function FabricOnboardingPage() {
     } else {
       // Clear preselectedEditId when leaving edit mode to prevent stale state
       if (mode === "edit" && newMode !== "edit") setPreselectedEditId(null);
+      // If switching to edit after create, auto-select last created fabric
+      if (newMode === "edit" && lastCreatedFabricId) {
+        setPreselectedEditId(lastCreatedFabricId);
+      }
       setMode(newMode);
     }
   };
@@ -70,7 +94,28 @@ export default function FabricOnboardingPage() {
       }
     };
     fetchFabrics();
-  }, [setFabrics]);
+
+    // DEMO DATA: Add default attribute values and a demo group if empty
+    setTimeout(() => {
+      // Add demo attribute values if missing
+      const demoAttrs = [
+        { category: "Color", value: "White" },
+        { category: "Color", value: "Blue" },
+        { category: "Color", value: "Black" },
+        { category: "Material", value: "Cotton" },
+        { category: "Material", value: "Linen" },
+        { category: "Pattern", value: "Solid" },
+        { category: "Pattern", value: "Stripe" },
+        { category: "Season", value: "Summer" },
+        { category: "Season", value: "Winter" },
+      ];
+      demoAttrs.forEach(attr => addAttributeValue(attr.category, attr.category, attr.value));
+      // Add a demo group if none exist
+      if (state.fabricGroups.length === 0) {
+        addFabricGroup({ groupName: "Demo Group", status: "active" });
+      }
+    }, 1000);
+  }, [setFabrics, addAttributeValue, addFabricGroup, state.fabricGroups.length]);
 
   const confirmModeSwitch = () => {
     // Clear preselectedEditId when confirming mode switch away from edit
@@ -118,14 +163,14 @@ export default function FabricOnboardingPage() {
       </div>
 
       {/* Mode Content */}
+
       {mode === "create" && (
         <CreateFabricMode
           groupId={selectedGroupId}
           groupName={selectedGroup?.groupName}
           onDirty={setHasUnsaved}
           onEditRequest={(id) => {
-            setPreselectedEditId(id);
-            handleModeSwitch("edit");
+            handleFabricCreated(id);
           }}
         />
       )}
@@ -158,4 +203,4 @@ export default function FabricOnboardingPage() {
       />
     </div>
   );
-}
+
