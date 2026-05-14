@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { useLocation } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore.jsx";
+import { adminService } from "../../../services/adminService";
 
 
 import FabricGroupManager from "./FabricGroupManager";
@@ -17,7 +18,8 @@ const MODES = [
 ];
 
 export default function FabricOnboardingPage() {
-  const { state, setFabrics } = useAdmin();
+  const location = useLocation();
+  const { state, setFabrics, addAttributeValue, addFabricGroup } = useAdmin();
   const [mode, setMode] = useState("create");
   const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
@@ -33,7 +35,6 @@ export default function FabricOnboardingPage() {
   }, [location.state?.editFabricId]);
 
   const selectedGroup = state.fabricGroups.find((g) => g.id === selectedGroupId);
-  const location = useLocation();
 
   useEffect(() => {
     const targetId = location.state?.editFabricId;

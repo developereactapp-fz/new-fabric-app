@@ -52,13 +52,9 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     };
   }, [imagePreviewUrl]);
 
-<<<<<<< HEAD
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-=======
   const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN; 
->>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
+  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
   const authHeaders = () => ({
     Authorization: `Bearer ${getToken()}`,
     "x-tenant-slug": "test-tenant",
@@ -230,15 +226,11 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
         weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
         price: form.price !== "" ? Number(form.price) : null,
-<<<<<<< HEAD
         status: form.status,
         availability: form.availability,
         image: form.image,
         isRecommended: false,
-=======
-        isRecommended: false,
         ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
->>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
       };
     }
 
@@ -282,13 +274,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
 
     try {
       if (allFabricsToSave.length === 1) {
-<<<<<<< HEAD
-        const res = await axios.post(`${API}/api/materials/fabrics`, preparedFabrics[0], {
-          headers: authHeaders(),
-        });
-=======
-        const res = await adminService.createFabric(allFabricsToSave[0]);
->>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
+        const res = await adminService.createFabric(preparedFabrics[0]);
 
         const rawFabric = res.data?.data || res.data || preparedFabrics[0];
         const newFabric = {
@@ -310,13 +296,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           return [...nonQueued, { fabricId: newFabric.fabricId || newFabric.code || form.fabricId, fabricName: newFabric.fabricName || newFabric.name }];
         });
       } else {
-<<<<<<< HEAD
-        const res = await axios.post(`${API}/api/materials/fabrics/bulk`, preparedFabrics, {
-          headers: authHeaders(),
-        });
-=======
-        const res = await adminService.createFabricsBulk(allFabricsToSave);
->>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
+        const res = await adminService.createFabricsBulk(preparedFabrics);
 
         const newFabrics = res.data?.data || res.data || preparedFabrics;
         const fabricsArray = (Array.isArray(newFabrics) ? newFabrics : preparedFabrics).map(raw => ({

@@ -8,9 +8,20 @@
 /* ── Header ── */
 .csf-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   margin-bottom: 24px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .csf-header {
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+    gap: 0;
+  }
 }
 
 .csf-header h1 {
@@ -45,12 +56,19 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 20px 24px;
+  padding: 16px 20px;
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+@media (min-width: 768px) {
+  .csf-global-bar {
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 20px 24px;
+  }
 }
 
 .csf-global-group {

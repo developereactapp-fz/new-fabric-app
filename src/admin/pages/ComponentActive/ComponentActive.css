@@ -6,16 +6,30 @@
 
 .filters-card {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   flex-wrap: wrap;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .filters-card {
+    gap: 24px;
+    flex-direction: row;
+  }
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 250px;
+  min-width: 100%;
   flex: 1;
+}
+
+@media (min-width: 768px) {
+  .filter-group {
+    min-width: 250px;
+  }
 }
 
 .list-card {

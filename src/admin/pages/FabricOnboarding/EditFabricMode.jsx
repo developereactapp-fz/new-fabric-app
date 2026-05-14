@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
@@ -31,18 +31,11 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     };
   }, [form?.image, imagePreviewUrl]);
 
-<<<<<<< HEAD
   // Fetch attributes from API on mount
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
-        const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-        const res = await axios.get(`${API}/api/attributes`, {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "x-tenant-slug": "test-tenant"
-          }
-        });
+        const res = await adminService.getAttributes();
         const raw = res.data?.data || res.data || [];
         const items = Array.isArray(raw) ? raw : [];
         setServerAttributes(items);
@@ -53,20 +46,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     fetchAttributes();
   }, []);
 
-  const getToken = () => import.meta.env.VITE_AUTH_TOKEN;
-  const authHeaders = () => ({
-    Authorization: `Bearer ${getToken()}`,
-    "x-tenant-slug": "test-tenant",
-  });
-
   const uploadAsset = async (file) => {
     if (!(file instanceof File)) return null;
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("category", "FABRIC");
 
-    const res = await axios.post(`${API}/api/assets/upload`, formData, {
-      headers: authHeaders(),
-    });
+    const res = await adminService.uploadAsset(formData);
 
     const payload = res.data?.data || res.data || {};
     return payload.url || payload.asset?.url || payload.imageUrl || payload.image || null;
@@ -93,17 +79,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   });
 
   // Get attribute options from server attributes, local store, AND existing fabrics
-  const getAttrValues = (attr) => {
+  const getAttrValues = useCallback((attr) => {
     // 1. From /api/attributes endpoint
     const serverVals = serverAttributes
       .filter(a => a.category === attr && a.isActive)
       .map(a => a.value);
 
     // 2. From local store
-=======
-  // Get attribute options from the store
-  const getAttrValues = useCallback((attr) => {
->>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
     const allCats = Object.values(state.attributes);
     const localVals = [];
     allCats.forEach((catAttrs) => {
@@ -111,8 +93,27 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
         if (v.status === "active" && !localVals.includes(v.value)) localVals.push(v.value);
       });
     });
+
+    // 3. From existing fabric records so older data remains selectable
+    const fields = attrToFabricField[attr];
+    const fabricVals = [];
+    state.fabrics.forEach((fabric) => {
+      if (Array.isArray(fields)) {
+        fields.forEach((field) => {
+          if (fabric[field]) fabricVals.push(fabric[field]);
+        });
+      } else if (fields === "features") {
+        (fabric.features || [fabric.feature1, fabric.feature2, fabric.feature3])
+          .filter(Boolean)
+          .forEach((feature) => fabricVals.push(feature));
+      } else if (fields && fabric[fields]) {
+        fabricVals.push(fabric[fields]);
+      }
+    });
+
+    const merged = [...new Set([...serverVals, ...localVals, ...fabricVals].filter(Boolean))];
     return merged;
-  }, [state.attributes]);
+  }, [serverAttributes, state.attributes, state.fabrics]);
 
   const colorOptions = useMemo(() => getAttrValues("Color"), [getAttrValues]);
   const materialOptions = useMemo(() => getAttrValues("Material"), [getAttrValues]);
@@ -275,18 +276,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     }
 
     try {
-<<<<<<< HEAD
-      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
-        headers: authHeaders(),
-=======
-      const getToken = () => import.meta.env.VITE_AUTH_TOKEN; 
-      const res = await axios.patch(`${API}/api/materials/fabrics/${selectedFabricId}`, updateData, {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-          "x-tenant-slug": "test-tenant"
-        }
->>>>>>> 5b6193c39f475aea5fd5ce601cc0622c7913b4b1
-      });
+      const res = await adminService.updateFabric(selectedFabricId, updateData);
 
       const savedFabric = res.data?.data || res.data || updateData;
       const imageSource = savedFabric.image || savedFabric.imageUrl || (typeof form.image === "string" ? form.image : null);
