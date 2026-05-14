@@ -5,6 +5,16 @@ import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import { isDuplicate } from "../../utils/validators";
 
+const ATTR_TO_FABRIC_FIELD = {
+  Color: "color",
+  Material: ["material", "type"],
+  "Sub Material": "subMaterial",
+  Pattern: "pattern",
+  "Weave Pattern": "weavePattern",
+  Season: "season",
+  Feature: "features",
+};
+
 export default function EditFabricMode({ groupId, groupName, onDirty, preselectedEditId }) {
   const { state, editFabric } = useAdmin();
   const [selectedFabricId, setSelectedFabricId] = useState(null);
@@ -58,17 +68,6 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     return payload.url || payload.asset?.url || payload.imageUrl || payload.image || null;
   };
 
-  // Map attribute names to the fabric object field(s) they correspond to
-  const attrToFabricField = {
-    "Color": "color",
-    "Material": ["material", "type"],
-    "Sub Material": "subMaterial",
-    "Pattern": "pattern",
-    "Weave Pattern": "weavePattern",
-    "Season": "season",
-    "Feature": "features",
-  };
-
   const normalizeFabric = (raw) => ({
     ...raw,
     fabricId: raw.fabricId || raw.code || "",
@@ -95,7 +94,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     });
 
     // 3. From existing fabric records so older data remains selectable
-    const fields = attrToFabricField[attr];
+    const fields = ATTR_TO_FABRIC_FIELD[attr];
     const fabricVals = [];
     state.fabrics.forEach((fabric) => {
       if (Array.isArray(fields)) {
@@ -175,7 +174,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
         if (fab.assetId) fetchAsset(fab.assetId);
       }
     }
-  }, [preselectedEditId, state.fabrics]);
+  }, [preselectedEditId, state.fabrics, onDirty]);
 
   const handleLoad = () => {
     const fab = state.fabrics.find((f) => f.id === selectedFabricId);
@@ -262,8 +261,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
     };
 
-    let imageUrl = form.image;
-    if (form.image instanceof File) {
+    let imageUrl = uploadedAsset?.url || uploadedAsset?.asset?.url || uploadedAsset?.imageUrl || (typeof form.image === "string" ? form.image : null);
+    if (form.image instanceof File && !imageUrl) {
       imageUrl = await uploadAsset(form.image);
     }
 

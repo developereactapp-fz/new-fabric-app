@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import axios from "axios";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
@@ -89,7 +89,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
   }, []);
 
   // Get attribute options from the store (global category)
-  const getAttrValues = (attr) => {
+  const getAttrValues = useCallback((attr) => {
     const serverVals = serverAttributes
       .filter(a => a.category === attr && a.isActive)
       .map(a => a.value);
@@ -104,15 +104,15 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
     });
 
     return [...new Set([...serverVals, ...localVals])];
-  };
+  }, [serverAttributes, state.attributes]);
 
-  const colorOptions = useMemo(() => getAttrValues("Color"), [state.attributes, serverAttributes]);
-  const materialOptions = useMemo(() => getAttrValues("Material"), [state.attributes, serverAttributes]);
-  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [state.attributes, serverAttributes]);
-  const patternOptions = useMemo(() => getAttrValues("Pattern"), [state.attributes, serverAttributes]);
-  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [state.attributes, serverAttributes]);
-  const seasonOptions = useMemo(() => getAttrValues("Season"), [state.attributes, serverAttributes]);
-  const featureOptions = useMemo(() => getAttrValues("Feature"), [state.attributes, serverAttributes]);
+  const colorOptions = useMemo(() => getAttrValues("Color"), [getAttrValues]);
+  const materialOptions = useMemo(() => getAttrValues("Material"), [getAttrValues]);
+  const subMaterialOptions = useMemo(() => getAttrValues("Sub Material"), [getAttrValues]);
+  const patternOptions = useMemo(() => getAttrValues("Pattern"), [getAttrValues]);
+  const weavePatternOptions = useMemo(() => getAttrValues("Weave Pattern"), [getAttrValues]);
+  const seasonOptions = useMemo(() => getAttrValues("Season"), [getAttrValues]);
+  const featureOptions = useMemo(() => getAttrValues("Feature"), [getAttrValues]);
 
   const existingIds = state.fabrics.map((f) => f.fabricId);
   const existingNames = state.fabrics.map((f) => f.fabricName);
@@ -215,6 +215,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
       currentFabric = {
         name: form.fabricName,
         code: form.fabricId,
+        description: form.description,
         type: form.material,
         color: form.color,
         colorHex: "#111111", // Placeholder
@@ -226,9 +227,10 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         features: [form.feature1, form.feature2, form.feature3].filter(Boolean),
         weight: gsmNum ? (gsmNum < 150 ? "Light" : gsmNum > 250 ? "Heavy" : "Medium") : "Medium",
         price: form.price !== "" ? Number(form.price) : null,
+        stock: form.stock !== "" ? Number(form.stock) : null,
         status: form.status,
         availability: form.availability,
-        image: form.image,
+        image: uploadedAsset?.url || uploadedAsset?.asset?.url || uploadedAsset?.imageUrl || form.image,
         isRecommended: false,
         ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
       };
@@ -239,6 +241,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
         setQueuedFabrics(prev => [...prev, currentFabric]);
         setRecentlyAdded(prev => [...prev, { fabricId: form.fabricId, fabricName: form.fabricName, status: "queued" }]);
         setForm({ ...EMPTY_FORM });
+        setUploadedAsset(null);
         setErrors({});
       }
       return;

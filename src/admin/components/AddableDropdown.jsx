@@ -63,12 +63,12 @@ export default function AddableDropdown({
   const isValid = newValue.trim() && !currentValidation;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%" }}>
+    <div className="admin-addable-dropdown">
       <label className="admin-label">
         {label} {required && <span style={{ color: "#ef4444", marginLeft: "2px" }}>*</span>}
       </label>
       
-      <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+      <div className="admin-addable-control">
         <select
           className={`admin-select ${error ? "error" : ""}`}
           value={value}
@@ -98,8 +98,8 @@ export default function AddableDropdown({
       )}
 
       {isAddingNew && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px", background: "#f8fafc", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
+        <div className="admin-addable-inline">
+          <div className="admin-addable-inline-row">
             <input
               className="admin-input"
               value={newValue}

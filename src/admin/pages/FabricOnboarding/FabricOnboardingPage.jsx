@@ -20,29 +20,14 @@ const MODES = [
 export default function FabricOnboardingPage() {
   const location = useLocation();
   const { state, setFabrics, addAttributeValue, addFabricGroup } = useAdmin();
-  const [mode, setMode] = useState("create");
-  const [loading, setLoading] = useState(false);
+  const initialEditId = location.state?.editFabricId || null;
+  const [mode, setMode] = useState(initialEditId ? "edit" : "create");
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
-  const [preselectedEditId, setPreselectedEditId] = useState(location.state?.editFabricId || null);
-
-  useEffect(() => {
-    if (location.state?.editFabricId) {
-      setMode("edit");
-      setPreselectedEditId(location.state.editFabricId);
-    }
-  }, [location.state?.editFabricId]);
+  const [preselectedEditId, setPreselectedEditId] = useState(initialEditId);
 
   const selectedGroup = state.fabricGroups.find((g) => g.id === selectedGroupId);
-
-  useEffect(() => {
-    const targetId = location.state?.editFabricId;
-    if (targetId) {
-      setMode("edit");
-      setPreselectedEditId(targetId);
-    }
-  }, [location.state]);
 
 
   // Track last created fabric ID
