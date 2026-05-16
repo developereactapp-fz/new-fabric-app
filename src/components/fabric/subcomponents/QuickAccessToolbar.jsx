@@ -1,4 +1,5 @@
 import React from "react";
+import { BotMessageSquare } from "lucide-react";
 
 const QuickAccessToolbar = ({ isToolbarCollapsed, setIsToolbarCollapsed }) => {
   return (
@@ -6,12 +7,7 @@ const QuickAccessToolbar = ({ isToolbarCollapsed, setIsToolbarCollapsed }) => {
       <div className="quick-access-inner">
         {/* Left - AI Bot Large */}
         <button className="qa-btn qa-ai-bot" title="AI Bot">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="4" y="10" width="16" height="10" rx="3" />
-            <circle cx="12" cy="5" r="2.5" />
-            <path d="M12 8v3" />
-            <path d="M9 14h6" />
-          </svg>
+          <BotMessageSquare size={48} strokeWidth={1.5} />
           <span>AI Bot</span>
         </button>
 
@@ -37,26 +33,24 @@ const QuickAccessToolbar = ({ isToolbarCollapsed, setIsToolbarCollapsed }) => {
             </button>
           </div>
 
-          {/* Bottom Row - Toggleable */}
-          {!isToolbarCollapsed && (
-            <div className="qa-row">
-              <button className="qa-btn qa-pill" title="Normal">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M6 3h12l4 6-4 2v11H6V11L2 9l4-6z" />
-                  <path d="M12 3v20" />
-                </svg>
-                <span>Normal</span>
-              </button>
-              <button className="qa-btn qa-pill" title="Tuxedo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M6 3h12l4 6-4 2v11H6V11L2 9l4-6z" />
-                  <path d="M12 3v20" />
-                  <path d="M9 7l3-3 3 3" />
-                </svg>
-                <span>Tuxedo</span>
-              </button>
-            </div>
-          )}
+          {/* Bottom Row - Toggleable with Slide Animation */}
+          <div className={`qa-row ${isToolbarCollapsed ? "collapsed" : ""}`}>
+            <button className="qa-btn qa-pill" title="Normal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 3h12l4 6-4 2v11H6V11L2 9l4-6z" />
+                <path d="M12 3v20" />
+              </svg>
+              <span>Normal</span>
+            </button>
+            <button className="qa-btn qa-pill" title="Tuxedo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 3h12l4 6-4 2v11H6V11L2 9l4-6z" />
+                <path d="M12 3v20" />
+                <path d="M9 7l3-3 3 3" />
+              </svg>
+              <span>Tuxedo</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -65,7 +59,7 @@ const QuickAccessToolbar = ({ isToolbarCollapsed, setIsToolbarCollapsed }) => {
         className="qa-toggle-center"
         onClick={() => setIsToolbarCollapsed(!isToolbarCollapsed)}
       >
-        <span>{isToolbarCollapsed ? "Maximize to select style preference" : ""}</span>
+        <span>{isToolbarCollapsed ? "Maximize to customize" : ""}</span>
         <svg
           viewBox="0 0 24 24"
           fill="#e74c3c"
