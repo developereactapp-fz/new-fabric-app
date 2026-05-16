@@ -1,3 +1,22 @@
+@media (max-width: 600px) {
+  .auth-container-fluid {
+    padding: 12px 4px;
+  }
+  .auth-content-container {
+    max-width: 100vw;
+    padding: 0;
+  }
+  .auth-card {
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
+  }
+  .auth-card-body {
+    padding: 12px;
+  }
+  .auth-card-top-border {
+    height: 2px;
+  }
+}
 .auth-page-wrapper {
   min-height: 100vh;
   display: flex;
