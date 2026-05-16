@@ -470,6 +470,108 @@ const SavedDesigns = () => {
         .delete-btn:hover {
           background: #fff5f5;
         }
+
+        @media (max-width: 1023px) {
+          .saved-designs-container {
+            padding: 40px 32px;
+          }
+
+          .designs-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
+          }
+
+          .card-image-container {
+            height: 260px;
+          }
+        }
+
+        @media (max-width: 767px) {
+          .saved-designs-container {
+            padding: 24px 16px 40px;
+            min-height: 100%;
+            overflow-x: hidden;
+          }
+
+          .saved-designs-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 16px;
+            margin-bottom: 24px;
+          }
+
+          .header-left {
+            align-items: flex-start;
+          }
+
+          h1 {
+            font-size: 30px;
+            line-height: 1.1;
+          }
+
+          .create-btn {
+            width: 100%;
+            margin-top: 0;
+          }
+
+          .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            margin-bottom: 24px;
+          }
+
+          .filter-group {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 2px;
+          }
+
+          .filter-icon-wrapper {
+            flex: 0 0 auto;
+          }
+
+          .filter-btn {
+            flex: 0 0 auto;
+            min-width: 88px;
+            padding: 9px 18px;
+          }
+
+          .search-wrapper,
+          .sort-wrapper {
+            width: 100%;
+            min-width: 0;
+          }
+
+          .designs-grid {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 18px;
+          }
+
+          .design-card {
+            width: 100%;
+            min-width: 0;
+            border-radius: 16px;
+          }
+
+          .card-image-container {
+            height: 240px;
+          }
+
+          .main-design-image {
+            object-fit: contain;
+            background: #fafafa;
+          }
+
+          .card-content {
+            padding: 18px;
+          }
+
+          .detail-item,
+          .action-buttons {
+            align-items: stretch;
+          }
+        }
       `}</style>
     </div>
   );
