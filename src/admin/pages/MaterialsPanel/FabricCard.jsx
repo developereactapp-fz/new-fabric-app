@@ -1,10 +1,11 @@
 import StatusBadge from "../../components/StatusBadge";
+import { getPublicAssetUrl } from "../../utils/assetUtils";
 
 export default function FabricCard({ fabric, onToggle, onEdit, onDelete }) {
   const isActive = fabric.status === "active";
   const price = fabric.price != null ? Number(fabric.price).toFixed(2) : null;
   const isAvailable = isActive;
-  const fabricImage = fabric.image || fabric.imageUrl || fabric.asset?.url || null;
+  const fabricImage = getPublicAssetUrl(fabric.assetId || fabric.asset?.id) || fabric.image || fabric.imageUrl || fabric.asset?.url || null;
   const gsmValue = fabric.gsm || null;
 
   return (

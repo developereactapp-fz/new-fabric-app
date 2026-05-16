@@ -23,8 +23,10 @@ axiosRetry(apiClient, {
 // Request interceptor to attach JWT + tenant slug
 apiClient.interceptors.request.use(
   (config) => {
-    // Token priority: localStorage > env variable
-    const token = localStorage.getItem('token') || import.meta.env.VITE_AUTH_TOKEN;
+    // Priority: VITE_AUTH_TOKEN (env) > localStorage
+    // This ensures that if an admin token is hardcoded for dev/staging, it takes precedence.
+    const token = import.meta.env.VITE_AUTH_TOKEN || localStorage.getItem('token');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -43,7 +45,10 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
     if (status === 401) {
-      console.warn('Unauthorized — token may be expired.');
+      console.warn('Unauthorized — clearing token and potentially redirecting.');
+      localStorage.removeItem('token');
+      // If we are in a browser, we might want to reload or redirect to login
+      // but for now, just clearing it so the next request might use the env token.
     }
     console.error('API Error:', error?.response?.data || error.message);
     return Promise.reject(error);
