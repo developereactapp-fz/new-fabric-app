@@ -8,11 +8,21 @@
 /* ── Header ── */
 .cp-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .cp-header {
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-direction: row;
+  }
 }
 
 .cp-header-left { display: flex; flex-direction: column; gap: 4px; }
@@ -41,9 +51,26 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-direction: column;
+  width: 100%;
 }
 
-.cp-search-wrap { flex: 1; min-width: 200px; }
+@media (min-width: 640px) {
+  .cp-toolbar-top {
+    flex-direction: row;
+  }
+}
+
+.cp-search-wrap { 
+  flex: 1; 
+  min-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .cp-search-wrap { 
+    min-width: 200px;
+  }
+}
 
 .cp-toolbar-actions {
   display: flex;
@@ -569,7 +596,7 @@
 .cp-summary-label { font-size: 12px; font-weight: 600; color: #64748b; margin-top: 2px; }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .cp-header { flex-direction: column; align-items: flex-start; }
   .cp-header-right { width: 100%; justify-content: flex-end; }
   .cp-toolbar-top { flex-direction: column; align-items: stretch; }
@@ -584,4 +611,16 @@
 @media (max-width: 640px) {
   .cp-cards-container { grid-template-columns: 1fr; }
   .cp-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .cp-header,
+  .cp-toolbar-top,
+  .cp-filter-row {
+    flex-direction: row;
+  }
+
+  .cp-list-view .cp-card {
+    flex-direction: row;
+  }
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
@@ -33,15 +34,53 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
-    if (form?.image instanceof File) return URL.createObjectURL(form.image);
+    if (!form?.image) return null;
+    if (typeof form.image === "string") return form.image;
+    if (form.image instanceof File) return URL.createObjectURL(form.image);
     return null;
   }, [form?.image]);
 
   useEffect(() => {
     return () => {
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+      if (form?.image instanceof File && imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
     };
-  }, [imagePreviewUrl]);
+  }, [form?.image, imagePreviewUrl]);
+
+  // Fetch attributes from API on mount
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const res = await adminService.getAttributes();
+        const raw = res.data?.data || res.data || [];
+        const items = Array.isArray(raw) ? raw : [];
+        setServerAttributes(items);
+      } catch (err) {
+        console.error("EditFabricMode: Failed to fetch attributes", err);
+      }
+    };
+    fetchAttributes();
+  }, []);
+
+  const uploadAsset = async (file) => {
+    if (!(file instanceof File)) return null;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("category", "FABRIC");
+
+    const res = await adminService.uploadAsset(formData);
+
+    const payload = res.data?.data || res.data || {};
+    return payload.url || payload.asset?.url || payload.imageUrl || payload.image || null;
+  };
+
+  const normalizeFabric = (raw) => ({
+    ...raw,
+    fabricId: raw.fabricId || raw.code || "",
+    fabricName: raw.fabricName || raw.name || "",
+    material: raw.material || raw.type || "",
+    status: raw.status || (raw.isActive === false ? "inactive" : "active"),
+    image: raw.image || raw.imageUrl || null,
+  });
 
   // Get attribute options merged from server + local store
   const getAttrValues = useCallback((attr) => {
@@ -135,7 +174,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
         if (fab.assetId) fetchAsset(fab.assetId);
       }
     }
-  }, [preselectedEditId, state.fabrics]);
+  }, [preselectedEditId, state.fabrics, onDirty]);
 
   const handleLoad = () => {
     const fab = state.fabrics.find((f) => f.id === selectedFabricId);
