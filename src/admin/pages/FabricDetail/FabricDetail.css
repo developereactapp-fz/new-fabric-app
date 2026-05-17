@@ -32,7 +32,7 @@
   gap: 24px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .fabric-info-grid {
     grid-template-columns: 300px 1fr;
   }
@@ -211,13 +211,13 @@
 }
 
 /* Responsiveness */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .fabric-info-grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .fabric-info-grid {
     grid-template-columns: 300px minmax(0, 1fr);
   }

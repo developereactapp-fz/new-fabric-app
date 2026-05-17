@@ -300,7 +300,7 @@
   margin: 0;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .contrast-mapper-page {
     padding: 16px;
   }
@@ -322,7 +322,7 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .mapper-layout {
     grid-template-columns: minmax(280px, 350px) minmax(0, 1fr);
   }

@@ -348,10 +348,10 @@
 
 .fc-preview-item:last-child { border-bottom: none; }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .fc-manual-layout { grid-template-columns: 1fr; }
 }
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .fc-controls { gap: 16px; }
   .fc-category-section { max-width: 100%; }
   .fc-preview-stats {
@@ -363,7 +363,7 @@
   .fc-category-section { max-width: 100%; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .fc-controls,
   .fc-values-header,
   .fc-actions,
@@ -387,7 +387,7 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .fc-manual-layout {
     grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
   }

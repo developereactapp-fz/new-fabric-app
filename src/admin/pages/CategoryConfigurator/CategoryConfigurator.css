@@ -271,7 +271,14 @@
 .cc-parent-chip-count { color: #9ca3af; font-size: 10px; }
 .cc-parent-chip-default { color: #f59e0b; font-size: 11px; }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
+  .cc-page,
+  .cc-left,
+  .cc-preview-card {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
   .cc-layout { grid-template-columns: 1fr; }
   .cc-preview-card { position: static; }
   .cc-add-row,
@@ -292,9 +299,36 @@
   .cc-sub-type-select {
     width: 100% !important;
   }
+
+  .cc-category-actions,
+  .cc-value-actions,
+  .cc-sub-actions,
+  .cc-comp-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .cc-component-grid,
+  .cc-parent-chips {
+    flex-direction: column;
+  }
+
+  .cc-comp-chip,
+  .cc-parent-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cc-tree-label,
+  .cc-category-name,
+  .cc-value-name,
+  .cc-sub-name {
+    overflow-wrap: anywhere;
+  }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .cc-layout {
     grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);
   }
