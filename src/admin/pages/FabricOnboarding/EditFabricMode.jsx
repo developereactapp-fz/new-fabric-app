@@ -4,16 +4,7 @@ import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import { isDuplicate } from "../../utils/validators";
-
-const ATTR_TO_FABRIC_FIELD = {
-  Color: "color",
-  Material: ["material", "type"],
-  "Sub Material": "subMaterial",
-  Pattern: "pattern",
-  "Weave Pattern": "weavePattern",
-  Season: "season",
-  Feature: "features",
-};
+import { getPublicAssetUrl } from "../../utils/assetUtils";
 
 export default function EditFabricMode({ groupId, groupName, onDirty, preselectedEditId }) {
   const { state, editFabric } = useAdmin();
@@ -25,7 +16,20 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const [uploadedAsset, setUploadedAsset] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-
+  // Fetch server attributes on mount (same as CreateFabricMode)
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const res = await adminService.getAttributes();
+        const raw = res.data?.data || res.data || [];
+        const items = Array.isArray(raw) ? raw : [];
+        setServerAttributes(items);
+      } catch (err) {
+        console.error("Failed to fetch attributes", err);
+      }
+    };
+    fetchAttributes();
+  }, []);
 
   // Memoize image preview URL and revoke on cleanup to prevent memory leak
   const imagePreviewUrl = useMemo(() => {
@@ -77,9 +81,9 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     image: raw.image || raw.imageUrl || null,
   });
 
-  // Get attribute options from server attributes, local store, AND existing fabrics
+  // Get attribute options merged from server + local store
   const getAttrValues = useCallback((attr) => {
-    // 1. From /api/attributes endpoint
+    // 1. From server
     const serverVals = serverAttributes
       .filter(a => a.category === attr && a.isActive)
       .map(a => a.value);
@@ -93,26 +97,14 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       });
     });
 
-    // 3. From existing fabric records so older data remains selectable
-    const fields = ATTR_TO_FABRIC_FIELD[attr];
-    const fabricVals = [];
-    state.fabrics.forEach((fabric) => {
-      if (Array.isArray(fields)) {
-        fields.forEach((field) => {
-          if (fabric[field]) fabricVals.push(fabric[field]);
-        });
-      } else if (fields === "features") {
-        (fabric.features || [fabric.feature1, fabric.feature2, fabric.feature3])
-          .filter(Boolean)
-          .forEach((feature) => fabricVals.push(feature));
-      } else if (fields && fabric[fields]) {
-        fabricVals.push(fabric[fields]);
-      }
-    });
+    return [...new Set([...serverVals, ...localVals])];
+  }, [state.attributes, serverAttributes]);
 
-    const merged = [...new Set([...serverVals, ...localVals, ...fabricVals].filter(Boolean))];
-    return merged;
-  }, [serverAttributes, state.attributes, state.fabrics]);
+  // Helper: ensure the current form value is included in options so dropdown shows it selected
+  const ensureValueInOptions = (options, value) => {
+    if (!value || options.includes(value)) return options;
+    return [value, ...options];
+  };
 
   const colorOptions = useMemo(() => getAttrValues("Color"), [getAttrValues]);
   const materialOptions = useMemo(() => getAttrValues("Material"), [getAttrValues]);
@@ -145,29 +137,36 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     }
   };
 
+  // Build form state from a fabric object, mapping API fields correctly
+  const buildFormFromFabric = (fab) => {
+    // Map features array to feature1/feature2/feature3
+    const features = Array.isArray(fab.features) ? fab.features : [];
+    return {
+      fabricName: fab.fabricName || fab.name || "",
+      description: fab.description || "",
+      color: fab.color || "",
+      material: fab.material || fab.type || "",
+      subMaterial: fab.subMaterial || "",
+      pattern: fab.pattern || "",
+      weavePattern: fab.weavePattern || "",
+      season: fab.season || "",
+      gsm: fab.gsm || "",
+      price: fab.price ?? "",
+      stock: fab.stock ?? "",
+      feature1: fab.feature1 || features[0] || "",
+      feature2: fab.feature2 || features[1] || "",
+      feature3: fab.feature3 || features[2] || "",
+      image: getPublicAssetUrl(fab.assetId || fab.asset?.id) || fab.image || fab.imageUrl || fab.asset?.url || null,
+      status: fab.status || (fab.isActive === false ? "inactive" : "active"),
+    };
+  };
+
   useEffect(() => {
     if (preselectedEditId) {
       setSelectedFabricId(preselectedEditId);
       const fab = state.fabrics.find((f) => f.id === preselectedEditId);
       if (fab) {
-        setForm({
-          fabricName: fab.fabricName || "",
-          description: fab.description || "",
-          color: fab.color || "",
-          material: fab.material || "",
-          subMaterial: fab.subMaterial || "",
-          pattern: fab.pattern || "",
-          weavePattern: fab.weavePattern || "",
-          season: fab.season || "",
-          gsm: fab.gsm || "",
-          price: fab.price ?? "",
-          stock: fab.stock ?? "",
-          feature1: fab.feature1 || "",
-          feature2: fab.feature2 || "",
-          feature3: fab.feature3 || "",
-          image: fab.image || fab.imageUrl || fab.asset?.url || null,
-          status: fab.status || "active",
-        });
+        setForm(buildFormFromFabric(fab));
         setSaved(false);
         onDirty?.(true);
         // Fetch existing asset for preview
@@ -179,24 +178,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
   const handleLoad = () => {
     const fab = state.fabrics.find((f) => f.id === selectedFabricId);
     if (!fab) return;
-    setForm({
-      fabricName: fab.fabricName || "",
-      description: fab.description || "",
-      color: fab.color || "",
-      material: fab.material || "",
-      subMaterial: fab.subMaterial || "",
-      pattern: fab.pattern || "",
-      weavePattern: fab.weavePattern || "",
-      season: fab.season || "",
-      gsm: fab.gsm || "",
-      price: fab.price ?? "",
-      stock: fab.stock ?? "",
-      feature1: fab.feature1 || "",
-      feature2: fab.feature2 || "",
-      feature3: fab.feature3 || "",
-      image: fab.image || fab.imageUrl || fab.asset?.url || null,
-      status: fab.status || "active",
-    });
+    setForm(buildFormFromFabric(fab));
     setSaved(false);
     setUploadedAsset(null);
     onDirty?.(true);
@@ -260,32 +242,13 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
       stock: form.stock !== "" ? Number(form.stock) : null,
       ...(uploadedAsset?.id ? { assetId: uploadedAsset.id } : {}),
     };
-
-    let imageUrl = uploadedAsset?.url || uploadedAsset?.asset?.url || uploadedAsset?.imageUrl || (typeof form.image === "string" ? form.image : null);
-    if (form.image instanceof File && !imageUrl) {
-      imageUrl = await uploadAsset(form.image);
-    }
-
-    if (form.image instanceof File) {
-      delete updateData.image;
-    }
-
-    if (imageUrl) {
-      updateData.image = imageUrl;
-    }
+    delete updateData.image;
 
     try {
       const res = await adminService.updateFabric(selectedFabricId, updateData);
 
-      const savedFabric = res.data?.data || res.data || updateData;
-      const imageSource = savedFabric.image || savedFabric.imageUrl || (typeof form.image === "string" ? form.image : null);
-      const normalizedFabric = normalizeFabric({
-        ...savedFabric,
-        image: imageSource,
-      });
-
-      editFabric(selectedFabricId, normalizedFabric);
-      setForm((prev) => ({ ...prev, ...normalizedFabric }));
+      const updatedFabric = res.data?.data || res.data || updateData;
+      editFabric(selectedFabricId, updatedFabric);
       setSaved(true);
       onDirty?.(false);
     } catch (err) {
@@ -310,17 +273,21 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     : false;
   const isValid = form && form.fabricName.trim() && !nameDup && form.color && form.material && form.pattern && form.season && form.gsm && (form.price !== "" && form.price !== null);
 
-  const renderDropdown = (label, field, options, required = false) => (
-    <div className="fo-field">
-      <label className="admin-label">{label} {required && <span className="fo-required">*</span>}</label>
-      <select className="admin-select" value={form[field]} onChange={(e) => setField(field, e.target.value)}>
-        <option value="">Select {label}</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-    </div>
-  );
+  const renderDropdown = (label, field, options, required = false) => {
+    // Ensure the current form value always appears in options so it shows as selected
+    const opts = ensureValueInOptions(options, form[field]);
+    return (
+      <div className="fo-field">
+        <label className="admin-label">{label} {required && <span className="fo-required">*</span>}</label>
+        <select className="admin-select" value={form[field]} onChange={(e) => setField(field, e.target.value)}>
+          <option value="">Select {label}</option>
+          {opts.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+    );
+  };
 
   return (
     <div className="fo-edit-layout">
@@ -476,8 +443,8 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
               </div>
               <div className="fo-preview-card-inner">
                 <div className="fo-preview-image">
-                  {(imagePreviewUrl || uploadedAsset?.url || (typeof form.image === "string" && form.image)) ? (
-                    <img src={imagePreviewUrl || uploadedAsset?.url || form.image} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                  {(imagePreviewUrl || getPublicAssetUrl(uploadedAsset?.id) || uploadedAsset?.url || (typeof form.image === "string" && form.image)) ? (
+                    <img src={imagePreviewUrl || getPublicAssetUrl(uploadedAsset?.id) || uploadedAsset?.url || form.image} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
                   ) : (
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                       <rect x="3" y="3" width="18" height="18" rx="2" />

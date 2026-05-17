@@ -15,9 +15,38 @@ const EditIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const PackageIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+
+const HeartIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+  </svg>
+);
+
 const ArrowRightIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polyline points="9,18 15,12 9,6" />
+  </svg>
+);
+
+const BotIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <rect x="3" y="11" width="18" height="10" rx="2" />
+    <circle cx="12" cy="5" r="2" />
+    <path d="M12 7v4M8 16h.01M16 16h.01" />
   </svg>
 );
 
@@ -221,21 +250,64 @@ const FabricInfoCard = ({ fabric }) => (
       <div className="finish-fabric-overlay">
         <span className="finish-fabric-badge">PREMIUM FABRIC</span>
         <h3 className="finish-fabric-name">{fabric.name}</h3>
+        <p className="finish-fabric-code">Code: {fabric.code || 'NHW-001'}</p>
       </div>
     </div>
     <div className="finish-fabric-details">
       <div className="finish-fabric-row">
         <span className="finish-fabric-label">Material</span>
-        <span className="finish-fabric-value">{fabric.material || 'Premium Blend'}</span>
+        <span className="finish-fabric-value">{fabric.material || '100% Virgin Wool'}</span>
       </div>
       <div className="finish-fabric-row">
         <span className="finish-fabric-label">GSM</span>
-        <span className="finish-fabric-value">{fabric.gsm || '250g/m²'}</span>
+        <span className="finish-fabric-value">{fabric.gsm || '285g/m²'}</span>
       </div>
       <div className="finish-fabric-row">
         <span className="finish-fabric-label">Season</span>
-        <span className="finish-fabric-value">{fabric.season || 'All Season'}</span>
+        <span className="finish-fabric-value">{fabric.season || 'Summer'}</span>
       </div>
+    </div>
+  </div>
+);
+
+// New AIBot Section
+const AIBotSection = () => (
+  <div className="finish-ai-bot-card">
+    <div className="finish-ai-bot-visual">
+      <div className="ai-bot-circle">
+        <BotIcon />
+        <span>AI Bot</span>
+      </div>
+    </div>
+    <div className="finish-ai-bot-content">
+      <h3>Elevate Your Design</h3>
+      <p>Consult our AI assistant to add personalized touches and fine-tune your unique Customization.</p>
+    </div>
+  </div>
+);
+
+// Utility Section (Track Order & Browse Collection)
+const UtilitySection = () => (
+  <div className="finish-utilities">
+    <div className="finish-utility-item">
+      <div className="utility-icon-box">
+        <PackageIcon />
+      </div>
+      <div className="utility-info">
+        <h4>Track Your Orders</h4>
+        <p>View status and delivery updates</p>
+      </div>
+      <ArrowRightIcon />
+    </div>
+    <div className="finish-utility-item">
+      <div className="utility-icon-box">
+        <HeartIcon />
+      </div>
+      <div className="utility-info">
+        <h4>Browse Collection</h4>
+        <p>Explore premium fabrics and styles</p>
+      </div>
+      <ArrowRightIcon />
     </div>
   </div>
 );
@@ -336,7 +408,7 @@ export default function FinishPage() {
   const hasActiveFabric = !!fabric;
 
   const handleEnquire = () => {
-    alert("Enquiry submitted! We'll contact you soon.");
+    navigate("/enquiry", { state: designData });
   };
 
   const handleSave = () => {
@@ -387,6 +459,12 @@ export default function FinishPage() {
     <div className="finish-page">
       {/* Header Section */}
       <div className="finish-header">
+        <div className="finish-back-btn" onClick={() => navigate(-1)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          <span>Main screen</span>
+        </div>
         <div className="finish-badge">
           <CheckIcon />
           <span>CUSTOMIZATION COMPLETE</span>
@@ -401,100 +479,55 @@ export default function FinishPage() {
 
       {/* Main Grid Layout */}
       <div className="finish-grid">
-        {hasActiveFabric ? (
-          // Show only selected fabric details - matching reference image layout (4/2 split)
-          <>
-            {/* Row 1: Selected Garment Summary Card (4 cols) + Fabric Info (2 cols) */}
-            <div className="finish-grid-row">
-              <div className="finish-grid-col-4">
-                <SummaryCard 
-                  data={{
-                    item: garmentType ? garmentType.charAt(0).toUpperCase() + garmentType.slice(1) : 'Design',
-                    options: activeCustomizationData,
-                    layers: fabric?.layers
-                    // Removed thumbnail - showing only shirt layers/pieces, not fabric texture
-                  }}
-                  editable 
-                  onEdit={() => handleEdit(garmentType)}
-                />
-              </div>
-              <div className="finish-grid-col-2">
-                <FabricInfoCard fabric={fabric} />
-              </div>
-            </div>
+        <div className="finish-main-content">
+          {hasActiveFabric ? (
+            <SummaryCard 
+              data={{
+                item: garmentType ? garmentType.charAt(0).toUpperCase() + garmentType.slice(1) : 'Design',
+                options: activeCustomizationData,
+                layers: fabric?.layers
+              }}
+              editable 
+              onEdit={() => handleEdit(garmentType)}
+            />
+          ) : (
+            <>
+              <SummaryCard data={customizationData.shirt} />
+              <SummaryCard 
+                data={customizationData.trousers}
+                editable 
+                onEdit={() => handleEdit("trousers")}
+              />
+              <SummaryCard 
+                data={customizationData.jacket}
+                editable 
+                onEdit={() => handleEdit("jacket")}
+              />
+              <SummaryCard data={customizationData.waistcoat} />
+            </>
+          )}
+        </div>
 
-            {/* Row 2: Actions only (aligned right like in reference) */}
-            <div className="finish-grid-row">
-              <div className="finish-grid-col-4">
-                {/* Empty or can show style info */}
-              </div>
-              <div className="finish-grid-col-2 finish-actions-col">
-                <button className="finish-btn-enquire" onClick={handleEnquire}>
-                  <span>ENQUIRE NOW</span>
-                  <ArrowRightIcon />
-                </button>
-                <button className="finish-btn-save" onClick={handleSave}>
-                  SAVE
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          // Show full suit summary (mock data)
-          <>
-            {/* Row 1: Shirt + Fabric Info */}
-            <div className="finish-grid-row">
-              <div className="finish-grid-col-4">
-                <SummaryCard 
-                  data={customizationData.shirt}
-                />
-              </div>
-              <div className="finish-grid-col-2">
-                <FabricInfoCard fabric={activeFabric} />
-              </div>
-            </div>
+        <div className="finish-sidebar">
+          <FabricInfoCard fabric={activeFabric} />
+          
+          <AIBotSection />
 
-            {/* Row 2: Trousers + Actions */}
-            <div className="finish-grid-row">
-              <div className="finish-grid-col-4">
-                <SummaryCard 
-                  data={customizationData.trousers}
-                  editable 
-                  onEdit={() => handleEdit("trousers")}
-                />
-              </div>
-              <div className="finish-grid-col-2 finish-actions-col">
-                <button className="finish-btn-enquire" onClick={handleEnquire}>
-                  <span>ENQUIRE NOW</span>
-                  <ArrowRightIcon />
-                </button>
-                <button className="finish-btn-save" onClick={handleSave}>
-                  SAVE
-                </button>
-              </div>
-            </div>
+          <div className="finish-actions-container">
+            <button className="finish-btn-enquire" onClick={handleEnquire}>
+              <span>ENQUIRE NOW</span>
+              <ArrowRightIcon />
+            </button>
+            <button className="finish-btn-secondary" onClick={handleSave}>
+              SAVE YOUR DESIGN
+            </button>
+            <button className="finish-btn-secondary">
+              DOWNLOAD YOUR DESIGN
+            </button>
+          </div>
 
-            {/* Row 3: Jacket */}
-            <div className="finish-grid-row">
-              <div className="finish-grid-col-4">
-                <SummaryCard 
-                  data={customizationData.jacket}
-                  editable 
-                  onEdit={() => handleEdit("jacket")}
-                />
-              </div>
-            </div>
-
-            {/* Row 4: Waistcoat */}
-            <div className="finish-grid-row">
-              <div className="finish-grid-col-4">
-                <SummaryCard 
-                  data={customizationData.waistcoat}
-                />
-              </div>
-            </div>
-          </>
-        )}
+          <UtilitySection />
+        </div>
       </div>
     </div>
   );

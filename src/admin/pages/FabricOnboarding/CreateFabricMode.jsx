@@ -6,6 +6,7 @@ import AddableDropdown from "../../components/AddableDropdown";
 import { isDuplicate } from "../../utils/validators";
 import { adminService } from "../../../services/adminService";
 import { toast } from "sonner";
+import { getPublicAssetUrl } from "../../utils/assetUtils";
 
 const EMPTY_FORM = {
   fabricId: "",
@@ -286,7 +287,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           fabricName: rawFabric.fabricName || rawFabric.name || "",
           material: rawFabric.material || rawFabric.type || "",
           status: rawFabric.status || (rawFabric.isActive === false ? "inactive" : "active"),
-          image: rawFabric.image || rawFabric.imageUrl || null,
+          image: getPublicAssetUrl(rawFabric.assetId || rawFabric.asset?.id) || rawFabric.image || rawFabric.imageUrl || null,
         };
         addFabric(newFabric);
 
@@ -308,7 +309,7 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           fabricName: raw.fabricName || raw.name || "",
           material: raw.material || raw.type || "",
           status: raw.status || (raw.isActive === false ? "inactive" : "active"),
-          image: raw.image || raw.imageUrl || null,
+          image: getPublicAssetUrl(raw.assetId || raw.asset?.id) || raw.image || raw.imageUrl || null,
         }));
 
         fabricsArray.forEach(f => {
@@ -558,8 +559,8 @@ export default function CreateFabricMode({ groupId, groupName, onDirty, onEditRe
           </div>
           <div className="fo-preview-card-inner">
             <div className="fo-preview-image">
-              {(imagePreviewUrl || uploadedAsset?.url) ? (
-                <img src={imagePreviewUrl || uploadedAsset?.url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+              {(imagePreviewUrl || getPublicAssetUrl(uploadedAsset?.id) || uploadedAsset?.url) ? (
+                <img src={imagePreviewUrl || getPublicAssetUrl(uploadedAsset?.id) || uploadedAsset?.url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
               ) : (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
