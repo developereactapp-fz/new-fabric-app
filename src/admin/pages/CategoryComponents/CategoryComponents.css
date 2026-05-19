@@ -40,7 +40,7 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .cc-selector-bar {
     grid-template-columns: 1fr 1fr 1fr auto;
     padding: 20px 24px;
@@ -465,4 +465,59 @@
 
 .cc-toast.success {
   background: linear-gradient(135deg, #059669, #10b981);
+}
+
+@media (max-width: 768px) {
+  .cc-page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .cc-header,
+  .cc-fabric-strip,
+  .cc-section-header,
+  .cc-section-left,
+  .cc-section-right,
+  .cc-option,
+  .cc-option-default,
+  .cc-action-bar,
+  .cc-action-left,
+  .cc-action-right,
+  .cc-validation {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cc-header,
+  .cc-section-header,
+  .cc-action-bar {
+    gap: 12px;
+  }
+
+  .cc-selector-bar,
+  .cc-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-selector-bar .admin-select,
+  .cc-load-btn,
+  .cc-action-right .admin-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cc-section-body {
+    padding: 0 14px 14px;
+  }
+
+  .cc-action-bar {
+    margin: 20px -12px -20px;
+    padding: 14px 12px;
+  }
+
+  .cc-fabric-info,
+  .cc-option-name,
+  .cc-action-stats {
+    overflow-wrap: anywhere;
+  }
 }

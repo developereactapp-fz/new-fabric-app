@@ -793,7 +793,57 @@
 .admin-content > * { animation: adminFadeIn 0.3s ease; }
 
 /* Responsive page defaults: phones stack, tablets/laptops can keep row layouts. */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
+  .admin-shell,
+  .admin-main,
+  .admin-content {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .admin-content {
+    padding: 14px 12px 20px;
+  }
+
+  .admin-sidebar-nav {
+    scrollbar-width: thin;
+  }
+
+  .admin-header-left,
+  .admin-header-right {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .admin-header-title {
+    font-size: 18px;
+  }
+
+  .admin-header-right {
+    flex-wrap: wrap;
+  }
+
+  .admin-header-search {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .admin-header-profile {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: none;
+  }
+
+  .admin-profile-info {
+    display: none;
+  }
+
   .admin-page-header,
   .admin-card-header,
   .admin-table-search,
@@ -826,9 +876,26 @@
     width: 100%;
     justify-content: center;
   }
+
+  .admin-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .admin-upload-zone {
+    padding: 24px 14px;
+  }
+
+  .admin-data-table table {
+    min-width: 640px;
+  }
+
+  .admin-confirm-actions {
+    justify-content: stretch;
+  }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .admin-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .admin-grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }

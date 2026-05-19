@@ -596,24 +596,52 @@
 .cp-summary-label { font-size: 12px; font-weight: 600; color: #64748b; margin-top: 2px; }
 
 /* ── Responsive ── */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
+  .cp-page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
   .cp-header { flex-direction: column; align-items: flex-start; }
-  .cp-header-right { width: 100%; justify-content: flex-end; }
+  .cp-header-right {
+    width: 100%;
+    justify-content: stretch;
+    flex-direction: column;
+    align-items: stretch;
+  }
   .cp-toolbar-top { flex-direction: column; align-items: stretch; }
-  .cp-toolbar-actions { justify-content: space-between; }
+  .cp-toolbar-actions {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
   .cp-filter-row { flex-direction: column; align-items: stretch; }
+  .cp-filter-chips {
+    flex-wrap: wrap;
+  }
+  .cp-filter-select,
+  .cp-clear-all-btn,
+  .cp-filter-toggle-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
   .cp-cards-container { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
   .cp-list-view .cp-card { flex-direction: column; }
   .cp-list-view .cp-card-image { width: 100%; height: 160px; border-radius: 14px 14px 0 0; }
   .cp-list-view .cp-card-footer { border-left: none; border-top: 1px solid #f1f5f9; min-width: auto; }
+  .cp-card-meta,
+  .cp-card-actions,
+  .cp-card-availability {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 640px) {
   .cp-cards-container { grid-template-columns: 1fr; }
-  .cp-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .cp-summary-grid { grid-template-columns: 1fr; }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .cp-header,
   .cp-toolbar-top,
   .cp-filter-row {

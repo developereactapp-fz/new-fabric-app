@@ -403,12 +403,19 @@
 .fo-success p { font-size: 14px; color: #64748b; margin: 0; }
 
 /* ── Responsive ── */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .fo-create-layout { grid-template-columns: 1fr; }
   .fo-preview-column { position: static; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
+  .fo-page,
+  .fo-form-column,
+  .fo-preview-column {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
   .fo-field-grid { grid-template-columns: 1fr; }
   .fo-mode-tabs { flex-direction: column; }
   .fo-group-add-row,
@@ -429,6 +436,12 @@
     width: 100%;
   }
 
+  .fo-mode-btn,
+  .fo-dropdown-row .admin-btn,
+  .fo-add-new-inline .admin-btn {
+    width: 100%;
+  }
+
   .fo-group-row,
   .fo-qv-row {
     flex-direction: column;
@@ -446,12 +459,34 @@
     width: 100%;
   }
 
+  .fo-group-actions,
+  .fo-form-actions {
+    justify-content: stretch;
+  }
+
   .fo-form-actions .admin-btn {
     flex: 1 1 100%;
   }
+
+  .fo-preview-image {
+    height: 180px;
+  }
+
+  .fo-recent-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fo-recent-name,
+  .fo-preview-name,
+  .fo-preview-desc,
+  .fo-qv-row strong,
+  .fo-qv-row span {
+    overflow-wrap: anywhere;
+  }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .fo-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

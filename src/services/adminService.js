@@ -13,6 +13,7 @@ export const adminService = {
   createFabricsBulk: (data) => apiClient.post('/api/materials/fabrics/bulk', data),
   getFabric: (id) => apiClient.get(`/api/materials/fabrics/${id}`),
   updateFabric: (id, data) => apiClient.patch(`/api/materials/fabrics/${id}`, data),
+  toggleFabric: (id) => apiClient.patch(`/api/materials/fabrics/${id}/toggle`),
   deactivateFabric: (id) => apiClient.patch(`/api/materials/fabrics/${id}/deactivate`),
   deleteFabric: (id) => apiClient.delete(`/api/materials/fabrics/${id}`),
 

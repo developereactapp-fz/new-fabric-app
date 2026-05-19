@@ -248,7 +248,7 @@ body:has(.finish-page) {
   min-height: 35vh;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .viewer {
     max-height: 65vh;
     min-height: 45vh;
@@ -263,7 +263,7 @@ body:has(.finish-page) {
   animation: fadeIn 0.6s ease;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .fabric {
     height: 55vh;
   }
@@ -487,7 +487,7 @@ body:has(.finish-page) {
   min-height: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .panel-section {
     padding: 2vh;
   }
@@ -2132,7 +2132,7 @@ body:has(.finish-page) {
 }
 
 /* Responsive */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .fabric-modal-content {
     flex-direction: column;
   }
@@ -2237,7 +2237,7 @@ body:has(.finish-page) {
   transform: scale(1.08);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .style-menu-grid {
     grid-template-columns: repeat(2, 1fr);
     max-width: 40vh;
@@ -2303,7 +2303,7 @@ body:has(.finish-page) {
 }
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .custom-body {
     grid-template-columns: 1fr;
   }
@@ -2506,7 +2506,7 @@ body:has(.finish-page) {
 }
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .custom-body {
     grid-template-columns: 1fr;
   }
@@ -3932,7 +3932,7 @@ body:has(.finish-page) {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .finish-page {
     padding: 3vh 4vw;
   }
@@ -3987,7 +3987,7 @@ body:has(.finish-page) {
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .custom-body {
     grid-template-columns: minmax(0, 8.7fr) minmax(280px, 3.3fr);
   }
@@ -3998,6 +3998,285 @@ body:has(.finish-page) {
 
   .finish-summary-card {
     grid-template-columns: 280px minmax(0, 1fr);
+  }
+}
+
+/* ================= MOBILE RESPONSIVENESS ================= */
+@media (max-width: 768px) {
+  html,
+  body,
+  #root {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  * {
+    max-width: 100%;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .app-content {
+    padding-top: 48px;
+    overflow-x: hidden;
+  }
+
+  .page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .title {
+    font-size: 2.4vh;
+    gap: 0.6vh;
+    padding: 0 12px;
+    text-align: center;
+  }
+
+  .title-icon {
+    width: 4.8vh;
+    height: 4.8vh;
+  }
+
+  .viewer {
+    min-height: 32vh;
+    max-height: 44vh;
+    padding: 0 12px;
+  }
+
+  .fabric {
+    height: min(42vh, 78vw);
+  }
+
+  .footer {
+    gap: 1.5vh;
+    padding: 1.5vh 16px 2vh;
+  }
+
+  .toggle {
+    gap: 8px;
+  }
+
+  .toggle button,
+  .btn {
+    width: 100%;
+    max-width: 320px;
+    min-width: 0;
+    padding: 12px 18px;
+    font-size: 15px;
+  }
+
+  .desc {
+    max-width: 100%;
+    font-size: 14px;
+  }
+
+  .app-content:has(.custom-page) {
+    overflow: visible;
+  }
+
+  .custom-page {
+    overflow-y: auto;
+  }
+
+  .custom-body {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .preview-section {
+    min-height: 42dvh;
+    max-height: 48dvh;
+    flex: 0 0 auto;
+  }
+
+  .preview-container {
+    min-height: 42dvh;
+  }
+
+  .preview-fabric {
+    height: min(42vh, 82vw);
+    max-height: 420px;
+  }
+
+  .panel-section {
+    overflow: visible;
+    padding: 14px;
+  }
+
+  .customize-panel,
+  .fabric-panel,
+  .finish-panel {
+    width: 100%;
+  }
+
+  .your-style-card,
+  .customize-detail-header,
+  .customize-option-header,
+  .fabric-search-bar,
+  .tab-switch,
+  .tab-switch-modern,
+  .fabric-tabs,
+  .style-confirm-actions,
+  .finish-fabric-card-small,
+  .finish-fabric-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customize-category-card,
+  .customize-option-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .customize-category-arrow,
+  .customize-option-price {
+    display: none;
+  }
+
+  .customize-category-image,
+  .customize-option-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .customize-detail-tabs,
+  .quick-access-inner,
+  .quick-action-grid {
+    flex-wrap: wrap;
+  }
+
+  .customize-detail-tabs button,
+  .fabric-tab,
+  .tab-switch-modern button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .fabric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fabric-filter-btn,
+  .fabric-search-input-wrapper {
+    width: 100%;
+  }
+
+  .fabric-name-card {
+    width: calc(100% - 32px);
+    min-width: 0;
+    padding: 12px 16px;
+  }
+
+  .fabric-name-card h2 {
+    white-space: normal;
+    font-size: 18px;
+  }
+
+  .live-preview-btn {
+    top: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .main-download-btn {
+    top: 12px;
+    right: 12px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .preview-modal-content {
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  .modal-controls {
+    top: 16px;
+    padding: 0 16px;
+  }
+
+  .preview-modal-fabric-wrapper {
+    padding: 64px 16px 24px;
+  }
+
+  .preview-modal-fabric {
+    height: min(72vh, 118vw);
+  }
+
+  .drawer {
+    max-width: 100%;
+  }
+
+  .drawer-header,
+  .drawer-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .quick-links-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finish-page {
+    padding: 28px 16px;
+  }
+
+  .finish-header {
+    margin-bottom: 36px;
+  }
+
+  .finish-title {
+    font-size: 32px;
+  }
+
+  .finish-subtitle,
+  .finish-card-subtitle,
+  .finish-fabric-label,
+  .finish-fabric-value {
+    font-size: 14px;
+  }
+
+  .finish-card-content,
+  .finish-fabric-details {
+    padding: 20px;
+  }
+
+  .finish-card-header,
+  .finish-fabric-row {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .customize-category-card,
+  .customize-option-card {
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .customize-category-image,
+  .customize-option-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .customize-category-info h4,
+  .customize-option-info h4 {
+    font-size: 14px;
+  }
+
+  .customize-category-info p,
+  .customize-option-desc {
+    font-size: 12px;
   }
 }
 

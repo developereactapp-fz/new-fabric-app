@@ -64,7 +64,7 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .csf-global-bar {
     grid-template-columns: 1fr 1fr 1fr;
     padding: 20px 24px;
@@ -562,4 +562,64 @@
   font-weight: 600;
   color: #6b7280;
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .csf-page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .csf-header,
+  .csf-fabric-strip,
+  .csf-section-header,
+  .csf-section-left,
+  .csf-section-right,
+  .csf-option,
+  .csf-option-default,
+  .csf-contrast-header,
+  .csf-contrast-default,
+  .csf-action-bar,
+  .csf-action-left,
+  .csf-action-right,
+  .csf-validation {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .csf-header,
+  .csf-section-header,
+  .csf-action-bar {
+    gap: 12px;
+  }
+
+  .csf-global-bar,
+  .csf-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .csf-section-body {
+    padding: 0 14px 14px;
+  }
+
+  .csf-default-tag,
+  .csf-contrast-default-badge {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .csf-action-bar {
+    margin: 20px -12px -20px;
+    padding: 14px 12px;
+  }
+
+  .csf-action-right .admin-btn {
+    width: 100%;
+  }
+
+  .csf-fabric-name,
+  .csf-option-name,
+  .csf-action-stats {
+    overflow-wrap: anywhere;
+  }
 }

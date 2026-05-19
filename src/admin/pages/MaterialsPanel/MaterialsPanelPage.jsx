@@ -100,13 +100,12 @@ export default function MaterialsPanelPage() {
   const handleToggle = async (fabricId) => {
     const fabric = state.fabrics.find(f => f.id === fabricId);
     if (!fabric) return;
-    const newStatus = fabric.status === "active" ? "inactive" : "active";
     
     // Optimistic update
     toggleStatus("fabrics", fabricId);
     
     try {
-      await adminService.updateFabric(fabricId, { status: newStatus });
+      await adminService.toggleFabric(fabricId);
     } catch (error) {
       console.error("Failed to toggle fabric status", error);
       // Revert optimistic update

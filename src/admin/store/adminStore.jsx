@@ -245,7 +245,20 @@ function adminReducer(state, action) {
     case A.TOGGLE_STATUS: {
       const { collection, itemId } = payload;
       if (collection === "fabrics") {
-        return { ...state, fabrics: state.fabrics.map(f => f.id === itemId ? { ...f, status: f.status === "active" ? "inactive" : "active" } : f) };
+        return {
+          ...state,
+          fabrics: state.fabrics.map(f => {
+            if (f.id === itemId) {
+              const newActive = f.isActive !== undefined ? !f.isActive : f.status !== "active";
+              return {
+                ...f,
+                isActive: newActive,
+                status: newActive ? "active" : "inactive"
+              };
+            }
+            return f;
+          })
+        };
       }
       return state;
     }
