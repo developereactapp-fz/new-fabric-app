@@ -1,90 +1,140 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { isDuplicate } from "../../utils/validators";
 
 /**
- * SubCategoryManager — Manages sub-categories for a selected component.
- * Supports Independent and Dependent types.
- * - Independent: global values not tied to parent values.
- * - Dependent: values mapped per parent component value.
+ * SubCategoryManager
+ *
+ * Manages Sub Categories (e.g. Inner Collar, Contrast Details) and their Values
+ * for a selected Component (Part). Supports dependent and independent types.
+ *
+ * Note: Connected to backend subcategory APIs
  */
 export default function SubCategoryManager({ componentId, componentName }) {
   const {
     state,
-    addSubCategory, editSubCategory, deleteSubCategory,
-    addSubCategoryValue, editSubCategoryValue, deleteSubCategoryValue,
+    fetchSubCategories,
+    fetchSubCategoryValues,
+    addSubCategory,
+    editSubCategory,
+    deleteSubCategory,
+    addSubCategoryValue,
+    editSubCategoryValue,
+    deleteSubCategoryValue,
   } = useAdmin();
 
+  const [selectedSubId, setSelectedSubId] = useState(null);
+  const [selectedParentValId, setSelectedParentValId] = useState("");
+
+  // Sub Category form
   const [newSubName, setNewSubName] = useState("");
   const [newSubType, setNewSubType] = useState("independent"); // "independent" | "dependent"
-  const [selectedSubId, setSelectedSubId] = useState(null);
+  const [newSubDependsOn, setNewSubDependsOn] = useState("");
+
   const [editingSubId, setEditingSubId] = useState(null);
   const [editSubName, setEditSubName] = useState("");
-  const [editSubType, setEditSubType] = useState("independent");
+
+  // Sub Category Value form
+  const [newValueName, setNewValueName] = useState("");
+  const [editingValueId, setEditingValueId] = useState(null);
+  const [editValueName, setEditValueName] = useState("");
+
+  // Delete
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteKind, setDeleteKind] = useState(""); // "sub" | "subval"
+  const [deleteType, setDeleteType] = useState(""); // "sub" | "value"
 
-  // Sub-category value form
-  const [newValName, setNewValName] = useState("");
-  const [newValDefault, setNewValDefault] = useState(false);
-  const [selectedParentValId, setSelectedParentValId] = useState(null);
-  const [editingValId, setEditingValId] = useState(null);
-  const [editValName, setEditValName] = useState("");
+  // Fetch subcategories when component changes
+  useEffect(() => {
+    if (componentId) {
+      fetchSubCategories(componentId);
+      setSelectedSubId(null);
+    }
+  }, [componentId, fetchSubCategories]);
 
-  const subCategories = state.subCategories[componentId] || [];
-  const parentValues = state.componentValues[componentId] || [];
+  const subCategories = state.subCategories?.[componentId] || [];
   const selectedSub = subCategories.find((s) => s.id === selectedSubId);
-  const subValues = useMemo(
-    () => (selectedSubId ? state.subCategoryValues[selectedSubId] || [] : []),
-    [selectedSubId, state.subCategoryValues]
+  const subCategoryValues = state.subCategoryValues?.[selectedSubId] || [];
+
+  // Get component values (Part Types) for dependency mapping
+  const componentValues = (state.catalogPartTypes || []).filter(
+    (pt) => pt.partId === componentId
   );
 
-  // For dependent sub-categories, filter values by selected parent
-  const filteredSubValues = useMemo(() => {
-    if (!selectedSub) return [];
-    if (selectedSub.type === "independent") return subValues;
-    if (!selectedParentValId) return [];
-    return subValues.filter((sv) => sv.parentValueId === selectedParentValId);
-  }, [selectedSub, subValues, selectedParentValId]);
+  // Auto-select first parent value if the selected subcategory is dependent
+  useEffect(() => {
+    if (selectedSub?.type === "dependent" && componentValues.length > 0) {
+      if (!selectedParentValId || !componentValues.some(cv => cv.id === selectedParentValId)) {
+        setSelectedParentValId(componentValues[0].id);
+      }
+    } else {
+      setSelectedParentValId("");
+    }
+  }, [selectedSub, componentValues, selectedParentValId]);
 
-  const existingSubNames = subCategories.map((s) => s.name);
-  const existingValNames = filteredSubValues.map((v) => v.valueName);
+  // Fetch subcategory values when selected subcategory or selected parent value changes
+  useEffect(() => {
+    if (selectedSubId) {
+      if (selectedSub?.type === "dependent") {
+        if (selectedParentValId) {
+          fetchSubCategoryValues(selectedSubId, selectedParentValId);
+        }
+      } else {
+        fetchSubCategoryValues(selectedSubId);
+      }
+    }
+  }, [selectedSubId, selectedSub?.type, selectedParentValId, fetchSubCategoryValues]);
 
-  // ── Add sub-category ──
-  const handleAddSub = () => {
+  // ── Sub Category Handlers ──
+  const handleAddSubCategory = () => {
     const name = newSubName.trim();
-    if (!name || isDuplicate(name, existingSubNames)) return;
-    addSubCategory(componentId, name, newSubType, newSubType === "dependent" ? "parent" : null, 1);
+    if (!name) return;
+    addSubCategory(componentId, name, newSubType, newSubType === "dependent" ? newSubDependsOn : null);
     setNewSubName("");
     setNewSubType("independent");
+    setNewSubDependsOn("");
   };
 
-  // ── Save edit sub-category ──
-  const handleSaveEditSub = () => {
+  const handleSaveSubEdit = () => {
     const name = editSubName.trim();
     if (!name) return;
-    const others = subCategories.filter((s) => s.id !== editingSubId).map((s) => s.name);
-    if (isDuplicate(name, others)) return;
-    editSubCategory(componentId, editingSubId, { name, type: editSubType });
+    editSubCategory(componentId, editingSubId, { name });
     setEditingSubId(null);
   };
 
-  // ── Add sub-category value ──
-  const handleAddValue = () => {
-    const name = newValName.trim();
-    if (!name || isDuplicate(name, existingValNames)) return;
-    const parentId = selectedSub?.type === "dependent" ? selectedParentValId : null;
-    addSubCategoryValue(selectedSubId, parentId, name, newValDefault);
-    setNewValName("");
-    setNewValDefault(false);
+  const toggleSubActive = (sub) => {
+    editSubCategory(componentId, sub.id, { isActive: !sub.isActive });
   };
 
-  // ── Delete confirm ──
+  // ── Sub Category Value Handlers ──
+  const handleAddValue = () => {
+    const name = newValueName.trim();
+    if (!name || !selectedSubId) return;
+
+    const parentId = selectedSub?.type === "dependent" ? selectedParentValId : null;
+    addSubCategoryValue(selectedSubId, parentId, name, false);
+    setNewValueName("");
+  };
+
+  const handleSaveValueEdit = () => {
+    const name = editValueName.trim();
+    if (!name) return;
+    editSubCategoryValue(selectedSubId, editingValueId, { valueName: name });
+    setEditingValueId(null);
+  };
+
+  const toggleValueDefault = (val) => {
+    editSubCategoryValue(selectedSubId, val.id, { isDefault: !val.isDefault });
+  };
+
+  const toggleValueActive = (val) => {
+    editSubCategoryValue(selectedSubId, val.id, { isActive: !val.isActive });
+  };
+
+  // ── Delete Confirm ──
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
-    if (deleteKind === "sub") {
+    if (deleteType === "sub") {
       deleteSubCategory(componentId, deleteTarget.id);
       if (selectedSubId === deleteTarget.id) setSelectedSubId(null);
     } else {
@@ -93,213 +143,278 @@ export default function SubCategoryManager({ componentId, componentName }) {
     setDeleteTarget(null);
   };
 
-  // ── Set default for sub-value ──
-  const setSubValueDefault = (valId) => {
-    // Un-default siblings, set this one as default
-    filteredSubValues.forEach((v) => {
-      if (v.id === valId) {
-        editSubCategoryValue(selectedSubId, v.id, { isDefault: true });
-      } else if (v.isDefault) {
-        editSubCategoryValue(selectedSubId, v.id, { isDefault: false });
-      }
-    });
-  };
-
-  if (subCategories.length === 0 && !newSubName) {
-    // Show add prompt
-  }
-
   return (
-    <div className="admin-card cc-sub-manager">
-      <div className="admin-card-header">
-        <div>
-          <h3 className="admin-card-title">Sub-Categories for "{componentName}"</h3>
-          <p className="admin-card-subtitle">Add sub-categories (e.g., Ticket Pocket, Chest Pocket)</p>
+    <>
+      <div className="cc-divider" />
+
+      {/* ═══ SUB CATEGORIES SECTION ═══ */}
+      <div className="cc-section">
+        <div className="cc-section-header">
+          <div className="cc-section-title">SUB CATEGORIES FOR "{componentName}"</div>
+          <StatusBadge status="info" label={`${subCategories.length} sub-categories`} size="sm" />
         </div>
-        <StatusBadge status="info" label={`${subCategories.length} sub-categories`} size="sm" />
-      </div>
 
-      {/* ── Add Sub-Category ── */}
-      <div className="cc-sub-add-form">
-        <div className="cc-sub-add-row">
-          <input
-            className="admin-input"
-            value={newSubName}
-            onChange={(e) => setNewSubName(e.target.value)}
-            placeholder="New sub-category name..."
-            onKeyDown={(e) => e.key === "Enter" && handleAddSub()}
-          />
-          <select
-            className="admin-select cc-sub-type-select"
-            value={newSubType}
-            onChange={(e) => setNewSubType(e.target.value)}
-          >
-            <option value="independent">Independent</option>
-            <option value="dependent">Dependent</option>
-          </select>
-          <button
-            className="admin-btn admin-btn-primary admin-btn-sm"
-            onClick={handleAddSub}
-            disabled={!newSubName.trim()}
-          >
-            Add
-          </button>
-        </div>
-        <p className="cc-sub-type-hint">
-          {newSubType === "dependent"
-            ? "Values will be configured per-parent-value (e.g., different options for each Pocket style)"
-            : "Values are global and not tied to parent component values"}
-        </p>
-      </div>
-
-      {/* ── Sub-Category List ── */}
-      {subCategories.length > 0 && (
-        <div className="cc-sub-list">
-          {subCategories.map((sub) => (
-            <div
-              key={sub.id}
-              className={`cc-sub-row ${selectedSubId === sub.id ? "selected" : ""}`}
-              onClick={() => { setSelectedSubId(sub.id); setSelectedParentValId(null); }}
-            >
-              {editingSubId === sub.id ? (
-                <div className="cc-edit-inline" onClick={(e) => e.stopPropagation()}>
-                  <input className="admin-input" value={editSubName} onChange={(e) => setEditSubName(e.target.value)} autoFocus />
-                  <select className="admin-select cc-sub-type-select" value={editSubType} onChange={(e) => setEditSubType(e.target.value)}>
-                    <option value="independent">Independent</option>
-                    <option value="dependent">Dependent</option>
-                  </select>
-                  <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={handleSaveEditSub}>Save</button>
-                  <button className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => setEditingSubId(null)}>Cancel</button>
-                </div>
-              ) : (
-                <>
-                  <div className="cc-sub-info">
-                    <span className="cc-sub-name">{sub.name}</span>
-                    <StatusBadge status={sub.type === "dependent" ? "warning" : "active"} label={sub.type} size="xs" />
-                    <span className="cc-sub-val-count">{(state.subCategoryValues[sub.id] || []).length} values</span>
-                  </div>
-                  <div className="cc-sub-actions" onClick={(e) => e.stopPropagation()}>
-                    <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => { setEditingSubId(sub.id); setEditSubName(sub.name); setEditSubType(sub.type); }}>Edit</button>
-                    <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => { setDeleteTarget(sub); setDeleteKind("sub"); }}>Delete</button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Sub-Category Value Manager ── */}
-      {selectedSub && (
-        <div className="cc-subval-section">
-          <div className="cc-subval-header">
-            <h4>
-              Values for "{selectedSub.name}" 
-              <span style={{ fontSize: "0.85em", color: "var(--text-tertiary)", marginLeft: "8px", fontWeight: "normal" }}>
-                (Parent: {componentName})
-              </span>
-            </h4>
-            <StatusBadge status={selectedSub.type === "dependent" ? "warning" : "active"} label={selectedSub.type} size="xs" />
-          </div>
-
-          {/* Parent value selector for dependent type */}
-          {selectedSub.type === "dependent" && (
-            <div className="cc-parent-selector">
-              <label className="admin-label">Select Parent "{componentName}" Value</label>
-              {parentValues.length === 0 ? (
-                <p className="cc-sub-type-hint">No parent values exist. Add values to "{componentName}" first.</p>
-              ) : (
-                <div className="cc-parent-chips">
-                  {parentValues.map((pv) => {
-                    const pvSubVals = subValues.filter((sv) => sv.parentValueId === pv.id);
-                    return (
-                      <button
-                        key={pv.id}
-                        className={`cc-parent-chip ${selectedParentValId === pv.id ? "selected" : ""}`}
-                        onClick={() => setSelectedParentValId(pv.id)}
-                      >
-                        <span className="cc-parent-chip-name">{pv.valueName}</span>
-                        <span className="cc-parent-chip-count">{pvSubVals.length} opts</span>
-                        {pv.isDefault && <span className="cc-parent-chip-default">★</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Value add form (show for independent always, for dependent only when parent selected) */}
-          {(selectedSub.type === "independent" || selectedParentValId) && (
-            <>
-              <div className="cc-add-value-row" style={{ marginTop: 12 }}>
-                <input
-                  className="admin-input"
-                  value={newValName}
-                  onChange={(e) => setNewValName(e.target.value)}
-                  placeholder={`New ${selectedSub.name} option...`}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddValue()}
-                />
-                <label className="cc-default-check">
-                  <input type="checkbox" checked={newValDefault} onChange={(e) => setNewValDefault(e.target.checked)} />
-                  <span>Default</span>
+        <div className="cc-form-group">
+          <div className="cc-input-row" style={{ alignItems: "flex-start" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+              <input
+                className="cc-input"
+                value={newSubName}
+                onChange={(e) => setNewSubName(e.target.value)}
+                placeholder="e.g. Inner Collar, Contrast Details"
+                onKeyDown={(e) => e.key === "Enter" && handleAddSubCategory()}
+              />
+              <div className="cc-radio-group" style={{ marginTop: "4px" }}>
+                <label className="cc-radio-label">
+                  <input
+                    type="radio"
+                    checked={newSubType === "independent"}
+                    onChange={() => setNewSubType("independent")}
+                  />
+                  <span>Independent</span>
                 </label>
-                <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={handleAddValue} disabled={!newValName.trim()}>Add</button>
+                <label className="cc-radio-label">
+                  <input
+                    type="radio"
+                    checked={newSubType === "dependent"}
+                    onChange={() => setNewSubType("dependent")}
+                  />
+                  <span>Dependent</span>
+                </label>
               </div>
 
-              {/* Value list */}
-              <div className="cc-subval-list">
-                {filteredSubValues.length === 0 ? (
-                  <div className="admin-empty" style={{ padding: 16 }}>
-                    <p>No values yet{selectedSub.type === "dependent" ? ` for this parent` : ""}</p>
+              {newSubType === "dependent" && (
+                <div style={{ marginTop: "4px" }}>
+                  <select
+                    className="cc-input"
+                    value={newSubDependsOn}
+                    onChange={(e) => setNewSubDependsOn(e.target.value)}
+                  >
+                    <option value="">-- Depends On (Select Value) --</option>
+                    {componentValues.map((cv) => (
+                      <option key={cv.id} value={cv.id}>{cv.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <button
+              className="cc-btn cc-btn-primary"
+              style={{ marginTop: "2px" }}
+              onClick={handleAddSubCategory}
+              disabled={
+                !newSubName.trim() ||
+                (newSubType === "dependent" && !newSubDependsOn)
+              }
+            >
+              + Add
+            </button>
+          </div>
+        </div>
+
+        <div className="cc-sub-list">
+          {state.isLoading ? (
+            Array.from({ length: 5 }).map((_, idx) => (
+              <div key={idx} className="cc-sub-item cc-skeleton-item" style={{ height: "64px" }}>
+                <div className="cc-sub-info" style={{ width: "100%" }}>
+                  <div className="cc-skeleton-box" style={{ width: "120px", height: "18px" }}></div>
+                  <div className="cc-skeleton-box" style={{ width: "80px", height: "16px", marginLeft: "12px" }}></div>
+                </div>
+              </div>
+            ))
+          ) : subCategories.length === 0 ? (
+            <div className="cc-empty-text">No sub-categories added yet</div>
+          ) : (
+            subCategories.map((sub) => (
+              <div
+                key={sub.id}
+                className={`cc-sub-item ${selectedSubId === sub.id ? "selected" : ""}`}
+                onClick={() => setSelectedSubId(sub.id)}
+              >
+                {editingSubId === sub.id ? (
+                  <div className="cc-edit-inline" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      className="cc-input"
+                      value={editSubName}
+                      onChange={(e) => setEditSubName(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => e.key === "Enter" && handleSaveSubEdit()}
+                    />
+                    <button className="cc-btn cc-btn-primary" onClick={handleSaveSubEdit}>Save</button>
+                    <button className="cc-btn cc-btn-ghost" onClick={() => setEditingSubId(null)}>Cancel</button>
                   </div>
                 ) : (
-                  filteredSubValues.map((val) => (
-                    <div key={val.id} className={`cc-value-row ${val.isDefault ? "is-default" : ""}`}>
-                      {editingValId === val.id ? (
-                        <div className="cc-edit-inline">
-                          <input className="admin-input" value={editValName} onChange={(e) => setEditValName(e.target.value)} autoFocus />
-                          <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={() => { editSubCategoryValue(selectedSubId, val.id, { valueName: editValName.trim() }); setEditingValId(null); }}>Save</button>
-                          <button className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => setEditingValId(null)}>Cancel</button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="cc-value-info">
-                            <span className="cc-value-name">{val.valueName}</span>
-                            {val.isDefault && <StatusBadge status="default" label="Default" size="xs" />}
-                          </div>
-                          <div className="cc-value-actions">
-                            {!val.isDefault && filteredSubValues.length > 1 && (
-                              <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => setSubValueDefault(val.id)}>Set Default</button>
-                            )}
-                            <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => { setEditingValId(val.id); setEditValName(val.valueName); }}>Edit</button>
-                            <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => { setDeleteTarget(val); setDeleteKind("subval"); }}>Delete</button>
-                          </div>
-                        </>
-                      )}
+                  <>
+                    <div className="cc-sub-info">
+                      <span className="cc-sub-name">{sub.name}</span>
+                      <span className="cc-badge-outline">
+                        {sub.type === "dependent" ? "Dependent" : "Independent"}
+                      </span>
+                      {sub.isActive === false && <span className="cc-badge-inactive">Inactive</span>}
                     </div>
-                  ))
+                    <div className="cc-sub-actions" onClick={(e) => e.stopPropagation()}>
+                      <button className="cc-btn-text" onClick={() => toggleSubActive(sub)}>
+                        {sub.isActive === false ? "Enable" : "Disable"}
+                      </button>
+                      <button
+                        className="cc-btn-text"
+                        onClick={() => { setEditingSubId(sub.id); setEditSubName(sub.name); }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="cc-btn-text text-danger"
+                        onClick={() => { setDeleteTarget(sub); setDeleteType("sub"); }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
-            </>
+            ))
           )}
         </div>
+      </div>
+
+      {/* ═══ SUB CATEGORY VALUES SECTION ═══ */}
+      {selectedSubId && (
+        <>
+          <div className="cc-divider" />
+          <div className="cc-section">
+            <div className="cc-section-header">
+              <div className="cc-section-title">VALUES FOR "{selectedSub?.name}"</div>
+              <StatusBadge status="info" label={`${subCategoryValues.length} values`} size="sm" />
+            </div>
+
+            {selectedSub?.type === "dependent" && componentValues.length > 0 && (
+              <div className="cc-form-group" style={{ marginBottom: "16px", padding: "12px", background: "rgba(255, 255, 255, 0.05)", borderRadius: "8px" }}>
+                <label className="cc-form-label" style={{ fontWeight: "600", color: "var(--primary-color, #4f46e5)", marginBottom: "6px", display: "block" }}>
+                  Configure Options for Parent Value
+                </label>
+                <select
+                  className="cc-input"
+                  value={selectedParentValId}
+                  onChange={(e) => setSelectedParentValId(e.target.value)}
+                  style={{ width: "100%", background: "var(--bg-card, #1f2937)", color: "var(--text-main, #f3f4f6)" }}
+                >
+                  <option value="" disabled>-- Select a Parent Value --</option>
+                  {componentValues.map((cv) => (
+                    <option key={cv.id} value={cv.id}>{cv.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {selectedSub?.type === "dependent" && componentValues.length === 0 && (
+              <div style={{ marginBottom: "16px", padding: "12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "8px", color: "#f87171", fontSize: "13px" }}>
+                ⚠️ Please add Component Values (Part Types) first under this Component so you can map dependent subcategory options.
+              </div>
+            )}
+
+            <div className="cc-form-group">
+              <div className="cc-input-row">
+                <input
+                  className="cc-input"
+                  value={newValueName}
+                  onChange={(e) => setNewValueName(e.target.value)}
+                  placeholder={selectedSub?.type === "dependent" && !selectedParentValId ? "Select a parent option first..." : "e.g. Red, Blue, Contrast White"}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddValue()}
+                  disabled={selectedSub?.type === "dependent" && !selectedParentValId}
+                />
+                <button
+                  className="cc-btn cc-btn-primary"
+                  onClick={handleAddValue}
+                  disabled={!newValueName.trim() || (selectedSub?.type === "dependent" && !selectedParentValId)}
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+
+            <div className="cc-sub-list">
+              {state.isLoading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <div key={idx} className="cc-sub-item cc-skeleton-item" style={{ height: "64px" }}>
+                    <div className="cc-sub-info" style={{ width: "100%" }}>
+                      <div className="cc-skeleton-box" style={{ width: "120px", height: "18px" }}></div>
+                      <div className="cc-skeleton-box" style={{ width: "80px", height: "16px", marginLeft: "12px" }}></div>
+                    </div>
+                  </div>
+                ))
+              ) : subCategoryValues.length === 0 ? (
+                <div className="cc-empty-text">No values added yet</div>
+              ) : (
+                subCategoryValues.map((val) => (
+                  <div key={val.id} className="cc-sub-item no-hover">
+                    {editingValueId === val.id ? (
+                      <div className="cc-edit-inline">
+                        <input
+                          className="cc-input"
+                          value={editValueName}
+                          onChange={(e) => setEditValueName(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveValueEdit()}
+                        />
+                        <button className="cc-btn cc-btn-primary" onClick={handleSaveValueEdit}>Save</button>
+                        <button className="cc-btn cc-btn-ghost" onClick={() => setEditingValueId(null)}>Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="cc-sub-info">
+                          <span className="cc-sub-name">{val.valueName}</span>
+                          {val.isDefault && <span className="cc-badge-default">Default</span>}
+                          {val.isActive === false && <span className="cc-badge-inactive">Inactive</span>}
+                        </div>
+                        <div className="cc-sub-actions">
+                          <label className="cc-toggle-label">
+                            <input
+                              type="checkbox"
+                              checked={val.isDefault}
+                              onChange={() => toggleValueDefault(val)}
+                            />
+                            Default
+                          </label>
+                          <button className="cc-btn-text" onClick={() => toggleValueActive(val)}>
+                            {val.isActive === false ? "Enable" : "Disable"}
+                          </button>
+                          <button
+                            className="cc-btn-text"
+                            onClick={() => { setEditingValueId(val.id); setEditValueName(val.valueName); }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="cc-btn-text text-danger"
+                            onClick={() => { setDeleteTarget(val); setDeleteType("value"); }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
       )}
 
-      {/* ── Delete Confirm ── */}
       <ConfirmDialog
         open={!!deleteTarget}
         title={`Delete "${deleteTarget?.name || deleteTarget?.valueName}"?`}
         message={
-          deleteKind === "sub"
-            ? "All values and dependency mappings under this sub-category will be removed."
-            : "This sub-category value will be permanently removed."
+          deleteType === "sub"
+            ? "All values under this sub-category will be removed."
+            : "This value will be removed."
         }
         confirmLabel="Delete"
         confirmVariant="danger"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
       />
-    </div>
+    </>
   );
 }

@@ -21,6 +21,11 @@ const defaultInitialState = {
   builderGroups: [],
   contrastMappings: [],
   contrastMappingItems: [],
+  catalogCategories: [],
+  catalogProducts: [],
+  catalogParts: [],
+  catalogPartTypes: [],
+  catalogPartOptions: [],
 };
 
 // ─── Action Types ────────────────────────────────────────────────
@@ -47,6 +52,8 @@ const A = {
   DELETE_COMP_VALUE: "DELETE_COMP_VALUE",
   SET_DEFAULT_VALUE: "SET_DEFAULT_VALUE",
   // Sub-categories
+  SET_SUBCATEGORIES: "SET_SUBCATEGORIES",
+  SET_SUBCATEGORY_VALUES: "SET_SUBCATEGORY_VALUES",
   ADD_SUBCATEGORY: "ADD_SUBCATEGORY",
   EDIT_SUBCATEGORY: "EDIT_SUBCATEGORY",
   DELETE_SUBCATEGORY: "DELETE_SUBCATEGORY",
@@ -64,6 +71,7 @@ const A = {
   DELETE_FABRIC_GROUP: "DELETE_FABRIC_GROUP",
   TOGGLE_FABRIC_GROUP: "TOGGLE_FABRIC_GROUP",
   // Fabric group mappings
+  SET_GROUP_MAPPINGS: "SET_GROUP_MAPPINGS",
   ADD_FG_MAPPING: "ADD_FG_MAPPING",
   REMOVE_FG_MAPPING: "REMOVE_FG_MAPPING",
   // Builder groups
@@ -76,6 +84,27 @@ const A = {
   SET_ATTRIBUTE_VALUES: "SET_ATTRIBUTE_VALUES",
   // Mappings
   BULK_SAVE_MAPPINGS: "BULK_SAVE_MAPPINGS",
+  // Catalog
+  SET_CATALOG_CATEGORIES: "SET_CATALOG_CATEGORIES",
+  ADD_CATALOG_CATEGORY: "ADD_CATALOG_CATEGORY",
+  EDIT_CATALOG_CATEGORY: "EDIT_CATALOG_CATEGORY",
+  DELETE_CATALOG_CATEGORY: "DELETE_CATALOG_CATEGORY",
+  SET_CATALOG_PRODUCTS: "SET_CATALOG_PRODUCTS",
+  SET_CATALOG_PARTS: "SET_CATALOG_PARTS",
+  SET_CATALOG_PART_TYPES: "SET_CATALOG_PART_TYPES",
+  SET_CATALOG_PART_OPTIONS: "SET_CATALOG_PART_OPTIONS",
+  ADD_CATALOG_PRODUCT: "ADD_CATALOG_PRODUCT",
+  EDIT_CATALOG_PRODUCT: "EDIT_CATALOG_PRODUCT",
+  DELETE_CATALOG_PRODUCT: "DELETE_CATALOG_PRODUCT",
+  ADD_CATALOG_PART: "ADD_CATALOG_PART",
+  EDIT_CATALOG_PART: "EDIT_CATALOG_PART",
+  DELETE_CATALOG_PART: "DELETE_CATALOG_PART",
+  ADD_CATALOG_TYPE: "ADD_CATALOG_TYPE",
+  EDIT_CATALOG_TYPE: "EDIT_CATALOG_TYPE",
+  DELETE_CATALOG_TYPE: "DELETE_CATALOG_TYPE",
+  ADD_CATALOG_OPTION: "ADD_CATALOG_OPTION",
+  EDIT_CATALOG_OPTION: "EDIT_CATALOG_OPTION",
+  DELETE_CATALOG_OPTION: "DELETE_CATALOG_OPTION",
 };
 
 // ─── Reducer ─────────────────────────────────────────────────────
@@ -93,6 +122,43 @@ function adminReducer(state, action) {
     case A.SET_FABRICS: return { ...state, fabrics: payload };
     case A.SET_MAPPINGS: return { ...state, fabricMappings: payload };
     case A.SET_ATTRIBUTES: return { ...state, attributes: payload };
+
+    // Catalog setters
+    case A.SET_CATALOG_CATEGORIES: return { ...state, catalogCategories: payload };
+    case A.SET_CATALOG_PRODUCTS: return { ...state, catalogProducts: payload };
+    case A.SET_CATALOG_PARTS: return { ...state, catalogParts: payload };
+    case A.SET_CATALOG_PART_TYPES: return { ...state, catalogPartTypes: payload };
+    case A.SET_CATALOG_PART_OPTIONS: return { ...state, catalogPartOptions: payload };
+
+    case A.ADD_CATALOG_CATEGORY: return { ...state, catalogCategories: [...state.catalogCategories, payload] };
+    case A.EDIT_CATALOG_CATEGORY:
+      return { ...state, catalogCategories: state.catalogCategories.map(c => c.id === payload.id ? { ...c, ...payload.updates } : c) };
+    case A.DELETE_CATALOG_CATEGORY:
+      return { ...state, catalogCategories: state.catalogCategories.filter(c => c.id !== payload) };
+
+    case A.ADD_CATALOG_PRODUCT: return { ...state, catalogProducts: [...state.catalogProducts, payload] };
+    case A.EDIT_CATALOG_PRODUCT:
+      return { ...state, catalogProducts: state.catalogProducts.map(p => p.id === payload.id ? { ...p, ...payload.updates } : p) };
+    case A.DELETE_CATALOG_PRODUCT:
+      return { ...state, catalogProducts: state.catalogProducts.filter(p => p.id !== payload) };
+
+    case A.ADD_CATALOG_PART: return { ...state, catalogParts: [...state.catalogParts, payload] };
+    case A.EDIT_CATALOG_PART:
+      return { ...state, catalogParts: state.catalogParts.map(p => p.id === payload.id ? { ...p, ...payload.updates } : p) };
+    case A.DELETE_CATALOG_PART:
+      return { ...state, catalogParts: state.catalogParts.filter(p => p.id !== payload) };
+
+    case A.ADD_CATALOG_TYPE: return { ...state, catalogPartTypes: [...state.catalogPartTypes, payload] };
+    case A.EDIT_CATALOG_TYPE:
+      return { ...state, catalogPartTypes: state.catalogPartTypes.map(t => t.id === payload.id ? { ...t, ...payload.updates } : t) };
+    case A.DELETE_CATALOG_TYPE:
+      return { ...state, catalogPartTypes: state.catalogPartTypes.filter(t => t.id !== payload) };
+
+    case A.ADD_CATALOG_OPTION: return { ...state, catalogPartOptions: [...state.catalogPartOptions, payload] };
+    case A.EDIT_CATALOG_OPTION:
+      return { ...state, catalogPartOptions: state.catalogPartOptions.map(o => o.id === payload.id ? { ...o, ...payload.updates } : o) };
+    case A.DELETE_CATALOG_OPTION:
+      return { ...state, catalogPartOptions: state.catalogPartOptions.filter(o => o.id !== payload) };
 
     // ── Categories ──
     case A.ADD_CATEGORY:
@@ -139,6 +205,10 @@ function adminReducer(state, action) {
     }
 
     // ── Sub-Categories ──
+    case A.SET_SUBCATEGORIES:
+      return { ...state, subCategories: { ...state.subCategories, [payload.compId]: payload.subs } };
+    case A.SET_SUBCATEGORY_VALUES:
+      return { ...state, subCategoryValues: { ...state.subCategoryValues, [payload.subId]: payload.vals } };
     case A.ADD_SUBCATEGORY: {
       const subs = state.subCategories[payload.compId] || [];
       return { ...state, subCategories: { ...state.subCategories, [payload.compId]: [...subs, payload.sub] } };
@@ -191,6 +261,8 @@ function adminReducer(state, action) {
       return { ...state, fabricGroups: state.fabricGroups.map(g => g.id === payload ? { ...g, isActive: !g.isActive } : g) };
 
     // ── Fabric Group Mappings ──
+    case A.SET_GROUP_MAPPINGS:
+      return { ...state, fabricGroupMappings: payload };
     case A.ADD_FG_MAPPING:
       return { ...state, fabricGroupMappings: [...state.fabricGroupMappings, { id: genId(), ...payload }] };
     case A.REMOVE_FG_MAPPING:
@@ -264,7 +336,15 @@ export function AdminProvider({ children }) {
           adminService.getFabricParts(),
         ]);
         if (catRes.status === "fulfilled") dispatch({ type: A.SET_CATEGORIES, payload: catRes.value.data?.data || catRes.value.data || [] });
-        if (grpRes.status === "fulfilled") dispatch({ type: A.SET_GROUPS, payload: grpRes.value.data?.data || grpRes.value.data || [] });
+        if (grpRes.status === "fulfilled") {
+          const rawGroups = grpRes.value.data?.data || grpRes.value.data || [];
+          const normalizedGroups = rawGroups.map(g => ({
+            ...g,
+            groupName: g.groupName || g.name || "",
+            isActive: g.isActive !== undefined ? g.isActive : true,
+          }));
+          dispatch({ type: A.SET_GROUPS, payload: normalizedGroups });
+        }
         if (partsRes.status === "fulfilled") dispatch({ type: A.SET_FABRIC_PARTS, payload: partsRes.value.data?.data || partsRes.value.data || [] });
       } catch (err) {
         console.error("Init fetch failed:", err);
@@ -337,31 +417,147 @@ export function AdminProvider({ children }) {
     dispatch({ type: A.SET_DEFAULT_VALUE, payload: { compId, valId } });
   }, []);
 
+  // Helper normalizers for sub-categories
+  const normalizeSubCategory = (s) => ({
+    ...s,
+    type: s.type ? s.type.toLowerCase() : "independent",
+    isActive: s.isActive !== undefined ? s.isActive : (s.status === "active" || s.status !== "inactive")
+  });
+
+  const normalizeSubValue = (v) => ({
+    ...v,
+    valueName: v.valueName || v.name || "",
+    isActive: v.isActive !== undefined ? v.isActive : (v.status === "active" || v.status !== "inactive")
+  });
+
   // -- Sub-Categories --
-  const addSubCategory = useCallback((compId, name, type = "independent", parentRef = null, order = 1) => {
-    const sub = { id: genId(), name, type, parentRef, order, status: "active" };
-    dispatch({ type: A.ADD_SUBCATEGORY, payload: { compId, sub } });
+  const fetchSubCategories = useCallback(async (partId) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    try {
+      const res = await adminService.getSubCategories(partId);
+      const subs = (res.data?.data || res.data || []).map(normalizeSubCategory);
+      dispatch({ type: A.SET_SUBCATEGORIES, payload: { compId: partId, subs } });
+    } catch (err) {
+      console.error("Failed to fetch sub-categories", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
   }, []);
 
-  const editSubCategory = useCallback((compId, subId, updates) => {
-    dispatch({ type: A.EDIT_SUBCATEGORY, payload: { compId, subId, updates } });
+  const fetchSubCategoryValues = useCallback(async (subCategoryId, parentValueId = null) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    try {
+      const params = parentValueId ? { parentValueId } : undefined;
+      const res = await adminService.getSubCategoryValues(subCategoryId, params);
+      const vals = (res.data?.data || res.data || []).map(normalizeSubValue);
+      dispatch({ type: A.SET_SUBCATEGORY_VALUES, payload: { subId: subCategoryId, vals } });
+    } catch (err) {
+      console.error("Failed to fetch sub-category values", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
   }, []);
 
-  const deleteSubCategory = useCallback((compId, subId) => {
-    dispatch({ type: A.DELETE_SUBCATEGORY, payload: { compId, subId } });
+  const addSubCategory = useCallback(async (compId, name, type = "independent", parentRef = null) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    const data = {
+      name,
+      slug,
+      type: type ? type.toUpperCase() : "INDEPENDENT",
+      dependsOn: type === "dependent" ? (parentRef ? "sub-category-id" : "parent") : "parent",
+      dependsOnEntityId: parentRef || null,
+      sortOrder: 0
+    };
+    try {
+      const res = await adminService.createSubCategory(compId, data);
+      const sub = normalizeSubCategory(res.data?.data || res.data);
+      dispatch({ type: A.ADD_SUBCATEGORY, payload: { compId, sub } });
+    } catch (err) {
+      console.error("Failed to add sub-category", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
   }, []);
 
-  const addSubCategoryValue = useCallback((subId, parentValueId, valueName, isDefault = false) => {
-    const val = { id: genId(), parentValueId, valueName, isDefault, status: "active" };
-    dispatch({ type: A.ADD_SUBCAT_VALUE, payload: { subId, val } });
+  const editSubCategory = useCallback(async (compId, subId, updates) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    const apiUpdates = { ...updates };
+    if (updates.type) {
+      apiUpdates.type = updates.type.toUpperCase();
+    }
+    try {
+      const res = await adminService.updateSubCategory(subId, apiUpdates);
+      const sub = normalizeSubCategory(res.data?.data || res.data || { ...updates, id: subId });
+      dispatch({ type: A.EDIT_SUBCATEGORY, payload: { compId, subId, updates: sub } });
+    } catch (err) {
+      console.error("Failed to edit sub-category", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
   }, []);
 
-  const editSubCategoryValue = useCallback((subId, valId, updates) => {
-    dispatch({ type: A.EDIT_SUBCAT_VALUE, payload: { subId, valId, updates } });
+  const deleteSubCategory = useCallback(async (compId, subId) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    try {
+      await adminService.deleteSubCategory(subId);
+      dispatch({ type: A.DELETE_SUBCATEGORY, payload: { compId, subId } });
+    } catch (err) {
+      console.error("Failed to delete sub-category", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
   }, []);
 
-  const deleteSubCategoryValue = useCallback((subId, valId) => {
-    dispatch({ type: A.DELETE_SUBCAT_VALUE, payload: { subId, valId } });
+  const addSubCategoryValue = useCallback(async (subId, parentValueId, valueName, isDefault = false) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    const slug = valueName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    const data = {
+      name: valueName,
+      value: slug,
+      slug,
+      isDefault,
+      parentValueId,
+      sortOrder: 0
+    };
+    try {
+      const res = await adminService.createSubCategoryValue(subId, data);
+      const val = normalizeSubValue(res.data?.data || res.data);
+      dispatch({ type: A.ADD_SUBCAT_VALUE, payload: { subId, val } });
+    } catch (err) {
+      console.error("Failed to add sub-category value", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
+  }, []);
+
+  const editSubCategoryValue = useCallback(async (subId, valId, updates) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    const apiUpdates = { ...updates };
+    if (updates.valueName) {
+      apiUpdates.name = updates.valueName;
+    }
+    try {
+      const res = await adminService.updateSubCategoryValue(valId, apiUpdates);
+      const updated = normalizeSubValue(res.data?.data || res.data || { ...updates, id: valId });
+      dispatch({ type: A.EDIT_SUBCAT_VALUE, payload: { subId, valId, updates: updated } });
+    } catch (err) {
+      console.error("Failed to edit sub-category value", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
+  }, []);
+
+  const deleteSubCategoryValue = useCallback(async (subId, valId) => {
+    dispatch({ type: A.SET_LOADING, payload: true });
+    try {
+      await adminService.deleteSubCategoryValue(valId);
+      dispatch({ type: A.DELETE_SUBCAT_VALUE, payload: { subId, valId } });
+    } catch (err) {
+      console.error("Failed to delete sub-category value", err);
+    } finally {
+      dispatch({ type: A.SET_LOADING, payload: false });
+    }
   }, []);
 
   // -- Fabrics --
@@ -388,14 +584,35 @@ export function AdminProvider({ children }) {
 
   // -- Fabric Groups --
   const addFabricGroup = useCallback(async (groupData) => {
+    // API expects { name, categoryIds }, frontend uses { groupName }
+    const apiPayload = {
+      name: groupData.groupName || groupData.name,
+      categoryIds: groupData.categoryIds || [],
+    };
     try {
-      const res = await adminService.createGroup(groupData);
-      dispatch({ type: A.ADD_FABRIC_GROUP, payload: res.data?.data || res.data || groupData });
-    } catch { dispatch({ type: A.ADD_FABRIC_GROUP, payload: groupData }); }
+      const res = await adminService.createGroup(apiPayload);
+      const serverGroup = res.data?.data || res.data || {};
+      // Normalize server response: map `name` back to `groupName` for frontend
+      const normalized = {
+        ...serverGroup,
+        groupName: serverGroup.groupName || serverGroup.name || apiPayload.name,
+        isActive: serverGroup.isActive !== undefined ? serverGroup.isActive : true,
+      };
+      dispatch({ type: A.ADD_FABRIC_GROUP, payload: normalized });
+    } catch (err) {
+      console.error('Failed to create group on server', err);
+      dispatch({ type: A.ADD_FABRIC_GROUP, payload: { ...groupData, isActive: true } });
+    }
   }, []);
 
   const editFabricGroup = useCallback(async (id, updates) => {
-    try { await adminService.updateGroup(id, updates); } catch { /* silent */ }
+    // Map frontend field to API field
+    const apiUpdates = { ...updates };
+    if (apiUpdates.groupName) {
+      apiUpdates.name = apiUpdates.groupName;
+      delete apiUpdates.groupName;
+    }
+    try { await adminService.updateGroup(id, apiUpdates); } catch { /* silent */ }
     dispatch({ type: A.EDIT_FABRIC_GROUP, payload: { id, updates } });
   }, []);
 
@@ -404,18 +621,84 @@ export function AdminProvider({ children }) {
     dispatch({ type: A.DELETE_FABRIC_GROUP, payload: id });
   }, []);
 
-  const toggleFabricGroup = useCallback((id) => {
+  const toggleFabricGroup = useCallback(async (id) => {
+    // Find current state to toggle
+    const group = state.fabricGroups.find(g => g.id === id);
+    const newIsActive = group ? !group.isActive : true;
     dispatch({ type: A.TOGGLE_FABRIC_GROUP, payload: id });
-  }, []);
+    try {
+      await adminService.toggleGroup(id, newIsActive);
+    } catch (err) {
+      console.error('Failed to toggle group on server', err);
+      // Revert on failure
+      dispatch({ type: A.TOGGLE_FABRIC_GROUP, payload: id });
+    }
+  }, [state.fabricGroups]);
 
   // -- Fabric Group Mappings --
-  const addFabricGroupMapping = useCallback((fabricId, groupId) => {
-    dispatch({ type: A.ADD_FG_MAPPING, payload: { fabricId, groupId } });
+  // Extract item/fabric IDs from a group detail response
+  const extractItemsFromGroup = (groupData) => {
+    // Try every likely field name the backend might use
+    const items = groupData.items || groupData.fabrics || groupData.fabricIds
+      || groupData.groupItems || groupData.fabricList || groupData.members || [];
+    return (Array.isArray(items) ? items : []).map(item =>
+      typeof item === 'string' ? item : (item.fabricId || item.id)
+    );
+  };
+
+  const fetchAllGroupMappings = useCallback(async (groups) => {
+    try {
+      const results = await Promise.allSettled(
+        groups.map(g => adminService.getGroup(g.id))
+      );
+      const allMappings = [];
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          const rawResponse = result.value.data;
+          const groupDetail = rawResponse?.data || rawResponse || {};
+          const fabricIds = extractItemsFromGroup(groupDetail);
+          fabricIds.forEach(fabricId => {
+            allMappings.push({
+              id: genId(),
+              fabricId,
+              groupId: groups[idx].id,
+            });
+          });
+        }
+      });
+      dispatch({ type: A.SET_GROUP_MAPPINGS, payload: allMappings });
+    } catch (err) {
+      console.error('Failed to fetch all group mappings', err);
+    }
   }, []);
 
-  const removeFabricGroupMapping = useCallback((fabricId, groupId) => {
+  const addFabricGroupMapping = useCallback(async (fabricId, groupId) => {
+    dispatch({ type: A.ADD_FG_MAPPING, payload: { fabricId, groupId } });
+    try {
+      // Build the full item list from local state + the new one
+      const currentMappedIds = state.fabricGroupMappings
+        .filter(m => m.groupId === groupId)
+        .map(m => m.fabricId);
+      if (!currentMappedIds.includes(fabricId)) {
+        currentMappedIds.push(fabricId);
+      }
+      await adminService.updateGroupItems(groupId, currentMappedIds);
+    } catch (err) {
+      console.error('Failed to add fabric to group on server', err);
+    }
+  }, [state.fabricGroupMappings]);
+
+  const removeFabricGroupMapping = useCallback(async (fabricId, groupId) => {
     dispatch({ type: A.REMOVE_FG_MAPPING, payload: { fabricId, groupId } });
-  }, []);
+    try {
+      const updatedIds = state.fabricGroupMappings
+        .filter(m => m.groupId === groupId && m.fabricId !== fabricId)
+        .map(m => m.fabricId);
+      await adminService.updateGroupItems(groupId, updatedIds);
+    } catch (err) {
+      console.error('Failed to remove fabric from group on server', err);
+    }
+  }, [state.fabricGroupMappings]);
 
   // -- Builder Groups --
   const addBuilderGroup = useCallback(async (groupData) => {
@@ -447,6 +730,161 @@ export function AdminProvider({ children }) {
     dispatch({ type: A.IMPORT_ATTR_VALUES, payload: { category, attrName, values } });
   }, []);
 
+  // -- Catalog --
+  const fetchCatalogCategories = useCallback(async () => {
+    try {
+      const res = await adminService.getCatalogCategories();
+      dispatch({ type: A.SET_CATALOG_CATEGORIES, payload: res.data?.data || res.data || [] });
+    } catch (err) { console.error("Failed to fetch catalog categories", err); }
+  }, []);
+
+  const addCatalogCategory = useCallback(async (data) => {
+    try {
+      const res = await adminService.createCatalogCategory(data);
+      dispatch({ type: A.ADD_CATALOG_CATEGORY, payload: res.data?.data || res.data || data });
+    } catch (err) { console.error("Failed to add catalog category", err); }
+  }, []);
+
+  const editCatalogCategory = useCallback(async (id, updates) => {
+    try {
+      await adminService.updateCatalogCategory(id, updates);
+      dispatch({ type: A.EDIT_CATALOG_CATEGORY, payload: { id, updates } });
+    } catch (err) { console.error("Failed to edit catalog category", err); }
+  }, []);
+
+  const deleteCatalogCategory = useCallback(async (id) => {
+    try {
+      await adminService.deleteCatalogCategory(id);
+      dispatch({ type: A.DELETE_CATALOG_CATEGORY, payload: id });
+    } catch (err) { console.error("Failed to delete catalog category", err); }
+  }, []);
+
+  const fetchCatalogProducts = useCallback(async () => {
+    try {
+      const res = await adminService.getProducts();
+      dispatch({ type: A.SET_CATALOG_PRODUCTS, payload: res.data?.data || res.data || [] });
+    } catch (err) { console.error("Failed to fetch catalog products", err); }
+  }, []);
+
+  const addCatalogProduct = useCallback(async (data) => {
+    try {
+      const res = await adminService.createProduct(data);
+      dispatch({ type: A.ADD_CATALOG_PRODUCT, payload: res.data?.data || res.data || data });
+    } catch (err) { console.error("Failed to add catalog product", err); }
+  }, []);
+
+  const editCatalogProduct = useCallback(async (id, updates) => {
+    try {
+      await adminService.updateProduct(id, updates);
+      dispatch({ type: A.EDIT_CATALOG_PRODUCT, payload: { id, updates } });
+    } catch (err) { console.error("Failed to edit catalog product", err); }
+  }, []);
+
+  const deleteCatalogProduct = useCallback(async (id) => {
+    try {
+      await adminService.deleteProduct(id);
+      dispatch({ type: A.DELETE_CATALOG_PRODUCT, payload: id });
+    } catch (err) { console.error("Failed to delete catalog product", err); }
+  }, []);
+
+  const fetchCatalogParts = useCallback(async (params) => {
+    try {
+      const res = await adminService.getParts(params);
+      dispatch({ type: A.SET_CATALOG_PARTS, payload: res.data?.data || res.data || [] });
+    } catch (err) { console.error("Failed to fetch catalog parts", err); }
+  }, []);
+
+  const addCatalogPart = useCallback(async (data) => {
+    try {
+      const res = await adminService.createPart(data);
+      dispatch({ type: A.ADD_CATALOG_PART, payload: res.data?.data || res.data || data });
+    } catch (err) { console.error("Failed to add catalog part", err); }
+  }, []);
+
+  const editCatalogPart = useCallback(async (id, updates) => {
+    try {
+      await adminService.updatePart(id, updates);
+      dispatch({ type: A.EDIT_CATALOG_PART, payload: { id, updates } });
+    } catch (err) { console.error("Failed to edit catalog part", err); }
+  }, []);
+
+  const deleteCatalogPart = useCallback(async (id) => {
+    try {
+      await adminService.deletePart(id);
+      dispatch({ type: A.DELETE_CATALOG_PART, payload: id });
+    } catch (err) { console.error("Failed to delete catalog part", err); }
+  }, []);
+
+  const fetchProductParts = useCallback(async (productId) => {
+    try {
+      const res = await adminService.getProductParts(productId);
+      dispatch({ type: A.SET_CATALOG_PARTS, payload: res.data?.data || res.data || [] });
+    } catch (err) { console.error("Failed to fetch product parts", err); }
+  }, []);
+
+  const addProductPart = useCallback(async (productId, data) => {
+    try {
+      const res = await adminService.createProductPart(productId, data);
+      dispatch({ type: A.ADD_CATALOG_PART, payload: res.data?.data || res.data || data });
+    } catch (err) { console.error("Failed to add product part", err); }
+  }, []);
+
+  const fetchPartTypes = useCallback(async (partId) => {
+    try {
+      const res = await adminService.getPartTypes(partId);
+      dispatch({ type: A.SET_CATALOG_PART_TYPES, payload: res.data?.data || res.data || [] });
+    } catch (err) { console.error("Failed to fetch part types", err); }
+  }, []);
+
+  const fetchPartOptions = useCallback(async (partTypeId) => {
+    try {
+      const res = await adminService.getPartOptions(partTypeId);
+      dispatch({ type: A.SET_CATALOG_PART_OPTIONS, payload: res.data?.data || res.data || [] });
+    } catch (err) { console.error("Failed to fetch part options", err); }
+  }, []);
+
+  const addCatalogType = useCallback(async (partId, data) => {
+    try {
+      const res = await adminService.createPartType(partId, data);
+      dispatch({ type: A.ADD_CATALOG_TYPE, payload: res.data?.data || res.data || data });
+    } catch (err) { console.error("Failed to add catalog type", err); }
+  }, []);
+
+  const editCatalogType = useCallback(async (id, updates) => {
+    try {
+      await adminService.updatePartType(id, updates);
+      dispatch({ type: A.EDIT_CATALOG_TYPE, payload: { id, updates } });
+    } catch (err) { console.error("Failed to edit catalog type", err); }
+  }, []);
+
+  const deleteCatalogType = useCallback(async (id) => {
+    try {
+      await adminService.deletePartType(id);
+      dispatch({ type: A.DELETE_CATALOG_TYPE, payload: id });
+    } catch (err) { console.error("Failed to delete catalog type", err); }
+  }, []);
+
+  const addCatalogOption = useCallback(async (typeId, data) => {
+    try {
+      const res = await adminService.createPartOption(typeId, data);
+      dispatch({ type: A.ADD_CATALOG_OPTION, payload: res.data?.data || res.data || data });
+    } catch (err) { console.error("Failed to add catalog option", err); }
+  }, []);
+
+  const editCatalogOption = useCallback(async (id, updates) => {
+    try {
+      await adminService.updatePartOption(id, updates);
+      dispatch({ type: A.EDIT_CATALOG_OPTION, payload: { id, updates } });
+    } catch (err) { console.error("Failed to edit catalog option", err); }
+  }, []);
+
+  const deleteCatalogOption = useCallback(async (id) => {
+    try {
+      await adminService.deletePartOption(id);
+      dispatch({ type: A.DELETE_CATALOG_OPTION, payload: id });
+    } catch (err) { console.error("Failed to delete catalog option", err); }
+  }, []);
+
   // -- Fabric Mappings --
   const bulkSaveFabricMappings = useCallback((mappings) => {
     dispatch({ type: A.BULK_SAVE_MAPPINGS, payload: mappings });
@@ -459,12 +897,19 @@ export function AdminProvider({ children }) {
     addComponentValue, editComponentValue, deleteComponentValue, setDefaultValue,
     addSubCategory, editSubCategory, deleteSubCategory,
     addSubCategoryValue, editSubCategoryValue, deleteSubCategoryValue,
+    fetchSubCategories, fetchSubCategoryValues,
     addFabric, editFabric, deleteFabric, setFabrics, toggleStatus,
     addFabricGroup, editFabricGroup, deleteFabricGroup, toggleFabricGroup,
     addFabricGroupMapping, removeFabricGroupMapping,
+    fetchAllGroupMappings,
     addBuilderGroup,
     addAttributeValue, editAttributeValue, deleteAttributeValue, importAttributeValues,
     bulkSaveFabricMappings,
+    fetchCatalogCategories, addCatalogCategory, editCatalogCategory, deleteCatalogCategory,
+    fetchCatalogProducts, addCatalogProduct, editCatalogProduct, deleteCatalogProduct,
+    fetchCatalogParts, fetchProductParts, addProductPart, addCatalogPart, editCatalogPart, deleteCatalogPart,
+    fetchPartTypes, addCatalogType, editCatalogType, deleteCatalogType,
+    fetchPartOptions, addCatalogOption, editCatalogOption, deleteCatalogOption,
   };
 
   // Spread actions at top level for pages that destructure directly from useAdmin()

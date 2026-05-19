@@ -26,7 +26,7 @@ const normalizeFabric = (f) => ({
 });
 
 export default function MaterialsPanelPage() {
-  const { state, toggleStatus, deleteFabric, setFabrics } = useAdmin();
+  const { state, toggleStatus, deleteFabric, setFabrics, fetchAllGroupMappings } = useAdmin();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("grid");
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -62,6 +62,18 @@ export default function MaterialsPanelPage() {
     return [...set].sort();
   }, [state.fabrics]);
 
+  const groups = useMemo(() => {
+    const set = new Set(state.fabricGroups.map((g) => g.groupName).filter(Boolean));
+    return [...set].sort();
+  }, [state.fabricGroups]);
+
+  // Fetch group-fabric mappings once groups are loaded
+  useEffect(() => {
+    if (state.fabricGroups.length > 0) {
+      fetchAllGroupMappings(state.fabricGroups);
+    }
+  }, [state.fabricGroups, fetchAllGroupMappings]);
+
   const {
     filtered,
     search,
@@ -74,6 +86,14 @@ export default function MaterialsPanelPage() {
       status: { default: "all", match: (item, val) => item.status === val },
       material: { default: "all", match: (item, val) => item.material === val },
       color: { default: "all", match: (item, val) => item.color === val },
+      fabricGroup: {
+        default: "all",
+        match: (item, val) => {
+          const group = state.fabricGroups.find(g => g.groupName === val);
+          if (!group) return false;
+          return state.fabricGroupMappings.some(m => (m.fabricId === item.id || m.fabricId === item.fabricId) && m.groupId === group.id);
+        }
+      }
     },
   });
 
@@ -159,6 +179,14 @@ export default function MaterialsPanelPage() {
       options: colors,
       value: filterValues.color,
       onChange: (val) => setFilter("color", val),
+    },
+    {
+      key: "fabricGroup",
+      label: "Fabric Group",
+      type: "select",
+      options: groups,
+      value: filterValues.fabricGroup,
+      onChange: (val) => setFilter("fabricGroup", val),
     },
   ];
 

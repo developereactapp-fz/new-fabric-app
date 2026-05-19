@@ -34,6 +34,19 @@ apiClient.interceptors.request.use(
     if (!config.headers['x-tenant-slug']) {
       config.headers['x-tenant-slug'] = 'test-tenant';
     }
+
+    // --- CASE SENSITIVITY FIX FOR SUBCATEGORIES ---
+    // Automatically force type to uppercase for subcategories requests to prevent 400 Bad Request
+    if (config.data && typeof config.data === 'object') {
+      const isSubCategoryUrl = config.url && (
+        config.url.includes('/api/catalog/sub-categories') ||
+        config.url.includes('/sub-categories')
+      );
+      if (isSubCategoryUrl && typeof config.data.type === 'string') {
+        config.data.type = config.data.type.toUpperCase();
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

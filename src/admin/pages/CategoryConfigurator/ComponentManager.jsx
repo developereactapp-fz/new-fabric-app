@@ -1,93 +1,194 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import SubCategoryManager from "./SubCategoryManager";
-import { isDuplicate } from "../../utils/validators";
 
-export default function ComponentManager({ categoryId, categoryName, selectedComponentId, onSelectComponent }) {
-  const { state, addComponent, editComponent, deleteComponent, addComponentValue, editComponentValue, deleteComponentValue, setDefaultValue } = useAdmin();
+/**
+ * ComponentManager
+ *
+ * Manages "Components" (Catalog Parts) and "Component Values" (Catalog Part Types)
+ * for the auto-selected Product.
+ *
+ * Props:
+ *   categoryId, categoryName — the selected category
+ *   productId — the auto-selected product
+ *   components — the parts for this product
+ *   selectedComponentId, onSelectComponent — part selection
+ */
+export default function ComponentManager({
+  categoryId,
+  categoryName,
+  productId,
+  components,
+  selectedComponentId,
+  onSelectComponent,
+}) {
+  const {
+    state,
+    addProductPart,
+    editCatalogPart,
+    deleteCatalogPart,
+    fetchPartTypes,
+    addCatalogType,
+    editCatalogType,
+    deleteCatalogType,
+  } = useAdmin();
+
+  // Component (Part) form state
   const [newCompName, setNewCompName] = useState("");
-  const [newValName, setNewValName] = useState("");
-  const [setAsDefault, setSetAsDefault] = useState(false);
   const [editingCompId, setEditingCompId] = useState(null);
   const [editCompName, setEditCompName] = useState("");
-  const [editingValId, setEditingValId] = useState(null);
-  const [editValName, setEditValName] = useState("");
+
+  // Value (Part Type) form state
+  const [newValueName, setNewValueName] = useState("");
+  const [editingValueId, setEditingValueId] = useState(null);
+  const [editValueName, setEditValueName] = useState("");
+
+  // Delete state
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteType, setDeleteType] = useState(""); // "component" | "value"
 
-  const components = state.components[categoryId] || [];
-  const selectedComp = components.find((c) => c.id === selectedComponentId);
-  const compValues = selectedComponentId ? (state.componentValues[selectedComponentId] || []) : [];
+  // Fetch Part Types when a Component is selected
+  useEffect(() => {
+    if (selectedComponentId) {
+      fetchPartTypes(selectedComponentId);
+    }
+  }, [selectedComponentId, fetchPartTypes]);
 
-  // Add component
-  const handleAddComp = () => {
+  const componentValues = (state.catalogPartTypes || []).filter(
+    (pt) => pt.partId === selectedComponentId
+  );
+
+  // ── Component Handlers ──
+  const handleAddComponent = () => {
     const name = newCompName.trim();
-    if (!name || isDuplicate(name, components.map((c) => c.name))) return;
-    addComponent(categoryId, name);
+    if (!name || !productId) return;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    addProductPart(productId, { name, slug, isRequired: false, isActive: true });
     setNewCompName("");
   };
 
-  // Add component value
-  const handleAddValue = () => {
-    const name = newValName.trim();
-    if (!name || !selectedComponentId || isDuplicate(name, compValues.map((v) => v.valueName))) return;
-    addComponentValue(selectedComponentId, name, setAsDefault);
-    setNewValName("");
-    setSetAsDefault(false);
+  const handleSaveComponentEdit = () => {
+    const name = editCompName.trim();
+    if (!name) return;
+    editCatalogPart(editingCompId, { name });
+    setEditingCompId(null);
   };
 
+  const toggleComponentActive = (comp) => {
+    editCatalogPart(comp.id, { isActive: !comp.isActive });
+  };
+
+  // ── Value Handlers ──
+  const handleAddValue = () => {
+    const name = newValueName.trim();
+    if (!name || !selectedComponentId) return;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    addCatalogType(selectedComponentId, { name, slug, isDefault: false, isActive: true });
+    setNewValueName("");
+  };
+
+  const handleSaveValueEdit = () => {
+    const name = editValueName.trim();
+    if (!name) return;
+    editCatalogType(editingValueId, { name });
+    setEditingValueId(null);
+  };
+
+  const toggleValueDefault = (val) => {
+    editCatalogType(val.id, { isDefault: !val.isDefault });
+  };
+
+  const toggleValueActive = (val) => {
+    editCatalogType(val.id, { isActive: !val.isActive });
+  };
+
+  // ── Delete Confirm ──
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
     if (deleteType === "component") {
-      deleteComponent(categoryId, deleteTarget.id);
+      deleteCatalogPart(deleteTarget.id);
       if (selectedComponentId === deleteTarget.id) onSelectComponent(null);
     } else {
-      deleteComponentValue(selectedComponentId, deleteTarget.id);
+      deleteCatalogType(deleteTarget.id);
     }
     setDeleteTarget(null);
   };
 
+  const selectedComponent = components.find((c) => c.id === selectedComponentId);
+
   return (
     <>
-      {/* Component List */}
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <div>
-            <h3 className="admin-card-title">Components for "{categoryName}"</h3>
-            <p className="admin-card-subtitle">Add components like Collar, Cuff, Placket, etc.</p>
+      {/* ═══ COMPONENTS SECTION ═══ */}
+      <div className="cc-section">
+        <div className="cc-section-header">
+          <div className="cc-section-title">COMPONENTS</div>
+          <StatusBadge status="info" label={`${components.length} components`} size="sm" />
+        </div>
+        
+        <div className="cc-form-group">
+          <div className="cc-input-row">
+            <input
+              className="cc-input"
+              value={newCompName}
+              onChange={(e) => setNewCompName(e.target.value)}
+              placeholder="e.g. Collar, Cuff"
+              onKeyDown={(e) => e.key === "Enter" && handleAddComponent()}
+            />
+            <button
+              className="cc-btn cc-btn-primary"
+              onClick={handleAddComponent}
+              disabled={!newCompName.trim()}
+            >
+              + Add
+            </button>
           </div>
         </div>
 
-        <div className="cc-add-row">
-          <input className="admin-input" value={newCompName} onChange={(e) => setNewCompName(e.target.value)} placeholder="New component name..." onKeyDown={(e) => e.key === "Enter" && handleAddComp()} />
-          <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={handleAddComp} disabled={!newCompName.trim()}>Add</button>
-        </div>
-
-        <div className="cc-component-grid">
+        <div className="cc-component-list">
           {components.length === 0 ? (
-            <div className="admin-empty" style={{ padding: 16 }}><p>No components yet</p></div>
+            <div className="cc-empty-text">No components added yet</div>
           ) : (
             components.map((comp) => (
               <div
                 key={comp.id}
-                className={`cc-comp-chip ${selectedComponentId === comp.id ? "selected" : ""}`}
+                className={`cc-list-item ${selectedComponentId === comp.id ? "selected" : ""}`}
                 onClick={() => onSelectComponent(comp.id)}
               >
                 {editingCompId === comp.id ? (
                   <div className="cc-edit-inline" onClick={(e) => e.stopPropagation()}>
-                    <input className="admin-input" value={editCompName} onChange={(e) => setEditCompName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && (() => { editComponent(categoryId, editingCompId, { name: editCompName.trim() }); setEditingCompId(null); })()} />
-                    <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={() => { editComponent(categoryId, editingCompId, { name: editCompName.trim() }); setEditingCompId(null); }}>Save</button>
-                    <button className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => setEditingCompId(null)}>Cancel</button>
+                    <input
+                      className="cc-input"
+                      value={editCompName}
+                      onChange={(e) => setEditCompName(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => e.key === "Enter" && handleSaveComponentEdit()}
+                    />
+                    <button className="cc-btn cc-btn-primary" onClick={handleSaveComponentEdit}>Save</button>
+                    <button className="cc-btn cc-btn-ghost" onClick={() => setEditingCompId(null)}>Cancel</button>
                   </div>
                 ) : (
                   <>
-                    <span className="cc-comp-name">{comp.name}</span>
-                    <span className="cc-comp-values-count">{(state.componentValues[comp.id] || []).length} values</span>
-                    <div className="cc-comp-actions" onClick={(e) => e.stopPropagation()}>
-                      <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => { setEditingCompId(comp.id); setEditCompName(comp.name); }}>Edit</button>
-                      <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => { setDeleteTarget(comp); setDeleteType("component"); }}>×</button>
+                    <div className="cc-list-item-info">
+                      <span className="cc-list-item-name">{comp.name}</span>
+                      {comp.isActive === false && <span className="cc-badge-inactive">Inactive</span>}
+                    </div>
+                    <div className="cc-list-item-actions" onClick={(e) => e.stopPropagation()}>
+                      <button className="cc-btn-text" onClick={() => toggleComponentActive(comp)}>
+                        {comp.isActive === false ? "Enable" : "Disable"}
+                      </button>
+                      <button
+                        className="cc-btn-text"
+                        onClick={() => { setEditingCompId(comp.id); setEditCompName(comp.name); }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="cc-btn-text text-danger"
+                        onClick={() => { setDeleteTarget(comp); setDeleteType("component"); }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </>
                 )}
@@ -97,51 +198,84 @@ export default function ComponentManager({ categoryId, categoryName, selectedCom
         </div>
       </div>
 
-      {/* Component Values */}
-      {selectedComp && (
-        <div className="admin-card">
-          <div className="admin-card-header">
-            <div>
-              <h3 className="admin-card-title">Values for "{selectedComp.name}"</h3>
-              <p className="admin-card-subtitle">Add options. One must be the default.</p>
+      <div className="cc-divider" />
+
+      {/* ═══ COMPONENT VALUES SECTION ═══ */}
+      {selectedComponentId && (
+        <div className="cc-section">
+          <div className="cc-section-header">
+            <div className="cc-section-title">COMPONENT VALUES ({selectedComponent?.name})</div>
+            <StatusBadge status="info" label={`${componentValues.length} values`} size="sm" />
+          </div>
+
+          <div className="cc-form-group">
+            <div className="cc-input-row">
+              <input
+                className="cc-input"
+                value={newValueName}
+                onChange={(e) => setNewValueName(e.target.value)}
+                placeholder="e.g. Classic Collar, Spread Collar"
+                onKeyDown={(e) => e.key === "Enter" && handleAddValue()}
+              />
+              <button
+                className="cc-btn cc-btn-primary"
+                onClick={handleAddValue}
+                disabled={!newValueName.trim()}
+              >
+                + Add
+              </button>
             </div>
-            <StatusBadge status="info" label={`${compValues.length} values`} size="sm" />
           </div>
 
-          <div className="cc-add-value-row">
-            <input className="admin-input" value={newValName} onChange={(e) => setNewValName(e.target.value)} placeholder={`New ${selectedComp.name} value...`} onKeyDown={(e) => e.key === "Enter" && handleAddValue()} />
-            <label className="cc-default-check">
-              <input type="checkbox" checked={setAsDefault} onChange={(e) => setSetAsDefault(e.target.checked)} />
-              <span>Set as Default</span>
-            </label>
-            <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={handleAddValue} disabled={!newValName.trim()}>Add</button>
-          </div>
-
-          <div className="cc-values-list">
-            {compValues.length === 0 ? (
-              <div className="admin-empty" style={{ padding: 16 }}><p>No values yet</p></div>
+          <div className="cc-component-list">
+            {componentValues.length === 0 ? (
+              <div className="cc-empty-text">No values added yet</div>
             ) : (
-              compValues.map((val) => (
-                <div key={val.id} className={`cc-value-row ${val.isDefault ? "is-default" : ""}`}>
-                  {editingValId === val.id ? (
+              componentValues.map((val) => (
+                <div key={val.id} className="cc-list-item no-hover">
+                  {editingValueId === val.id ? (
                     <div className="cc-edit-inline">
-                      <input className="admin-input" value={editValName} onChange={(e) => setEditValName(e.target.value)} autoFocus />
-                      <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={() => { editComponentValue(selectedComponentId, val.id, { valueName: editValName.trim() }); setEditingValId(null); }}>Save</button>
-                      <button className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => setEditingValId(null)}>Cancel</button>
+                      <input
+                        className="cc-input"
+                        value={editValueName}
+                        onChange={(e) => setEditValueName(e.target.value)}
+                        autoFocus
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveValueEdit()}
+                      />
+                      <button className="cc-btn cc-btn-primary" onClick={handleSaveValueEdit}>Save</button>
+                      <button className="cc-btn cc-btn-ghost" onClick={() => setEditingValueId(null)}>Cancel</button>
                     </div>
                   ) : (
                     <>
-                      <div className="cc-value-info">
-                        <span className="cc-value-name">{val.valueName}</span>
-                        {val.isDefault && <StatusBadge status="default" label="Default" size="xs" />}
-                        <StatusBadge status={val.status} size="xs" />
+                      <div className="cc-list-item-info">
+                        <span className="cc-list-item-name">{val.name}</span>
+                        {val.isDefault && <span className="cc-badge-default">Default</span>}
+                        {val.isActive === false && <span className="cc-badge-inactive">Inactive</span>}
                       </div>
-                      <div className="cc-value-actions">
-                        {!val.isDefault && (
-                          <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => setDefaultValue(selectedComponentId, val.id)}>Set Default</button>
-                        )}
-                        <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => { setEditingValId(val.id); setEditValName(val.valueName); }}>Edit</button>
-                        <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => { setDeleteTarget(val); setDeleteType("value"); }}>Delete</button>
+                      <div className="cc-list-item-actions">
+                        <label className="cc-toggle-label">
+                          <input
+                            type="checkbox"
+                            checked={val.isDefault}
+                            onChange={() => toggleValueDefault(val)}
+                          />
+                          Default
+                        </label>
+                        <button className="cc-btn-text" onClick={() => toggleValueActive(val)}>
+                          {val.isActive === false ? "Enable" : "Disable"}
+                        </button>
+                        <button
+                          className="cc-btn-text"
+                          onClick={() => { setEditingValueId(val.id); setEditValueName(val.name); }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="cc-btn-text text-danger"
+                          onClick={() => { setDeleteTarget(val); setDeleteType("value"); }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </>
                   )}
@@ -152,18 +286,14 @@ export default function ComponentManager({ categoryId, categoryName, selectedCom
         </div>
       )}
 
-      {/* Sub-Category Manager (shown when component selected + has values) */}
-      {selectedComp && (
-        <SubCategoryManager
-          componentId={selectedComponentId}
-          componentName={selectedComp.name}
-        />
-      )}
-
       <ConfirmDialog
         open={!!deleteTarget}
-        title={`Delete "${deleteTarget?.name || deleteTarget?.valueName}"?`}
-        message={deleteType === "component" ? "All values under this component will be removed." : "This value will be permanently removed."}
+        title={`Delete "${deleteTarget?.name}"?`}
+        message={
+          deleteType === "component"
+            ? "All values under this component will be removed."
+            : "This value will be removed."
+        }
         confirmLabel="Delete"
         confirmVariant="danger"
         onConfirm={handleDeleteConfirm}

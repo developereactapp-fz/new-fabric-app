@@ -45,20 +45,7 @@ export default function EditFabricMode({ groupId, groupName, onDirty, preselecte
     };
   }, [form?.image, imagePreviewUrl]);
 
-  // Fetch attributes from API on mount
-  useEffect(() => {
-    const fetchAttributes = async () => {
-      try {
-        const res = await adminService.getAttributes();
-        const raw = res.data?.data || res.data || [];
-        const items = Array.isArray(raw) ? raw : [];
-        setServerAttributes(items);
-      } catch (err) {
-        console.error("EditFabricMode: Failed to fetch attributes", err);
-      }
-    };
-    fetchAttributes();
-  }, []);
+
 
   const uploadAsset = async (file) => {
     if (!(file instanceof File)) return null;

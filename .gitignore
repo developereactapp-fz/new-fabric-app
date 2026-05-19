@@ -26,3 +26,10 @@ context.md
 output_final_names_1_example.xlsx
 .env
 *.md
+catalog_apis.json
+swagger.json
+.gitignore
+test_api.js
+test_api2.js
+test_api3.js
+test_api_sub.js

@@ -5,19 +5,25 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import { isDuplicate } from "../../utils/validators";
 
 export default function CategoryManager({ selectedCategoryId, onSelectCategory }) {
-  const { state, addCategory, editCategory, deleteCategory } = useAdmin();
+  const { state, addCatalogCategory, editCatalogCategory, deleteCatalogCategory } = useAdmin();
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const categories = state.categories;
+  const categories = state.catalogCategories || [];
   const existingNames = categories.map((c) => c.name);
 
   const handleAdd = () => {
     const name = newName.trim();
     if (!name || isDuplicate(name, existingNames)) return;
-    addCategory(name, "active");
+    addCatalogCategory({
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      description: "",
+      sortOrder: categories.length,
+      isCombined: false
+    });
     setNewName("");
   };
 
@@ -28,13 +34,13 @@ export default function CategoryManager({ selectedCategoryId, onSelectCategory }
     if (!name) return;
     const otherNames = categories.filter((c) => c.id !== editingId).map((c) => c.name);
     if (isDuplicate(name, otherNames)) return;
-    editCategory(editingId, { name });
+    editCatalogCategory(editingId, { name });
     setEditingId(null);
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    deleteCategory(deleteTarget.id);
+    deleteCatalogCategory(deleteTarget.id);
     if (selectedCategoryId === deleteTarget.id) onSelectCategory(null);
     setDeleteTarget(null);
   };
@@ -89,8 +95,8 @@ export default function CategoryManager({ selectedCategoryId, onSelectCategory }
                 <>
                   <div className="cc-category-info">
                     <span className="cc-category-name">{cat.name}</span>
-                    <StatusBadge status={cat.status} size="xs" />
-                    <span className="cc-category-count">{(state.components[cat.id] || []).length} components</span>
+                    <StatusBadge status="active" size="xs" />
+                    <span className="cc-category-count">{cat.childCount || 0} parts</span>
                   </div>
                   <div className="cc-category-actions" onClick={(e) => e.stopPropagation()}>
                     <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => startEdit(cat)}>Edit</button>

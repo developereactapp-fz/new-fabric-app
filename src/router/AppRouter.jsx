@@ -39,6 +39,7 @@ const ComponentActivePage = lazy(() => import("../admin/pages/ComponentActive/Co
 const GroupBuilderPage = lazy(() => import("../admin/pages/GroupBuilder/GroupBuilderPage"));
 const ContrastMapperPage = lazy(() => import("../admin/pages/ContrastMapper/ContrastMapperPage"));
 
+
 // Loading fallback for Suspense
 const AdminLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc' }}>
@@ -65,6 +66,7 @@ export default function AppRouter() {
             <Route path="component-active" element={<ComponentActivePage />} />
             <Route path="group-builder" element={<GroupBuilderPage />} />
             <Route path="contrast-mapper" element={<ContrastMapperPage />} />
+
           </Route>
 
           {/* ═══════ Customer Routes ═══════ */}

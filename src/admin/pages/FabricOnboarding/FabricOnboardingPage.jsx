@@ -19,7 +19,7 @@ const MODES = [
 
 export default function FabricOnboardingPage() {
   const location = useLocation();
-  const { state, setFabrics, addAttributeValue, addFabricGroup } = useAdmin();
+  const { state, setFabrics, fetchAllGroupMappings } = useAdmin();
   const initialEditId = location.state?.editFabricId || null;
   const [mode, setMode] = useState(initialEditId ? "edit" : "create");
   const [selectedGroupId, setSelectedGroupId] = useState(null);
@@ -65,6 +65,7 @@ export default function FabricOnboardingPage() {
     image: f.image || f.imageUrl || f.asset?.url || null,
   });
 
+  // Fetch fabrics on mount
   useEffect(() => {
     const fetchFabrics = async () => {
       try {
@@ -78,28 +79,14 @@ export default function FabricOnboardingPage() {
       }
     };
     fetchFabrics();
+  }, [setFabrics]);
 
-    // DEMO DATA: Add default attribute values and a demo group if empty
-    setTimeout(() => {
-      // Add demo attribute values if missing
-      const demoAttrs = [
-        { category: "Color", value: "White" },
-        { category: "Color", value: "Blue" },
-        { category: "Color", value: "Black" },
-        { category: "Material", value: "Cotton" },
-        { category: "Material", value: "Linen" },
-        { category: "Pattern", value: "Solid" },
-        { category: "Pattern", value: "Stripe" },
-        { category: "Season", value: "Summer" },
-        { category: "Season", value: "Winter" },
-      ];
-      demoAttrs.forEach(attr => addAttributeValue(attr.category, attr.category, attr.value));
-      // Add a demo group if none exist
-      if (state.fabricGroups.length === 0) {
-        addFabricGroup({ groupName: "Demo Group", status: "active" });
-      }
-    }, 1000);
-  }, [setFabrics, addAttributeValue, addFabricGroup, state.fabricGroups.length]);
+  // Fetch group-fabric mappings once groups are loaded
+  useEffect(() => {
+    if (state.fabricGroups.length > 0) {
+      fetchAllGroupMappings(state.fabricGroups);
+    }
+  }, [state.fabricGroups, fetchAllGroupMappings]);
 
   const confirmModeSwitch = () => {
     // Clear preselectedEditId when confirming mode switch away from edit
