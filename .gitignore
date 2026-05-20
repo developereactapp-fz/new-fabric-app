@@ -28,8 +28,10 @@ output_final_names_1_example.xlsx
 *.md
 catalog_apis.json
 swagger.json
-.gitignore
 test_api.js
 test_api2.js
 test_api3.js
 test_api_sub.js
+test_api5.js
+test_api4.js
+test_api6.js
