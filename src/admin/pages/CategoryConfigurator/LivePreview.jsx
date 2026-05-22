@@ -68,7 +68,6 @@ export default function LivePreview({ categoryId, categoryName, productId }) {
         <div className="cc-tree-root">
           {/* Category Root */}
           <div className="cc-tree-node root">
-            <span className="cc-tree-icon">📁</span>
             <span className="cc-tree-label">{categoryName}</span>
             <span className="cc-tree-count">{components.length} components</span>
           </div>
@@ -85,7 +84,6 @@ export default function LivePreview({ categoryId, categoryName, productId }) {
                   <div key={comp.id} className="cc-tree-branch">
                     {/* Component Node */}
                     <div className="cc-tree-node component">
-                      <span className="cc-tree-icon">🧩</span>
                       <span className="cc-tree-label" style={{ textDecoration: comp.isActive === false ? 'line-through' : 'none' }}>
                         {comp.name}
                       </span>
@@ -108,12 +106,31 @@ export default function LivePreview({ categoryId, categoryName, productId }) {
                       {/* Sub Categories */}
                       {subCats.map((sub) => {
                         const subValues = state.subCategoryValues?.[sub.id] || [];
+
+                        // Resolve dependency label
+                        let depLabel = "";
+                        if (sub.type === "dependent") {
+                          const dependsOn = sub.dependsOn || "parent";
+                          if (dependsOn === "parent") {
+                            depLabel = "depends on Component Values";
+                          } else if (dependsOn === "component") {
+                            const depComp = (state.catalogParts || []).find(c => c.id === sub.dependsOnEntityId);
+                            depLabel = `depends on Component Values: ${depComp ? depComp.name : "Unknown"}`;
+                          } else if (dependsOn === "sub-category-id") {
+                            let depSubName = "Unknown";
+                            Object.values(state.subCategories || {}).forEach(list => {
+                              const found = list.find(s => s.id === sub.dependsOnEntityId);
+                              if (found) depSubName = found.name;
+                            });
+                            depLabel = `depends on Sub-Category: ${depSubName}`;
+                          }
+                        }
+
                         return (
                           <div key={sub.id} className="cc-tree-branch">
                             <div className="cc-tree-node component" style={{ marginTop: 4 }}>
-                              <span className="cc-tree-icon">📌</span>
                               <span className="cc-tree-label" style={{ color: '#888', fontStyle: 'italic', textDecoration: sub.isActive === false ? 'line-through' : 'none' }}>
-                                {sub.name} <small>({sub.type})</small>
+                                {sub.name} <small>({sub.type === "dependent" && depLabel ? depLabel : sub.type})</small>
                               </span>
                             </div>
                             <div className="cc-tree-children" style={{ paddingLeft: 16 }}>

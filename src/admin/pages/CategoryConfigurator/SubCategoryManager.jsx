@@ -11,7 +11,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
  *
  * Note: Connected to backend subcategory APIs
  */
-export default function SubCategoryManager({ componentId, componentName }) {
+export default function SubCategoryManager({ componentId, componentName, productId }) {
   const {
     state,
     fetchSubCategories,
@@ -30,7 +30,7 @@ export default function SubCategoryManager({ componentId, componentName }) {
   // Sub Category form
   const [newSubName, setNewSubName] = useState("");
   const [newSubType, setNewSubType] = useState("independent"); // "independent" | "dependent"
-  const [newSubDependsOn, setNewSubDependsOn] = useState("");
+  const [newSubDependsOn, setNewSubDependsOn] = useState("parent"); // "parent" | "component:<compId>" | "sub-category:<subId>"
 
   const [editingSubId, setEditingSubId] = useState(null);
   const [editSubName, setEditSubName] = useState("");
@@ -56,21 +56,59 @@ export default function SubCategoryManager({ componentId, componentName }) {
   const selectedSub = subCategories.find((s) => s.id === selectedSubId);
   const subCategoryValues = state.subCategoryValues?.[selectedSubId] || [];
 
-  // Get component values (Part Types) for dependency mapping
-  const componentValues = (state.catalogPartTypes || []).filter(
-    (pt) => pt.partId === componentId
+  // Get all components (Parts) for this product to support cross-component dependency
+  const allComponents = (state.catalogParts || []).filter(
+    (p) => p.productId === productId
   );
+
+  // Fetch values for the dependency if the selected subcategory depends on another subcategory
+  useEffect(() => {
+    if (
+      selectedSub?.type === "dependent" &&
+      selectedSub?.dependsOn === "sub-category-id" &&
+      selectedSub?.dependsOnEntityId
+    ) {
+      if (!state.subCategoryValues?.[selectedSub.dependsOnEntityId]) {
+        fetchSubCategoryValues(selectedSub.dependsOnEntityId);
+      }
+    }
+  }, [selectedSub, state.subCategoryValues, fetchSubCategoryValues]);
+
+  // Get the values that the selected subcategory's options depend on
+  const getDependencyParentValues = () => {
+    if (!selectedSub || selectedSub.type !== "dependent") return [];
+
+    const dependsOn = selectedSub.dependsOn || "parent";
+    const entityId = selectedSub.dependsOnEntityId;
+
+    if (dependsOn === "parent") {
+      return (state.catalogPartTypes || []).filter((pt) => pt.partId === componentId);
+    }
+
+    if (dependsOn === "component") {
+      return (state.catalogPartTypes || []).filter((pt) => pt.partId === entityId);
+    }
+
+    if (dependsOn === "sub-category-id") {
+      const vals = state.subCategoryValues?.[entityId] || [];
+      return vals.map(v => ({ id: v.id, name: v.valueName || v.name }));
+    }
+
+    return [];
+  };
+
+  const dependencyParentValues = getDependencyParentValues();
 
   // Auto-select first parent value if the selected subcategory is dependent
   useEffect(() => {
-    if (selectedSub?.type === "dependent" && componentValues.length > 0) {
-      if (!selectedParentValId || !componentValues.some(cv => cv.id === selectedParentValId)) {
-        setSelectedParentValId(componentValues[0].id);
+    if (selectedSub?.type === "dependent" && dependencyParentValues.length > 0) {
+      if (!selectedParentValId || !dependencyParentValues.some(cv => cv.id === selectedParentValId)) {
+        setSelectedParentValId(dependencyParentValues[0].id);
       }
     } else {
       setSelectedParentValId("");
     }
-  }, [selectedSub, componentValues, selectedParentValId]);
+  }, [selectedSub, dependencyParentValues, selectedParentValId]);
 
   // Fetch subcategory values when selected subcategory or selected parent value changes
   useEffect(() => {
@@ -89,10 +127,24 @@ export default function SubCategoryManager({ componentId, componentName }) {
   const handleAddSubCategory = () => {
     const name = newSubName.trim();
     if (!name) return;
-    addSubCategory(componentId, name, newSubType, newSubType === "dependent" ? newSubDependsOn : null);
+
+    let dependsOn = "parent";
+    let dependsOnEntityId = null;
+
+    if (newSubType === "dependent") {
+      if (newSubDependsOn.startsWith("component:")) {
+        dependsOn = "component";
+        dependsOnEntityId = newSubDependsOn.split(":")[1];
+      } else if (newSubDependsOn.startsWith("sub-category:")) {
+        dependsOn = "sub-category-id";
+        dependsOnEntityId = newSubDependsOn.split(":")[1];
+      }
+    }
+
+    addSubCategory(componentId, name, newSubType, dependsOn, dependsOnEntityId);
     setNewSubName("");
     setNewSubType("independent");
-    setNewSubDependsOn("");
+    setNewSubDependsOn("parent");
   };
 
   const handleSaveSubEdit = () => {
@@ -184,15 +236,16 @@ export default function SubCategoryManager({ componentId, componentName }) {
               </div>
 
               {newSubType === "dependent" && (
-                <div style={{ marginTop: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
                   <select
                     className="cc-input"
                     value={newSubDependsOn}
                     onChange={(e) => setNewSubDependsOn(e.target.value)}
+                    style={{ fontSize: "13px" }}
                   >
-                    <option value="">-- Depends On (Select Value) --</option>
-                    {componentValues.map((cv) => (
-                      <option key={cv.id} value={cv.id}>{cv.name}</option>
+                    <option value="parent">Component Values ({componentName})</option>
+                    {subCategories.map((s) => (
+                      <option key={s.id} value={`sub-category:${s.id}`}>Sub-Category ({s.name})</option>
                     ))}
                   </select>
                 </div>
@@ -203,10 +256,7 @@ export default function SubCategoryManager({ componentId, componentName }) {
               className="cc-btn cc-btn-primary"
               style={{ marginTop: "2px" }}
               onClick={handleAddSubCategory}
-              disabled={
-                !newSubName.trim() ||
-                (newSubType === "dependent" && !newSubDependsOn)
-              }
+              disabled={!newSubName.trim()}
             >
               + Add
             </button>
@@ -249,7 +299,11 @@ export default function SubCategoryManager({ componentId, componentName }) {
                     <div className="cc-sub-info">
                       <span className="cc-sub-name">{sub.name}</span>
                       <span className="cc-badge-outline">
-                        {sub.type === "dependent" ? "Dependent" : "Independent"}
+                        {sub.type === "dependent" ? (
+                          <>
+                            Dependent ({sub.dependsOn === "parent" ? "Component Values" : sub.dependsOn === "component" ? "Another Component" : "Another Sub-Category"})
+                          </>
+                        ) : "Independent"}
                       </span>
                       {sub.isActive === false && <span className="cc-badge-inactive">Inactive</span>}
                     </div>
@@ -288,10 +342,10 @@ export default function SubCategoryManager({ componentId, componentName }) {
               <StatusBadge status="info" label={`${subCategoryValues.length} values`} size="sm" />
             </div>
 
-            {selectedSub?.type === "dependent" && componentValues.length > 0 && (
+            {selectedSub?.type === "dependent" && dependencyParentValues.length > 0 && (
               <div className="cc-form-group" style={{ marginBottom: "16px", padding: "12px", background: "rgba(255, 255, 255, 0.05)", borderRadius: "8px" }}>
                 <label className="cc-form-label" style={{ fontWeight: "600", color: "var(--primary-color, #4f46e5)", marginBottom: "6px", display: "block" }}>
-                  Configure Options for Parent Value
+                  Configure Options for Dependency Value
                 </label>
                 <select
                   className="cc-input"
@@ -299,17 +353,17 @@ export default function SubCategoryManager({ componentId, componentName }) {
                   onChange={(e) => setSelectedParentValId(e.target.value)}
                   style={{ width: "100%", background: "var(--bg-card, #1f2937)", color: "var(--text-main, #f3f4f6)" }}
                 >
-                  <option value="" disabled>-- Select a Parent Value --</option>
-                  {componentValues.map((cv) => (
+                  <option value="" disabled>-- Select a Dependency Value --</option>
+                  {dependencyParentValues.map((cv) => (
                     <option key={cv.id} value={cv.id}>{cv.name}</option>
                   ))}
                 </select>
               </div>
             )}
 
-            {selectedSub?.type === "dependent" && componentValues.length === 0 && (
+            {selectedSub?.type === "dependent" && dependencyParentValues.length === 0 && (
               <div style={{ marginBottom: "16px", padding: "12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "8px", color: "#f87171", fontSize: "13px" }}>
-                ⚠️ Please add Component Values (Part Types) first under this Component so you can map dependent subcategory options.
+                ⚠️ Please add values first for the selected dependency so you can map dependent subcategory options.
               </div>
             )}
 

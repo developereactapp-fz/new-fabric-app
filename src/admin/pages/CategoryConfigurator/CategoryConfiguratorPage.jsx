@@ -27,11 +27,13 @@ export default function CategoryConfiguratorPage() {
     editCatalogCategory,
     deleteCatalogCategory,
     fetchProductParts,
+    addCatalogProduct,
   } = useAdmin();
 
   const [mode, setMode] = useState("create"); // "create" | "edit" | "manage"
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [selectedComponentId, setSelectedComponentId] = useState(null);
+  const [creatingProductIdFor, setCreatingProductIdFor] = useState(null);
 
   // Create form
   const [newCatName, setNewCatName] = useState("");
@@ -55,6 +57,32 @@ export default function CategoryConfiguratorPage() {
     (p) => p.categoryId === selectedCategoryId
   );
   const autoProductId = categoryProducts.length > 0 ? categoryProducts[0].id : null;
+
+  // Auto-create a default product if a category is selected but has no products
+  useEffect(() => {
+    if (selectedCategoryId && categories.length > 0 && creatingProductIdFor !== selectedCategoryId) {
+      const currentCategoryProducts = products.filter(
+        (p) => p.categoryId === selectedCategoryId
+      );
+      if (currentCategoryProducts.length === 0) {
+        const cat = categories.find((c) => c.id === selectedCategoryId);
+        if (cat) {
+          setCreatingProductIdFor(selectedCategoryId);
+          const name = `Default ${cat.name}`;
+          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+          addCatalogProduct({
+            name,
+            slug,
+            description: `Default product for ${cat.name}`,
+            isActive: true,
+            basePrice: 0,
+            currency: "INR",
+            categoryId: selectedCategoryId
+          });
+        }
+      }
+    }
+  }, [selectedCategoryId, products, categories, addCatalogProduct, creatingProductIdFor]);
 
   // Fetch parts for the auto-selected product
   useEffect(() => {
@@ -146,33 +174,6 @@ export default function CategoryConfiguratorPage() {
 
           <div className="cc-divider" />
 
-          {/* ── EXISTING CATEGORIES ── */}
-          <div className="cc-section">
-            <div className="cc-section-title">Existing Categories</div>
-            <div className="cc-category-list">
-              {categories.length === 0 ? (
-                <div className="cc-empty-text">No categories yet</div>
-              ) : (
-                categories.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className={`cc-category-row ${selectedCategoryId === cat.id ? "selected" : ""}`}
-                    onClick={() => handleSelectCategory(cat.id)}
-                  >
-                    <div className="cc-category-info">
-                      <span className="cc-category-name">{cat.name}</span>
-                    </div>
-                    {cat.isActive === false && (
-                      <span className="cc-badge-inactive">Inactive</span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="cc-divider" />
-
           {/* ── CREATE CATEGORY FORM ── */}
           {mode === "create" && (
             <div className="cc-section">
@@ -246,13 +247,11 @@ export default function CategoryConfiguratorPage() {
 
           {mode === "edit" && !selectedCategoryId && (
             <div className="cc-section">
-              <div className="cc-empty-text">Select a category to edit</div>
+              <div className="cc-empty-text">Select a category from the right to edit</div>
             </div>
           )}
-        </div>
 
-        {/* ═══ RIGHT PANEL ═══ */}
-        <div className="cc-right">
+          {/* ── MANAGE COMPONENTS ── */}
           {mode === "manage" && selectedCategoryId ? (
             <>
               <ComponentManager
@@ -272,22 +271,55 @@ export default function CategoryConfiguratorPage() {
                 />
               )}
             </>
-          ) : mode === "manage" && !selectedCategoryId ? (
-            <div className="cc-panel-placeholder">
-              <div className="cc-placeholder-icon">⚙️</div>
-              <p>Select a category from the left to manage its components</p>
+          ) : mode === "manage" && !selectedCategoryId && (
+            <div className="admin-card cc-preview-card">
+              <div className="admin-empty" style={{ padding: 32 }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: 12, opacity: 0.4 }}>
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+                <p>Select a category from the right to manage its components</p>
+              </div>
             </div>
-          ) : (
-            <LivePreview
-              categoryId={selectedCategoryId}
-              categoryName={selectedCategory?.name}
-              components={parts}
-              partTypes={state.catalogPartTypes || []}
-              subCategories={state.subCategories || {}}
-              subCategoryValues={state.subCategoryValues || {}}
-              componentValues={state.componentValues || {}}
-            />
           )}
+        </div>
+
+        {/* ═══ RIGHT PANEL ═══ */}
+        <div className="cc-right">
+          {/* ── EXISTING CATEGORIES ── */}
+          <div className="cc-section">
+            <div className="cc-section-title">Existing Categories</div>
+            <div className="cc-category-list">
+              {categories.length === 0 ? (
+                <div className="cc-empty-text">No categories yet</div>
+              ) : (
+                categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className={`cc-category-row ${selectedCategoryId === cat.id ? "selected" : ""}`}
+                    onClick={() => handleSelectCategory(cat.id)}
+                  >
+                    <div className="cc-category-info">
+                      <span className="cc-category-name">{cat.name}</span>
+                    </div>
+                    {cat.isActive === false && (
+                      <span className="cc-badge-inactive">Inactive</span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="cc-divider" />
+
+          {/* ── LIVE PREVIEW ── */}
+          <LivePreview
+            categoryId={selectedCategoryId}
+            categoryName={selectedCategory?.name}
+            productId={autoProductId}
+          />
         </div>
       </div>
     </div>

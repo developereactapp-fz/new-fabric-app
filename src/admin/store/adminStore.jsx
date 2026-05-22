@@ -471,15 +471,34 @@ export function AdminProvider({ children }) {
     }
   }, []);
 
-  const addSubCategory = useCallback(async (compId, name, type = "independent", parentRef = null) => {
+  const addSubCategory = useCallback(async (compId, name, type = "independent", dependsOnOrParentRef = "parent", dependsOnEntityId = null) => {
     dispatch({ type: A.SET_LOADING, payload: true });
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+
+    let finalDependsOn = "parent";
+    let finalDependsOnEntityId = null;
+
+    if (type === "dependent") {
+      if (
+        dependsOnOrParentRef === "parent" ||
+        dependsOnOrParentRef === "component" ||
+        dependsOnOrParentRef === "sub-category-id"
+      ) {
+        finalDependsOn = dependsOnOrParentRef;
+        finalDependsOnEntityId = dependsOnEntityId;
+      } else {
+        // Old signature backward compatibility: dependsOnOrParentRef was parentRef
+        finalDependsOn = dependsOnOrParentRef ? "sub-category-id" : "parent";
+        finalDependsOnEntityId = dependsOnOrParentRef || null;
+      }
+    }
+
     const data = {
       name,
       slug,
       type: type ? type.toUpperCase() : "INDEPENDENT",
-      dependsOn: type === "dependent" ? (parentRef ? "sub-category-id" : "parent") : "parent",
-      dependsOnEntityId: parentRef || null,
+      dependsOn: finalDependsOn,
+      dependsOnEntityId: finalDependsOnEntityId,
       sortOrder: 0
     };
     try {
