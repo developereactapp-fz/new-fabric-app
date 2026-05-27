@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 import StatusBadge from "../../components/StatusBadge";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -75,7 +75,7 @@ export default function SubCategoryManager({ componentId, componentName, product
   }, [selectedSub, state.subCategoryValues, fetchSubCategoryValues]);
 
   // Get the values that the selected subcategory's options depend on
-  const getDependencyParentValues = () => {
+  const dependencyParentValues = useMemo(() => {
     if (!selectedSub || selectedSub.type !== "dependent") return [];
 
     const dependsOn = selectedSub.dependsOn || "parent";
@@ -95,9 +95,7 @@ export default function SubCategoryManager({ componentId, componentName, product
     }
 
     return [];
-  };
-
-  const dependencyParentValues = getDependencyParentValues();
+  }, [selectedSub, componentId, state.catalogPartTypes, state.subCategoryValues]);
 
   // Auto-select first parent value if the selected subcategory is dependent
   useEffect(() => {

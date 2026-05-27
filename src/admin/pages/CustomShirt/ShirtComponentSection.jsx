@@ -10,7 +10,9 @@ import ContrastSection from "./ContrastSection";
  *   title          — component display name (e.g. "Collar")
  *   options        — [{ key, label }] hardcoded options
  *   mappings       — { [optionKey]: { checked, image, isDefault } }
+ *   mappings       — { [optionKey]: { checked, image, isDefault, isUploading } }
  *   onChange        — (optionKey, updates) => void
+ *   onImageUpload   — (optionKey, file) => void
  *   onSetDefault    — (optionKey) => void
  *   hasContrast     — boolean, whether to show contrast panel
  *   contrastEnabled — boolean
@@ -24,6 +26,7 @@ export default function ShirtComponentSection({
   options = [],
   mappings = {},
   onChange,
+  onImageUpload,
   onSetDefault,
   hasContrast = false,
   contrastEnabled = false,
@@ -43,22 +46,28 @@ export default function ShirtComponentSection({
 
   let badgeLabel = "Not set";
   let badgeClass = "empty";
-  if (selectedCount > 0 && missingImages === 0 && hasDefault) {
-    badgeLabel = "✓ Complete";
-    badgeClass = "complete";
-  } else if (selectedCount > 0 && missingImages > 0) {
-    badgeLabel = `${missingImages} missing`;
-    badgeClass = "warning";
-  } else if (selectedCount > 0) {
-    badgeLabel = `${selectedCount} selected`;
-    badgeClass = "selected";
+  if (selectedCount > 0) {
+    if (missingImages === 0 && hasDefault) {
+      badgeLabel = "✓ Complete";
+      badgeClass = "complete";
+    } else if (missingImages > 0 && !hasDefault) {
+      badgeLabel = `${missingImages} missing & no default`;
+      badgeClass = "warning";
+    } else if (missingImages > 0) {
+      badgeLabel = `${missingImages} missing`;
+      badgeClass = "warning";
+    } else if (!hasDefault) {
+      badgeLabel = "No default";
+      badgeClass = "warning";
+    }
   }
 
   const handleImageUpload = (optionKey, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    onChange(optionKey, { image: url });
+    if (onImageUpload) {
+      onImageUpload(optionKey, file);
+    }
   };
 
   return (
@@ -85,10 +94,12 @@ export default function ShirtComponentSection({
               const m = mappings[opt.key] || {};
               const checked = !!m.checked;
               const hasImage = !!m.image;
+              const isUploading = !!m.isUploading;
               let optionClass = "csf-option";
               if (checked) optionClass += " checked";
               if (checked && hasImage) optionClass += " has-image";
-              if (checked && !hasImage) optionClass += " missing-image";
+              if (checked && !hasImage && !isUploading) optionClass += " missing-image";
+              if (isUploading) optionClass += " uploading";
 
               return (
                 <div key={opt.key} className={optionClass}>
@@ -97,12 +108,15 @@ export default function ShirtComponentSection({
                     className="csf-option-checkbox"
                     checked={checked}
                     onChange={(e) => onChange(opt.key, { checked: e.target.checked })}
+                    disabled={isUploading}
                   />
                   <span className="csf-option-name">{opt.label}</span>
 
                   {/* Image upload */}
-                  <div className="csf-option-image" title={hasImage ? "Change image" : "Upload image"}>
-                    {hasImage ? (
+                  <div className="csf-option-image" title={isUploading ? "Uploading..." : hasImage ? "Change image" : "Upload image"}>
+                    {isUploading ? (
+                      <div className="csf-option-image-spinner" />
+                    ) : hasImage ? (
                       <img src={m.image} alt={opt.label} />
                     ) : (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
@@ -111,15 +125,17 @@ export default function ShirtComponentSection({
                         <path d="M21 15l-5-5L5 21" />
                       </svg>
                     )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(opt.key, e)}
-                    />
+                    {!isUploading && (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(opt.key, e)}
+                      />
+                    )}
                   </div>
 
                   {/* Default radio */}
-                  {checked && (
+                  {checked && !isUploading && (
                     <label className={`csf-option-default ${m.isDefault ? "is-default" : ""}`}>
                       <input
                         type="radio"

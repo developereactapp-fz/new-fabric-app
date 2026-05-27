@@ -7,7 +7,9 @@ import PropertyGrid from "../../components/PropertyGrid";
 import EmptyState from "../../components/EmptyState";
 import ActionBar from "../../components/ActionBar";
 import FabricMappingTable from "./FabricMappingTable";
+import { getPublicAssetUrl } from "../../utils/assetUtils";
 import "./FabricDetail.css";
+
 
 export default function FabricDetailPage() {
   const { state, actions } = useAdmin();
@@ -44,8 +46,9 @@ export default function FabricDetailPage() {
   };
 
   const handleEditMappings = () => {
-    navigate("/admin/category-components");
+    navigate("/admin/custom-shirt");
   };
+
 
   const handleDisableFabric = () => {
     if (!selectedFabric) return;
@@ -125,12 +128,16 @@ export default function FabricDetailPage() {
 
           <div className="fabric-info-grid">
             <div className="admin-card fabric-image-card">
-              {selectedFabric.image ? (
-                <img src={selectedFabric.image} alt={selectedFabric.fabricName} />
-              ) : (
-                <div className="no-image-placeholder">No Image Available</div>
-              )}
+              {(() => {
+                const fabricImage = getPublicAssetUrl(selectedFabric.assetId || selectedFabric.asset?.id) || selectedFabric.image || selectedFabric.imageUrl || selectedFabric.asset?.url || null;
+                return fabricImage ? (
+                  <img src={fabricImage} alt={selectedFabric.fabricName} />
+                ) : (
+                  <div className="no-image-placeholder">No Image Available</div>
+                );
+              })()}
             </div>
+
 
             <div className="admin-card fabric-props-card">
               <h3>Core Details</h3>

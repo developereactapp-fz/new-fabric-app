@@ -623,3 +623,26 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* ── Option Image Uploading Spinner ── */
+.csf-option.uploading {
+  border-color: #93c5fd;
+  background: #f0f7ff;
+}
+
+.csf-option-image-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: csf-spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes csf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

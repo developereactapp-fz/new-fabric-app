@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useAdmin } from "../../store/adminStore.jsx";
 
 /**
@@ -30,18 +30,22 @@ export default function LivePreview({ categoryId, categoryName, productId }) {
   }
 
   // Get parts (Components) for this product
-  const components = (state.catalogParts || []).filter(
-    (p) => p.productId === productId
-  );
+  const components = useMemo(() => {
+    return (state.catalogParts || []).filter(
+      (p) => p.productId === productId
+    );
+  }, [state.catalogParts, productId]);
 
   // Fetch subcategories for all components of this product
   useEffect(() => {
     if (components.length > 0) {
       components.forEach((comp) => {
-        fetchSubCategories(comp.id);
+        if (!state.subCategories?.[comp.id]) {
+          fetchSubCategories(comp.id);
+        }
       });
     }
-  }, [components, fetchSubCategories]);
+  }, [components, state.subCategories, fetchSubCategories]);
 
   // Fetch values for all subcategories
   useEffect(() => {

@@ -452,6 +452,7 @@ export function AdminProvider({ children }) {
       dispatch({ type: A.SET_SUBCATEGORIES, payload: { compId: partId, subs } });
     } catch (err) {
       console.error("Failed to fetch sub-categories", err);
+      dispatch({ type: A.SET_SUBCATEGORIES, payload: { compId: partId, subs: [] } });
     } finally {
       dispatch({ type: A.SET_LOADING, payload: false });
     }
@@ -466,6 +467,7 @@ export function AdminProvider({ children }) {
       dispatch({ type: A.SET_SUBCATEGORY_VALUES, payload: { subId: subCategoryId, vals } });
     } catch (err) {
       console.error("Failed to fetch sub-category values", err);
+      dispatch({ type: A.SET_SUBCATEGORY_VALUES, payload: { subId: subCategoryId, vals: [] } });
     } finally {
       dispatch({ type: A.SET_LOADING, payload: false });
     }

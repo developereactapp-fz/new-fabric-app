@@ -32,12 +32,11 @@ const CategoryConfiguratorPage = lazy(() => import("../admin/pages/CategoryConfi
 const FabricOnboardingPage = lazy(() => import("../admin/pages/FabricOnboarding/FabricOnboardingPage"));
 const MaterialsPanelPage = lazy(() => import("../admin/pages/MaterialsPanel/MaterialsPanelPage"));
 const ComponentsPanelPage = lazy(() => import("../admin/pages/ComponentsPanel/ComponentsPanelPage"));
-const CategoryComponentsPage = lazy(() => import("../admin/pages/CategoryComponents/CategoryComponentsPage"));
 const CustomShirtPage = lazy(() => import("../admin/pages/CustomShirt/CustomShirtPage"));
 const FabricDetailPage = lazy(() => import("../admin/pages/FabricDetail/FabricDetailPage"));
-const ComponentActivePage = lazy(() => import("../admin/pages/ComponentActive/ComponentActivePage"));
 const GroupBuilderPage = lazy(() => import("../admin/pages/GroupBuilder/GroupBuilderPage"));
 const ContrastMapperPage = lazy(() => import("../admin/pages/ContrastMapper/ContrastMapperPage"));
+
 
 
 // Loading fallback for Suspense
@@ -60,12 +59,12 @@ export default function AppRouter() {
             <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
             <Route path="materials-panel" element={<MaterialsPanelPage />} />
             <Route path="components-panel" element={<ComponentsPanelPage />} />
-            <Route path="category-components" element={<CategoryComponentsPage />} />
             <Route path="custom-shirt" element={<CustomShirtPage />} />
+
             <Route path="fabric-detail" element={<FabricDetailPage />} />
-            <Route path="component-active" element={<ComponentActivePage />} />
             <Route path="group-builder" element={<GroupBuilderPage />} />
             <Route path="contrast-mapper" element={<ContrastMapperPage />} />
+
 
           </Route>
 
