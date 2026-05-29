@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { shirtData } from "./Data/shirtData";
 import PreviewArea from "../../components/PreviewArea";
 import FabricPanel from "../../components/FabricPanel";
+import { getPublicAssetUrl } from "../../admin/utils/assetUtils";
 
 export default function ShirtCustomizePage() {
   const [fabrics, setFabrics] = useState(shirtData.fabrics);
@@ -15,7 +16,7 @@ export default function ShirtCustomizePage() {
     if (!selectedFabric) return;
     setCustomLayers((prev) => {
       const newLayers = [...prev];
-      const layerImage = option.image || option.raw?.asset?.url || option.raw?.imageUrl;
+      const layerImage = option.image || (option.raw ? (getPublicAssetUrl(option.raw.assetId || option.raw.asset?.id) || option.raw.asset?.url || option.raw.imageUrl) : "");
 
       if (category === "collar") {
         if (isContrast) {

@@ -32,6 +32,11 @@ export default function ShirtComponentSection({
   contrastEnabled = false,
   onContrastToggle,
   defaultFabric = null,
+  checkedOptions = [],
+  contrastFabrics = [],
+  onAddContrastFabric,
+  onRemoveContrastFabric,
+  onContrastImageUpload,
   startExpanded = false,
 }) {
   const [expanded, setExpanded] = useState(startExpanded);
@@ -158,6 +163,11 @@ export default function ShirtComponentSection({
               enabled={contrastEnabled}
               onToggle={onContrastToggle}
               defaultFabric={defaultFabric}
+              checkedOptions={checkedOptions}
+              contrastFabrics={contrastFabrics}
+              onAddContrastFabric={onAddContrastFabric}
+              onRemoveContrastFabric={onRemoveContrastFabric}
+              onImageUpload={onContrastImageUpload}
             />
           )}
         </div>

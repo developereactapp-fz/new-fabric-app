@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore.jsx";
 import { adminService } from "../../../services/adminService";
+import { getPublicAssetUrl } from "../../utils/assetUtils";
 
 
 import FabricGroupManager from "./FabricGroupManager";
@@ -62,7 +63,7 @@ export default function FabricOnboardingPage() {
     fabricName: f.fabricName || f.name || "",
     material: f.material || f.type || "",
     status: f.status || (f.isActive === false ? "inactive" : "active"),
-    image: f.image || f.imageUrl || f.asset?.url || null,
+    image: getPublicAssetUrl(f.assetId || f.asset?.id) || f.image || f.imageUrl || f.asset?.url || null,
   });
 
   // Fetch fabrics on mount

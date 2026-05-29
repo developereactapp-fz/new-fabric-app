@@ -32,13 +32,13 @@ export default function ContrastSection({
     if (componentName.toLowerCase() !== "cuff") return checkedOptions;
 
     return checkedOptions.filter((opt) => {
-      const key = opt.key.toLowerCase();
+      const label = opt.label.toLowerCase();
       if (selectedCuffType === "Single Round") {
-        return key.includes("single_round");
+        return label.includes("single round") || label.includes("single cuff one button") || label.includes("single round adjustable");
       } else if (selectedCuffType === "Single Square") {
-        return key.includes("single_square") || key.includes("single_eclipse") || key.includes("single_chisel");
+        return label.includes("single square") || label.includes("single eclipse") || label.includes("single cuff elipse") || label.includes("single chisel");
       } else if (selectedCuffType === "Double Cuff") {
-        return key.includes("double_cuff") || key.includes("turnback_cuff");
+        return label.includes("double cuff") || label.includes("turnback cuff");
       }
       return true;
     });

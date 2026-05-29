@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import QuickAccessToolbar from "./fabric/subcomponents/QuickAccessToolbar";
 import FabricFilterPanel from "./fabric/subcomponents/FabricFilterPanel";
 import FabricDetailModal from "./fabric/subcomponents/FabricDetailModal";
+import { getPublicAssetUrl } from "../admin/utils/assetUtils";
 
 
 
@@ -802,7 +803,7 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
 
           description: t?.description || "",
 
-          image: t?.asset?.url || t?.imageUrl || null,
+          image: getPublicAssetUrl(t?.assetId || t?.asset?.id) || t?.asset?.url || t?.imageUrl || null,
 
           selected: !!t?.isDefault,
 

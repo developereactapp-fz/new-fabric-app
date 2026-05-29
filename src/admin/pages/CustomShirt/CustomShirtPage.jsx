@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAdmin } from "../../store/adminStore";
 import { adminService } from "../../../services/adminService";
-import SHIRT_COMPONENTS, { initialContrastState } from "./shirtConfig";
 import PageHeader from "../../components/PageHeader";
 import EmptyState from "../../components/EmptyState";
 import ActionBar from "../../components/ActionBar";
@@ -11,18 +10,24 @@ import ValidationBanner from "../../components/ValidationBanner";
 import { getPublicAssetUrl } from "../../utils/assetUtils";
 import "./CustomShirt.css";
 
-
 /**
  * CustomShirtPage
  * ───────────────
- * Category-specific mapping page hardcoded for "Custom Shirt".
- * 8 component sections with contrast support for Collar & Cuff.
+ * Category-specific mapping page dynamically loading parts and partTypes.
+ * Supports Collar & Cuff contrast.
  * Synchronized with the database catalog APIs.
  */
 export default function CustomShirtPage() {
-  const { state, setFabrics, fetchAllGroupMappings, fetchCatalogCategories } = useAdmin();
+  const {
+    state,
+    setFabrics,
+    fetchAllGroupMappings,
+    fetchCatalogCategories,
+    fetchCatalogProducts,
+  } = useAdmin();
 
   // ── Selection state ──
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedFabricId, setSelectedFabricId] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -37,17 +42,21 @@ export default function CustomShirtPage() {
   const [mappingState, setMappingState] = useState({});
 
   // ── Contrast toggles ──
-  const [contrastState, setContrastState] = useState(initialContrastState());
+  const [contrastState, setContrastState] = useState({});
 
   // ── Contrast fabrics state: { [sectionKey]: [{ id, fabricId, fabricName }] } ──
-  const [contrastFabrics, setContrastFabrics] = useState({ collar: [], cuff: [] });
+  const [contrastFabrics, setContrastFabrics] = useState({});
 
   // ── Toast ──
   const [toast, setToast] = useState(null);
 
-  // Fetch fabrics & categories on mount
+  // Track product creation to avoid duplicate triggers
+  const [creatingProductFor, setCreatingProductFor] = useState(null);
+
+  // Fetch fabrics, categories & products on mount
   useEffect(() => {
     fetchCatalogCategories();
+    fetchCatalogProducts();
     const fetchFabrics = async () => {
       try {
         const res = await adminService.getFabrics({ limit: 100 });
@@ -59,7 +68,7 @@ export default function CustomShirtPage() {
             fabricName: f.fabricName || f.name || "",
             material: f.material || f.type || "",
             status: f.status || (f.isActive === false ? "inactive" : "active"),
-            image: f.image || f.imageUrl || f.asset?.url || null,
+            image: getPublicAssetUrl(f.assetId || f.asset?.id) || f.image || f.imageUrl || f.asset?.url || null,
           })));
         }
       } catch (err) {
@@ -67,7 +76,7 @@ export default function CustomShirtPage() {
       }
     };
     fetchFabrics();
-  }, [setFabrics, fetchCatalogCategories]);
+  }, [setFabrics, fetchCatalogCategories, fetchCatalogProducts]);
 
   // Fetch group-fabric mappings once groups are loaded
   useEffect(() => {
@@ -76,22 +85,7 @@ export default function CustomShirtPage() {
     }
   }, [state.fabricGroups, fetchAllGroupMappings]);
 
-  // Fetch product tree on mount
-  useEffect(() => {
-    const fetchTree = async () => {
-      try {
-        const res = await adminService.getProductTree("s91724-5554-00-uuid");
-        setProductTree(res.data?.data || res.data);
-      } catch (err) {
-        console.error("Failed to load Custom Shirt product tree", err);
-      } finally {
-        setLoadingTree(false);
-      }
-    };
-    fetchTree();
-  }, []);
-
-  // ── Find "Custom Shirt" category ──
+  // ── Find "Custom Shirt" category initially ──
   const shirtCategory = useMemo(
     () => (state.catalogCategories || []).find(
       (c) => c?.name?.toLowerCase().includes("custom shirt") || c?.name?.toLowerCase().includes("shirt")
@@ -99,22 +93,83 @@ export default function CustomShirtPage() {
     [state.catalogCategories]
   );
 
+  // Initialize selectedCategoryId once shirtCategory is loaded
+  useEffect(() => {
+    if (shirtCategory && !selectedCategoryId) {
+      setSelectedCategoryId(shirtCategory.id);
+    }
+  }, [shirtCategory, selectedCategoryId]);
 
+  // Find the corresponding product for the selected category
+  const currentProduct = useMemo(() => {
+    if (!selectedCategoryId || !state.catalogProducts) return null;
+    return state.catalogProducts.find((p) => p.categoryId === selectedCategoryId) || null;
+  }, [selectedCategoryId, state.catalogProducts]);
 
-  const categoryId = shirtCategory?.id || "";
+  // Auto-create a default product if a category is selected but has no products
+  useEffect(() => {
+    if (selectedCategoryId && state.catalogCategories.length > 0 && creatingProductFor !== selectedCategoryId) {
+      const categoryProducts = (state.catalogProducts || []).filter(
+        (p) => p.categoryId === selectedCategoryId
+      );
+      if (categoryProducts.length === 0) {
+        const cat = state.catalogCategories.find((c) => c.id === selectedCategoryId);
+        if (cat) {
+          setCreatingProductFor(selectedCategoryId);
+          const name = `Default ${cat.name}`;
+          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+          adminService.createProduct({
+            name,
+            slug,
+            description: `Default product for ${cat.name}`,
+            isActive: true,
+            basePrice: 0,
+            currency: "INR",
+            categoryId: selectedCategoryId
+          }).then(() => {
+            fetchCatalogProducts();
+          }).catch((err) => {
+            console.error("Failed to auto-create default product", err);
+          });
+        }
+      }
+    }
+  }, [selectedCategoryId, state.catalogProducts, state.catalogCategories, fetchCatalogProducts, creatingProductFor]);
 
-  // ── Groups for this category ──
+  // Fetch product tree dynamically whenever the active product changes
+  useEffect(() => {
+    if (!currentProduct) {
+      setProductTree(null);
+      setLoadingTree(false);
+      return;
+    }
+    const fetchTree = async () => {
+      setLoadingTree(true);
+      try {
+        const res = await adminService.getProductTree(currentProduct.id);
+        setProductTree(res.data?.data || res.data);
+      } catch (err) {
+        console.error("Failed to load product tree for category product", err);
+        setProductTree(null);
+      } finally {
+        setLoadingTree(false);
+      }
+    };
+    fetchTree();
+  }, [currentProduct]);
+
+  // ── Groups for selected category ──
   const categoryGroups = useMemo(() => {
-    if (!categoryId) return [];
+    if (!selectedCategoryId) return [];
     return state.fabricGroups.filter(
       (g) =>
         g.isActive !== false &&
-        (g.categories?.some((c) => c.id === categoryId) ||
-         g.categoryIds?.includes(categoryId) ||
+        (g.categories?.some((c) => c.id === selectedCategoryId) ||
+         g.categoryIds?.includes(selectedCategoryId) ||
          !g.categories ||
          g.categories.length === 0)
     );
-  }, [state.fabricGroups, categoryId]);
+  }, [state.fabricGroups, selectedCategoryId]);
 
   // ── Fabrics in selected group ──
   const groupFabrics = useMemo(() => {
@@ -132,113 +187,48 @@ export default function CustomShirtPage() {
     [state.fabrics, selectedFabricId]
   );
 
-  // ── Resolve Option Keys to database partTypeId ──
-  const resolvedOptionsMap = useMemo(() => {
-    if (!productTree) return { map: {}, reverseMap: {} };
-
-    const map = {}; // { [sectionKey]: { [optionKey]: { partTypeId, image, isDefault } } }
-    const reverseMap = {}; // { [partTypeId]: { sectionKey, optionKey } }
-
-    const existingParts = productTree.parts || [];
-
-    const DESIRED_STRUCTURE = {
-      "collar": "Collar",
-      "cuff": "Cuff",
-      "placket": "Placket",
-      "back_details": "Back Details",
-      "chest_pocket": "Chest Pocket",
-      "sleeve": "Sleeve",
-      "hem": "Hem",
-      "button": "Accessories — Button"
-    };
-
-    const NAME_MAP = {
-      "classic": ["Classic"],
-      "classic_widespread": ["Classic Widespread"],
-      "curved": ["Curved", "Curved Cutaway"],
-      "cutaway": ["Cutaway"],
-      "high_widespread": ["High Widespread"],
-      "point": ["Point"],
-      "button_down": ["Button Down"],
-      "band": ["Band"],
-      "wing_tip": ["Wing Tip"],
-      "club": ["Club"],
-      "single_round": ["Single Round", "Single Cuff One Button", "Single Round Adjustable"],
-      "single_eclipse": ["Single Eclipse", "Single Cuff Elipse"],
-      "single_chisel": ["Single Chisel", "Single Chisel Adjustable"],
-      "single_square": ["Single Square"],
-      "double_cuff_round": ["Double Cuff Round"],
-      "double_cuff_square": ["Double Cuff Square"],
-      "double_cuff_chisel": ["Double Cuff Chisel"],
-      "turnback_cuff": ["Turnback Cuff"],
-      "plain": ["Plain", "Plain - Hem Standard", "Plain - Hem Curved"],
-      "hidden_button": ["Hidden Button", "Hidden Button - Hem Standard", "Hidden Button - Hem Curved"],
-      "half_hidden_button": ["Half Hidden Button"],
-      "stitched_on": ["Stitched-On", "Stitched-On - Hem Standard", "Stitched-On - Hem Curved"],
-      "plain_bib": ["Plain Bib"],
-      "pleated_bib": ["Pleated Bib"],
-      "rear_side_pleats": ["Rear Side Pleats"],
-      "center_box_pleats": ["Center Box Pleats"],
-      "box_pleat": ["Box Pleat"],
-      "no_back_pleats": ["No Back Pleats"],
-      "dart_pleats": ["Dart Pleats"],
-      "no_pocket": ["No Pocket"],
-      "patch_pocket": ["Patch Pocket", "Single Patch"],
-      "regular_pocket": ["Regular Pocket"],
-      "regular_flap_pocket": ["Regular Flap Pocket"],
-      "long_sleeve": ["Long Sleeve"],
-      "short_sleeve": ["Short Sleeve"],
-      "straight": ["Straight"],
-      "gusset": ["Gusset"],
-      "tie": ["Tie"],
-      "bow": ["Bow"]
-
-    };
-
-    SHIRT_COMPONENTS.forEach((section) => {
-      const dbPartName = DESIRED_STRUCTURE[section.key];
-      const dbPart = existingParts.find(p => p.name.toLowerCase() === dbPartName.toLowerCase());
-
-      map[section.key] = {};
-
-      section.options.forEach((opt) => {
-        let matchedType = null;
-        if (dbPart) {
-          const aliases = NAME_MAP[opt.key] || [opt.key];
-          for (const alias of aliases) {
-            matchedType = (dbPart.types || []).find(t => t.name.toLowerCase() === alias.toLowerCase());
-            if (matchedType) break;
-          }
-        }
-
-        if (matchedType) {
-          map[section.key][opt.key] = {
-            partTypeId: matchedType.id,
-            image: matchedType.asset?.url || matchedType.imageUrl || "",
-            isDefault: matchedType.isDefault,
-          };
-          reverseMap[matchedType.id] = { sectionKey: section.key, optionKey: opt.key };
-        } else {
-          map[section.key][opt.key] = {
-            partTypeId: null,
-            image: "",
-            isDefault: false,
-          };
-        }
+  // ── Dynamic Shirt Components from Product Tree ──
+  const dynamicShirtComponents = useMemo(() => {
+    if (!productTree || !productTree.parts) return [];
+    return productTree.parts
+      .filter((part) => part.isActive !== false)
+      .map((part) => {
+        const hasContrast = ["collar", "cuff"].includes(part.slug?.toLowerCase() || part.name?.toLowerCase());
+        return {
+          key: part.slug || part.id,
+          id: part.id,
+          title: part.name,
+          hasContrast,
+          options: (part.types || [])
+            .filter((t) => t.isActive !== false)
+            .map((t) => ({
+              key: t.id,
+              label: t.name,
+              image: getPublicAssetUrl(t.assetId || t.asset?.id) || t.imageUrl || t.asset?.url || "",
+              isDefault: t.isDefault,
+            })),
+        };
       });
-    });
-
-    return { map, reverseMap };
   }, [productTree]);
 
   // ── Initialize mapping state from Server ──
   const handleLoad = useCallback(async () => {
-    if (!selectedFabricId || !categoryId || !resolvedOptionsMap.reverseMap) return;
+    if (!selectedFabricId || !selectedCategoryId || !productTree) return;
     setLoading(true);
     setLoaded(false);
     setMappingState({});
-    setContrastState(initialContrastState());
-    setContrastFabrics({ collar: [], cuff: [] });
+
+    const initContrast = {};
+    const initContrastFabrics = {};
+    dynamicShirtComponents.forEach((section) => {
+      if (section.hasContrast) {
+        initContrast[section.key] = false;
+        initContrastFabrics[section.key] = [];
+      }
+    });
+
+    setContrastState(initContrast);
+    setContrastFabrics(initContrastFabrics);
 
     try {
       const mappingRes = await adminService.getMapping(selectedFabricId);
@@ -247,21 +237,20 @@ export default function CustomShirtPage() {
       const contrastList = mappingData.contrast || [];
 
       const newState = {};
-      const newContrastState = initialContrastState();
-      const newContrastFabrics = { collar: [], cuff: [] };
+      const newContrastState = { ...initContrast };
+      const newContrastFabrics = { ...initContrastFabrics };
 
       // Map to cache group fabric detail fetches
       const groupCache = {};
 
-      for (const section of SHIRT_COMPONENTS) {
+      for (const section of dynamicShirtComponents) {
         newState[section.key] = {};
         for (const opt of section.options) {
-          const resolved = resolvedOptionsMap.map[section.key]?.[opt.key];
-          const partTypeId = resolved?.partTypeId;
+          const partTypeId = opt.key;
 
           let checked = false;
-          let image = resolved?.image || "";
-          let isDefault = resolved?.isDefault || false;
+          let image = opt.image || "";
+          let isDefault = opt.isDefault || false;
           let enableContrast = false;
           let contrastGroupId = "";
 
@@ -273,7 +262,7 @@ export default function CustomShirtPage() {
             enableContrast = !!contrastMatch?.enableContrast;
             contrastGroupId = contrastMatch?.contrastGroupId || "";
 
-            if (enableContrast) {
+            if (enableContrast && section.hasContrast) {
               newContrastState[section.key] = true;
               
               if (contrastGroupId) {
@@ -334,15 +323,23 @@ export default function CustomShirtPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedFabricId, categoryId, resolvedOptionsMap, state.fabrics]);
+  }, [selectedFabricId, selectedCategoryId, productTree, dynamicShirtComponents, state.fabrics]);
 
   // Reset on fabric / group selection changes
   useEffect(() => {
     setLoaded(false);
     setMappingState({});
-    setContrastState(initialContrastState());
-    setContrastFabrics({ collar: [], cuff: [] });
-  }, [selectedGroupId, selectedFabricId]);
+    const initContrast = {};
+    const initContrastFabrics = {};
+    dynamicShirtComponents.forEach((section) => {
+      if (section.hasContrast) {
+        initContrast[section.key] = false;
+        initContrastFabrics[section.key] = [];
+      }
+    });
+    setContrastState(initContrast);
+    setContrastFabrics(initContrastFabrics);
+  }, [selectedGroupId, selectedFabricId, dynamicShirtComponents]);
 
   // ── Option check / uncheck ──
   const handleOptionChange = useCallback((sectionKey, optionKey, updates) => {
@@ -410,8 +407,7 @@ export default function CustomShirtPage() {
 
   // ── Immediate uploader for base option images ──
   const handleImageUpload = useCallback(async (sectionKey, optionKey, file) => {
-    const resolved = resolvedOptionsMap.map[sectionKey]?.[optionKey];
-    const partTypeId = resolved?.partTypeId;
+    const partTypeId = optionKey;
     if (!partTypeId) return;
 
     setMappingState((prev) => ({
@@ -440,7 +436,7 @@ export default function CustomShirtPage() {
       // Update globally on catalog part type
       await adminService.updatePartType(partTypeId, { assetId: assetData.id });
 
-      const imageUrl = assetData.url || assetData.asset?.url || "";
+      const imageUrl = getPublicAssetUrl(assetData.id || assetData.asset?.id) || assetData.url || assetData.asset?.url || "";
       setMappingState((prev) => ({
         ...prev,
         [sectionKey]: {
@@ -471,13 +467,17 @@ export default function CustomShirtPage() {
       setToast("Failed to upload image.");
       setTimeout(() => setToast(null), 4000);
     }
-  }, [resolvedOptionsMap]);
+  }, []);
 
   // ── Immediate uploader for contrast fabric option images ──
   const handleContrastImageUpload = useCallback(async (optionKey, contrastFabricId, file) => {
-    // Find sectionKey from resolved map
-    const resolved = resolvedOptionsMap.reverseMap[resolvedOptionsMap.map.collar?.[optionKey]?.partTypeId || resolvedOptionsMap.map.cuff?.[optionKey]?.partTypeId];
-    const sectionKey = resolved?.sectionKey || "collar";
+    let sectionKey = "collar";
+    for (const section of dynamicShirtComponents) {
+      if (section.options.some(opt => opt.key === optionKey)) {
+        sectionKey = section.key;
+        break;
+      }
+    }
 
     setMappingState((prev) => ({
       ...prev,
@@ -497,12 +497,9 @@ export default function CustomShirtPage() {
 
       const assetRes = await adminService.uploadAsset(formData);
       const assetData = assetRes.data?.data || assetRes.data;
-      const imageUrl = assetData.url || assetData.asset?.url || "";
+      const imageUrl = getPublicAssetUrl(assetData.id || assetData.asset?.id) || assetData.url || assetData.asset?.url || "";
 
-      const partTypeId = resolvedOptionsMap.map[sectionKey]?.[optionKey]?.partTypeId;
-      if (partTypeId) {
-        await adminService.updatePartType(partTypeId, { assetId: assetData.id });
-      }
+      await adminService.updatePartType(optionKey, { assetId: assetData.id });
 
       setMappingState((prev) => ({
         ...prev,
@@ -532,12 +529,13 @@ export default function CustomShirtPage() {
       setToast("Failed to upload contrast image.");
       setTimeout(() => setToast(null), 3000);
     }
-  }, [resolvedOptionsMap]);
+  }, [dynamicShirtComponents]);
 
   // ── Get list of checked options for contrast display ──
   const getCheckedOptions = (sectionKey) => {
     const sectionMap = mappingState[sectionKey] || {};
-    return SHIRT_COMPONENTS.find((s) => s.key === sectionKey)?.options
+    const section = dynamicShirtComponents.find((s) => s.key === sectionKey);
+    return section?.options
       .filter((opt) => sectionMap[opt.key]?.checked)
       .map((opt) => ({
         key: opt.key,
@@ -548,13 +546,13 @@ export default function CustomShirtPage() {
 
   // ── Progress / Stats ──
   const progress = useMemo(() => {
-    let totalSections = SHIRT_COMPONENTS.length;
+    let totalSections = dynamicShirtComponents.length;
     let completeSections = 0;
     let totalChecked = 0;
     let totalImages = 0;
     let totalMissing = 0;
 
-    SHIRT_COMPONENTS.forEach((section) => {
+    dynamicShirtComponents.forEach((section) => {
       const sectionMap = mappingState[section.key] || {};
       const checked = Object.values(sectionMap).filter((v) => v.checked);
       const withImages = checked.filter((v) => v.image);
@@ -570,7 +568,7 @@ export default function CustomShirtPage() {
     });
 
     return { totalSections, completeSections, totalChecked, totalImages, totalMissing };
-  }, [mappingState]);
+  }, [mappingState, dynamicShirtComponents]);
 
   const progressPercent = progress.totalSections > 0
     ? Math.round((progress.completeSections / progress.totalSections) * 100)
@@ -580,7 +578,7 @@ export default function CustomShirtPage() {
   const validationIssues = useMemo(() => {
     if (!loaded) return [];
     const issues = [];
-    SHIRT_COMPONENTS.forEach((section) => {
+    dynamicShirtComponents.forEach((section) => {
       const sectionMap = mappingState[section.key] || {};
       const checked = Object.entries(sectionMap).filter(([, v]) => v.checked);
       if (checked.length === 0) return;
@@ -594,7 +592,7 @@ export default function CustomShirtPage() {
       }
     });
     return issues;
-  }, [loaded, mappingState]);
+  }, [loaded, mappingState, dynamicShirtComponents]);
 
   const isAnyUploading = useMemo(() => {
     return Object.values(mappingState).some((sectionMap) =>
@@ -611,7 +609,7 @@ export default function CustomShirtPage() {
       // 1. Create or update contrast fabric groups
       const contrastGroupIds = {};
 
-      for (const section of SHIRT_COMPONENTS) {
+      for (const section of dynamicShirtComponents) {
         const enabled = !!contrastState[section.key];
         if (enabled && selectedFabric) {
           const expectedGroupName = `Contrast - ${selectedFabric.fabricName} - ${section.title}`;
@@ -623,7 +621,7 @@ export default function CustomShirtPage() {
           } else {
             const groupRes = await adminService.createGroup({
               name: expectedGroupName,
-              categoryIds: [categoryId],
+              categoryIds: [selectedCategoryId],
             });
             const createdGroup = groupRes.data?.data || groupRes.data;
             groupId = createdGroup.id;
@@ -638,16 +636,13 @@ export default function CustomShirtPage() {
 
       // 2. Update default settings on Catalog Part Types if changed
       const partTypePromises = [];
-      SHIRT_COMPONENTS.forEach((section) => {
+      dynamicShirtComponents.forEach((section) => {
         const sectionMap = mappingState[section.key] || {};
         section.options.forEach((opt) => {
-          const resolved = resolvedOptionsMap.map[section.key]?.[opt.key];
-          const partTypeId = resolved?.partTypeId;
-          if (partTypeId) {
-            const val = sectionMap[opt.key] || {};
-            if (val.isDefault !== resolved.isDefault) {
-              partTypePromises.push(adminService.updatePartType(partTypeId, { isDefault: !!val.isDefault }));
-            }
+          const partTypeId = opt.key;
+          const val = sectionMap[opt.key] || {};
+          if (val.isDefault !== opt.isDefault) {
+            partTypePromises.push(adminService.updatePartType(partTypeId, { isDefault: !!val.isDefault }));
           }
         });
       });
@@ -658,24 +653,21 @@ export default function CustomShirtPage() {
 
       // 3. Save customization mappings to the database
       const mappingPromises = [];
-      SHIRT_COMPONENTS.forEach((section) => {
+      dynamicShirtComponents.forEach((section) => {
         const sectionMap = mappingState[section.key] || {};
         const enableContrast = !!contrastState[section.key];
         const contrastGroupId = contrastGroupIds[section.key] || null;
 
         section.options.forEach((opt) => {
-          const resolved = resolvedOptionsMap.map[section.key]?.[opt.key];
-          const partTypeId = resolved?.partTypeId;
-          if (partTypeId) {
-            const val = sectionMap[opt.key] || {};
-            mappingPromises.push(adminService.createMapping({
-              fabricId: selectedFabricId,
-              partTypeId,
-              isChecked: !!val.checked,
-              enableContrast,
-              contrastGroupId,
-            }));
-          }
+          const partTypeId = opt.key;
+          const val = sectionMap[opt.key] || {};
+          mappingPromises.push(adminService.createMapping({
+            fabricId: selectedFabricId,
+            partTypeId,
+            isChecked: !!val.checked,
+            enableContrast,
+            contrastGroupId,
+          }));
         });
       });
 
@@ -688,8 +680,16 @@ export default function CustomShirtPage() {
         setSelectedFabricId("");
         setLoaded(false);
         setMappingState({});
-        setContrastState(initialContrastState());
-        setContrastFabrics({ collar: [], cuff: [] });
+        const initContrast = {};
+        const initContrastFabrics = {};
+        dynamicShirtComponents.forEach((section) => {
+          if (section.hasContrast) {
+            initContrast[section.key] = false;
+            initContrastFabrics[section.key] = [];
+          }
+        });
+        setContrastState(initContrast);
+        setContrastFabrics(initContrastFabrics);
       } else {
         await handleLoad();
       }
@@ -707,8 +707,8 @@ export default function CustomShirtPage() {
     contrastFabrics,
     selectedFabric,
     selectedFabricId,
-    categoryId,
-    resolvedOptionsMap,
+    selectedCategoryId,
+    dynamicShirtComponents,
     state.fabricGroups,
     handleLoad,
   ]);
@@ -735,10 +735,22 @@ export default function CustomShirtPage() {
       <div className="csf-global-bar">
         <div className="csf-global-group">
           <span className="csf-global-label">Category</span>
-          <select className="admin-select" value={categoryId} disabled>
-            <option value={categoryId}>
-              {shirtCategory ? shirtCategory.name : "Custom Shirt"}
-            </option>
+          <select
+            className="admin-select"
+            value={selectedCategoryId}
+            onChange={(e) => {
+              setSelectedCategoryId(e.target.value);
+              setSelectedGroupId("");
+              setSelectedFabricId("");
+              setLoaded(false);
+            }}
+          >
+            <option value="">Select Category</option>
+            {(state.catalogCategories || []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -805,7 +817,6 @@ export default function CustomShirtPage() {
         </div>
       )}
 
-
       {/* Progress Bar */}
       {loaded && (
         <div className="csf-progress">
@@ -832,7 +843,7 @@ export default function CustomShirtPage() {
           <p>⏳ Loading product specifications...</p>
         </div>
       ) : loaded ? (
-        SHIRT_COMPONENTS.map((section, idx) => (
+        dynamicShirtComponents.map((section, idx) => (
           <ShirtComponentSection
             key={section.key}
             index={idx + 1}
@@ -885,8 +896,16 @@ export default function CustomShirtPage() {
                 if (progress.totalChecked > 0 && !window.confirm("Discard unsaved changes?")) return;
                 setLoaded(false);
                 setMappingState({});
-                setContrastState(initialContrastState());
-                setContrastFabrics({ collar: [], cuff: [] });
+                const initContrast = {};
+                const initContrastFabrics = {};
+                dynamicShirtComponents.forEach((section) => {
+                  if (section.hasContrast) {
+                    initContrast[section.key] = false;
+                    initContrastFabrics[section.key] = [];
+                  }
+                });
+                setContrastState(initContrast);
+                setContrastFabrics(initContrastFabrics);
               }}
               disabled={isSaving || isAnyUploading}
             >

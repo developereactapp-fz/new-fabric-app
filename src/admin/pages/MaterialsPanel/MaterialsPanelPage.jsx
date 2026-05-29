@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { adminService } from "../../../services/adminService";
 import { useAdmin } from "../../store/adminStore.jsx";
 import { useNavigate } from "react-router-dom";
+import { getPublicAssetUrl } from "../../utils/assetUtils";
 import useFilteredList from "../../hooks/useFilteredList";
 import PageHeader from "../../components/PageHeader";
 import FilterToolbar from "../../components/FilterToolbar";
@@ -20,7 +21,7 @@ const normalizeFabric = (f) => ({
   fabricName: f.fabricName || f.name || "",
   material: f.material || f.type || "",
   status: f.status || (f.isActive === false ? "inactive" : "active"),
-  image: f.image || f.imageUrl || f.asset?.url || null,
+  image: getPublicAssetUrl(f.assetId || f.asset?.id) || f.image || f.imageUrl || f.asset?.url || null,
   colorHex: f.colorHex || null,
   weight: f.weight || null,
 });
