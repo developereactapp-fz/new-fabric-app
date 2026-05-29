@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -20,6 +21,8 @@ import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import FlashOnRoundedIcon from "@mui/icons-material/FlashOnRounded";
 
 export default function EditProfile() {
+  const navigate = useNavigate();
+
   const [values, setValues] = useState({
     firstName: "Manju",
     lastName: "Sheriff",
@@ -40,7 +43,7 @@ export default function EditProfile() {
       sx={{
         minHeight: "100vh",
         background: "#fafafa",
-        py: 6,
+        py: { xs: 2, md: 6 },
         display: "flex",
         justifyContent: "center",
       }}
@@ -112,7 +115,7 @@ export default function EditProfile() {
               FULL NAME
             </Typography>
 
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
               <TextField
                 fullWidth
                 name="firstName"
@@ -197,7 +200,7 @@ export default function EditProfile() {
               sx={{
                 mt: 2,
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
                 gap: 2,
               }}
             >
@@ -253,13 +256,14 @@ export default function EditProfile() {
         </Card>
 
         {/* ACTIONS */}
-        <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
-          <Button fullWidth variant="outlined">
+        <Box sx={{ mt: 3, display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+          <Button fullWidth variant="outlined" onClick={() => navigate(-1)}>
             Cancel
           </Button>
           <Button
             fullWidth
             variant="contained"
+            onClick={() => { alert("Profile Updated!"); navigate("/profiledashboard"); }}
             sx={{ background: "#7a3f43" }}
           >
             Save Changes
@@ -280,8 +284,9 @@ export default function EditProfile() {
         <Box
           sx={{
             mt: 4,
-            display: "grid",
-            gridTemplateColumns: "repeat(3,1fr)",
+            display: { xs: "flex", sm: "grid" },
+            flexDirection: "column",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: 2,
           }}
         >

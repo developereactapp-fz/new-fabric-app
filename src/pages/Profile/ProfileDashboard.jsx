@@ -53,7 +53,7 @@ export default function ProfileDashboard() {
         sx={{
           mt: 4,
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "2fr 2fr 1.4fr" },
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "2fr 2fr 1.4fr" },
           gap: { xs: 2, sm: 3, md: 4 },
         }}
       >

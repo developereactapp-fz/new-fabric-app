@@ -1,6 +1,7 @@
 /* Common Auth Styles */
 .left-panel-content {
-  max-width: 520px;
+  max-width: 100%;
+  padding: 1rem;
 }
 
 .badge-wrapper {
@@ -29,10 +30,10 @@
 }
 
 .auth-heading {
-  font-size: 48px;
+  font-size: clamp(2rem, 5vw, 3rem);
   line-height: 1.15;
   font-weight: 500;
-  margin-bottom: 16px;
+  margin-bottom: 1.5rem;
   color: #0f172a;
 }
 
@@ -57,8 +58,8 @@
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
 }
 
 .feature-card {
@@ -83,7 +84,6 @@
 .feature-cards-stacked {
   display: grid;
   gap: 16px;
-  max-width: 460px;
 }
 
 .stacked-feature-card {
@@ -115,6 +115,9 @@
 .auth-form-container {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .back-link {
@@ -371,11 +374,13 @@
 
 .social-buttons {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .social-button {
   flex: 1;
+  min-width: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -474,6 +479,16 @@
 @media (max-width: 480px) {
   .name-row {
     grid-template-columns: 1fr;
-    gap: 0;
+    gap: 1rem;
+  }
+  .auth-form-container {
+    padding: 0 0.5rem;
+  }
+  .auth-heading {
+    text-align: center;
+  }
+  .badge-wrapper {
+    display: flex;
+    justify-content: center;
   }
 }

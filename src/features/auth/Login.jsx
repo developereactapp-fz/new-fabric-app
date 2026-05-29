@@ -15,6 +15,11 @@ const schema = yup.object({
 });
 
 
+// const API = "https://apperal-clothing-app.onrender.com";
+   const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
+
+ 
+
 export default function Login() {
   const navigate = useNavigate();
 

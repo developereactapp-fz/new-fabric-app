@@ -287,9 +287,9 @@ const AIBotSection = () => (
 );
 
 // Utility Section (Track Order & Browse Collection)
-const UtilitySection = () => (
+const UtilitySection = ({ onTrack, onBrowse }) => (
   <div className="finish-utilities">
-    <div className="finish-utility-item">
+    <div className="finish-utility-item" onClick={onTrack} style={{ cursor: 'pointer' }}>
       <div className="utility-icon-box">
         <PackageIcon />
       </div>
@@ -299,7 +299,7 @@ const UtilitySection = () => (
       </div>
       <ArrowRightIcon />
     </div>
-    <div className="finish-utility-item">
+    <div className="finish-utility-item" onClick={onBrowse} style={{ cursor: 'pointer' }}>
       <div className="utility-icon-box">
         <HeartIcon />
       </div>

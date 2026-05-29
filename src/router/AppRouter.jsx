@@ -1,3 +1,4 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Header from "../components/layout/Header";
@@ -27,9 +28,67 @@ import NotificationCenter from "../pages/Notifications/NotificationCenter";
 import ProfileDashboard from "../pages/Profile/ProfileDashboard";
 import EditProfile from "../pages/Profile/EditProfile";
 
+// Admin imports (Lazy Loaded)
+const AdminLayout = lazy(() => import("../admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("../admin/pages/AdminDashboard"));
+const PlaceholderPage = lazy(() => import("../admin/pages/PlaceholderPage"));
+const FabricConfiguratorPage = lazy(() => import("../admin/pages/FabricConfigurator/FabricConfiguratorPage"));
+const CategoryConfiguratorPage = lazy(() => import("../admin/pages/CategoryConfigurator/CategoryConfiguratorPage"));
+const FabricOnboardingPage = lazy(() => import("../admin/pages/FabricOnboarding/FabricOnboardingPage"));
+const MaterialsPanelPage = lazy(() => import("../admin/pages/MaterialsPanel/MaterialsPanelPage"));
+const ComponentsPanelPage = lazy(() => import("../admin/pages/ComponentsPanel/ComponentsPanelPage"));
+const CategoryComponentsPage = lazy(() => import("../admin/pages/CategoryComponents/CategoryComponentsPage"));
+const CustomShirtPage = lazy(() => import("../admin/pages/CustomShirt/CustomShirtPage"));
+const FabricDetailPage = lazy(() => import("../admin/pages/FabricDetail/FabricDetailPage"));
+const ComponentActivePage = lazy(() => import("../admin/pages/ComponentActive/ComponentActivePage"));
+const GroupBuilderPage = lazy(() => import("../admin/pages/GroupBuilder/GroupBuilderPage"));
+const ContrastMapperPage = lazy(() => import("../admin/pages/ContrastMapper/ContrastMapperPage"));
+const AdvancedEnquiryDashboard = lazy(() => import("./AdvancedEnquiryDashboard"));
+const CommunityPanelPage = lazy(() => import("./CommunityPanelPage"));
+const AdvancedNotificationPage = lazy(() => import("./AdvancedNotificationPage"));
+
+// Loading fallback for Suspense
+const AdminLoader = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc' }}>
+    <p style={{ fontSize: '18px', color: '#64748b' }}>Loading Admin Portal...</p>
+  </div>
+);
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<AdminLoader />}>
+        <Routes>
+          {/* ═══════ Admin Routes ═══════ */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="fabric-configurator" element={<FabricConfiguratorPage />} />
+            <Route path="category-configurator" element={<CategoryConfiguratorPage />} />
+            <Route path="fabric-onboarding" element={<FabricOnboardingPage />} />
+            <Route path="materials-panel" element={<MaterialsPanelPage />} />
+            <Route path="components-panel" element={<ComponentsPanelPage />} />
+            <Route path="category-components" element={<CategoryComponentsPage />} />
+            <Route path="custom-shirt" element={<CustomShirtPage />} />
+            <Route path="fabric-detail" element={<FabricDetailPage />} />
+            <Route path="component-active" element={<ComponentActivePage />} />
+            <Route path="group-builder" element={<GroupBuilderPage />} />
+            <Route path="contrast-mapper" element={<ContrastMapperPage />} />
+            <Route path="advanced-enquiry" element={<AdvancedEnquiryDashboard />} />
+            <Route path="community-panel" element={<CommunityPanelPage />} />
+            <Route path="notifications-panel" element={<AdvancedNotificationPage />} />
+          </Route>
+
+          {/* ═══════ Customer Routes ═══════ */}
+          <Route path="/*" element={<CustomerApp />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  );
+}
+
+function CustomerApp() {
+  return (
+    <>
       <Header />
       <main className="app-content">
         <Routes>
@@ -86,6 +145,6 @@ export default function AppRouter() {
 
         </Routes>
       </main>
-    </BrowserRouter>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -24,13 +25,15 @@ import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import MainLayout from "../../layouts/MainLayout";
 
 export default function NotificationCenter() {
+  const navigate = useNavigate();
+
   return (
     <MainLayout>
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "300px 1fr 320px" },
-          gap: 4,
+          gridTemplateColumns: { xs: "1fr", md: "280px 1fr", lg: "300px 1fr 320px" },
+          gap: { xs: 2, md: 4 },
         }}
       >
 
@@ -182,6 +185,8 @@ export default function NotificationCenter() {
                   background: item.active ? "#7a3f43" : "#f8fafc",
                   color: item.active ? "#fff" : "#0f172a",
                   cursor: "pointer",
+                transition: "all 0.2s ease",
+                "&:hover": { opacity: 0.9 }
                 }}
               >
                 <Typography fontSize={13}>{item.label}</Typography>
@@ -231,6 +236,7 @@ export default function NotificationCenter() {
                   mb: 1,
                   borderRadius: 1,
                   cursor: "pointer",
+                fontSize: "13px",
                   "&:hover": { background: "#f8fafc" },
                 }}
               >
@@ -242,7 +248,7 @@ export default function NotificationCenter() {
         </Box>
 
         {/* ================= CENTER COLUMN ================= */}
-        <Box>
+        <Box sx={{ gridColumn: { md: "span 1", lg: "span 1" } }}>
           <TextField
             fullWidth
             placeholder="Search notifications..."
@@ -337,7 +343,7 @@ export default function NotificationCenter() {
         </Box>
 
         {/* ================= RIGHT COLUMN (UPDATED) ================= */}
-        <Box>
+        <Box sx={{ gridColumn: { md: "span 2", lg: "span 1" } }}>
 
           {/* Activity Summary */}
           <Box
@@ -483,10 +489,12 @@ export default function NotificationCenter() {
             <Button
               fullWidth
               variant="contained"
+              onClick={() => navigate("/editprofile")}
               sx={{
                 borderRadius: 1,
                 background: "#7a3f43",
                 textTransform: "none",
+                "&:hover": { background: "#5e3034" }
               }}
             >
               Configure
@@ -495,11 +503,12 @@ export default function NotificationCenter() {
 
           {/* Quick Links */}
           {[
-            { label: "View Profile", icon: <PersonRoundedIcon /> },
-            { label: "Design Studio", icon: <AutoAwesomeRoundedIcon /> },
+            { label: "View Profile", icon: <PersonRoundedIcon />, path: "/profiledashboard" },
+            { label: "Design Studio", icon: <AutoAwesomeRoundedIcon />, path: "/style/shirt" },
           ].map((item) => (
             <Box
               key={item.label}
+              onClick={() => navigate(item.path)}
               sx={{
                 p: 2.5,
                 mb: 2,
@@ -510,6 +519,8 @@ export default function NotificationCenter() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 cursor: "pointer",
+                transition: "transform 0.2s ease",
+                "&:hover": { transform: "translateY(-2px)" }
               }}
             >
               <Box sx={{ display: "flex", gap: 1 }}>

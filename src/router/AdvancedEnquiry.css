@@ -1,0 +1,40 @@
+.advanced-enquiry-container { padding: clamp(1rem, 3vw, 2rem); font-family: sans-serif; max-width: 1400px; margin: 0 auto; box-sizing: border-box; width: 100%; }
+.dashboard-title { font-size: clamp(1.5rem, 4vw, 2.5rem); margin-bottom: 1.5rem; color: #0f172a; }
+.time-insights-header { margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: flex-start; }
+.filter-group { display: flex; gap: 0.5rem; }
+.time-insights-header button { padding: 0.5rem 1rem; cursor: pointer; border: 1px solid #e2e8f0; background: white; border-radius: 6px; }
+.time-insights-header button.active { background: #0f172a; color: white; border-color: #0f172a; }
+.top-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.metric-card { background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: center; }
+.metric-value { font-size: clamp(1.25rem, 3vw, 1.5rem); font-weight: bold; margin: 10px 0; }
+.distribution-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+.status-card { background: white; border: 1px solid #e2e8f0; padding: 1.25rem; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+.status-card:hover { background: #f1f5f9; }
+.component-insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 1.5rem; }
+.category-card { background: #fff; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; margin-top: 0.75rem; }
+.component-breakdown { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+.breakdown-item { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 5px; }
+.text-success { color: #22c55e; }
+.text-danger { color: #ef4444; }
+
+@media (max-width: 1024px) {
+  .component-insights-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .advanced-enquiry-container { padding: 0.75rem; }
+  .top-metrics { grid-template-columns: 1fr; }
+  .distribution-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .metric-value { font-size: 20px; }
+}
+
+@media (max-width: 540px) {
+  .top-metrics {
+    grid-template-columns: 1fr;
+  }
+  .distribution-grid { grid-template-columns: 1fr; }
+  .time-insights-header { justify-content: center; }
+  .filter-group { width: 100%; justify-content: center; }
+  .time-insights-header span { width: 100%; text-align: center; margin-top: 0.5rem; }
+  .breakdown-item { flex-direction: column; align-items: flex-start; gap: 4px; }
+}

@@ -151,12 +151,38 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
 /* Base app content layout */
 .app-content {
-  padding-top: 40px;
-  height: 100vh;
+  padding-top: 48px;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .app-content {
+    padding-top: 52px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-content {
+    padding-top: 52px;
+  }
 }
 
 /* Customizer pages (hidden scroll) */
@@ -218,16 +244,29 @@ body:has(.finish-page) {
   align-items: center;
   justify-content: center;
   position: relative;
-  max-height: 65vh;
-  min-height: 45vh;
+  max-height: 50vh;
+  min-height: 35vh;
+}
+
+@media (min-width: 768px) {
+  .viewer {
+    max-height: 65vh;
+    min-height: 45vh;
+  }
 }
 
 /* ================= FABRIC ================= */
 .fabric {
-  height: 55vh;
+  height: 40vh;
   aspect-ratio: 3 / 4;
   position: relative;
   animation: fadeIn 0.6s ease;
+}
+
+@media (min-width: 768px) {
+  .fabric {
+    height: 55vh;
+  }
 }
 
 /* FABRIC LAYERS */
@@ -376,12 +415,20 @@ body:has(.finish-page) {
   min-height: 0;
 }
 
-/* BODY - 9/3 GRID LAYOUT */
+/* BODY - Mobile First: Column Layout, Desktop: Grid Layout */
 .custom-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 8.7fr 3.3fr;
+  grid-template-columns: 1fr;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .custom-body {
+    grid-template-columns: 8.7fr 3.3fr;
+  }
 }
 
 /* LEFT */
@@ -392,6 +439,8 @@ body:has(.finish-page) {
   background: #fff;
   overflow: hidden;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
 /* PREVIEW */
@@ -433,7 +482,15 @@ body:has(.finish-page) {
 .panel-section {
   background: #fff;
   overflow-y: auto;
-  padding: 2vh;
+  padding: 1.5vh;
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (min-width: 768px) {
+  .panel-section {
+    padding: 2vh;
+  }
 }
 
  .customize-panel {
@@ -2075,7 +2132,7 @@ body:has(.finish-page) {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .fabric-modal-content {
     flex-direction: column;
   }
@@ -2180,7 +2237,7 @@ body:has(.finish-page) {
   transform: scale(1.08);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .style-menu-grid {
     grid-template-columns: repeat(2, 1fr);
     max-width: 40vh;
@@ -2246,7 +2303,7 @@ body:has(.finish-page) {
 }
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 1024px) {
+@media (max-width: 767px) {
   .custom-body {
     grid-template-columns: 1fr;
   }
@@ -2449,7 +2506,7 @@ body:has(.finish-page) {
 }
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 1024px) {
+@media (max-width: 767px) {
   .custom-body {
     grid-template-columns: 1fr;
   }
@@ -2770,7 +2827,7 @@ body:has(.finish-page) {
   top: 0;
   left: 0;
   right: 0;
-  height: 40px;
+  height: 48px;
   background: #faf8f7;
   border-bottom: 1px solid rgba(0,0,0,0.05);
   z-index: 1000;
@@ -2782,11 +2839,12 @@ body:has(.finish-page) {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
+  position: relative;
 }
 
 .hamburger-btn {
@@ -2817,25 +2875,34 @@ body:has(.finish-page) {
   text-decoration: none;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  padding: 0 8px;
 }
 
 .logo-text {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #4a3f3f;
   letter-spacing: 0.5px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .header-icon-btn {
-  width: 40px;
+  width: 36px;
   height: 40px;
   display: flex;
   align-items: center;
@@ -2853,9 +2920,38 @@ body:has(.finish-page) {
 }
 
 .header-icon-btn svg {
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
   color: #5a4f4f;
+}
+
+@media (min-width: 640px) {
+  .global-header {
+    height: 52px;
+  }
+
+  .header-container {
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  .header-logo {
+    justify-content: flex-start;
+    flex: 0 1 auto;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+  }
+
+  .header-actions {
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .header-icon-btn {
+    width: 40px;
+  }
 }
 
 /* ================= DRAWER ================= */
@@ -3836,7 +3932,7 @@ body:has(.finish-page) {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .finish-page {
     padding: 3vh 4vw;
   }
@@ -3888,6 +3984,20 @@ body:has(.finish-page) {
   
   .finish-actions-col {
     padding-top: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .custom-body {
+    grid-template-columns: minmax(0, 8.7fr) minmax(280px, 3.3fr);
+  }
+
+  .finish-grid-row {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .finish-summary-card {
+    grid-template-columns: 280px minmax(0, 1fr);
   }
 }
 
