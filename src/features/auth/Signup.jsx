@@ -5,6 +5,7 @@ import * as yup from "yup";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AuthLayout from "../../layouts/AuthLayout";
+import { API_ENDPOINTS } from "../../config/api";
 import "./Auth.css";
 
 /* ---------------- VALIDATION ---------------- */
@@ -19,9 +20,6 @@ const schema = yup.object({
     .required("Confirm your password"),
   terms: yup.boolean().oneOf([true], "You must accept the terms"),
 });
-
-// const API = "https://apperal-clothing-app.onrender.com";
-   const API = "https://apperal-clothing-app-production.up.railway.app";
 
 
 export default function Signup() {
@@ -44,7 +42,7 @@ export default function Signup() {
     setMessage("");
 
     try {
-      await axios.post(`${API}/api/auth/register`, {
+      await axios.post(API_ENDPOINTS.SIGNUP, {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,

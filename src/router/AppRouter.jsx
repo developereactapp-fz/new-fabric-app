@@ -21,6 +21,11 @@ import VerificationSuccess from "../features/verification/VerificationSuccess";
 import SavedDesigns from "../features/save/SavedDesigns";
 import SavedDesignDetails from "../features/save/SavedDesignDetails";
 import UserEnquiryPage from "../features/userEnquiry/UserEnquiryPage";
+import Dashboard from "../pages/Dashboard/Dashboard";
+import CustomSuitSummary from "../pages/Summary/CustomSuitSummary";
+import NotificationCenter from "../pages/Notifications/NotificationCenter";
+import ProfileDashboard from "../pages/Profile/ProfileDashboard";
+import EditProfile from "../pages/Profile/EditProfile";
 
 export default function AppRouter() {
   return (
@@ -63,9 +68,19 @@ export default function AppRouter() {
           <Route path="/saved-designs/:id" element={<SavedDesignDetails />} />
           <Route path="/enquiry" element={<UserEnquiryPage />} />
 
+          {/* Dashboard & Main */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/customsuitsummary" element={<CustomSuitSummary />} />
+          <Route path="/notifications" element={<NotificationCenter />} />
+
+          {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/resetpassword" element={<ResetPassword />} />
+
+          {/* Profile */}
+          <Route path="/profiledashboard" element={<ProfileDashboard />} />
+          <Route path="/editprofile" element={<EditProfile />} />
 
           <Route path="*" element={<h2>Page Not Found</h2>} />
 

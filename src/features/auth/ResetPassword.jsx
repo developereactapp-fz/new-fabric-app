@@ -5,6 +5,7 @@ import * as yup from "yup";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AuthLayout from "../../layouts/AuthLayout";
+import { API_ENDPOINTS } from "../../config/api";
 import "./Auth.css";
 
 /* ---------------- VALIDATION ---------------- */
@@ -14,9 +15,6 @@ const schema = yup.object({
     .email("Enter a valid email address")
     .required("Email is required"),
 });
-
-// const API = "https://apperal-clothing-app.onrender.com";
-   const API = "https://apperal-clothing-app-production.up.railway.app";
 
 
 export default function ResetPassword() {
@@ -38,7 +36,7 @@ export default function ResetPassword() {
     setMessage("");
 
     try {
-      await axios.post(`${API}/api/auth/forgot-password`, {
+      await axios.post(API_ENDPOINTS.RESET_PASSWORD, {
         email: data.email,
         tenantSlug: "test-tenant"
       });
