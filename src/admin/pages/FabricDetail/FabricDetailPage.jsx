@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "../../store/adminStore";
+import { adminService } from "../../../services/adminService";
 import PageHeader from "../../components/PageHeader";
 import PropertyGrid from "../../components/PropertyGrid";
 import EmptyState from "../../components/EmptyState";
@@ -17,28 +18,134 @@ export default function FabricDetailPage() {
 
   const [selectedFabricId, setSelectedFabricId] = useState("");
 
+  // ── Catalog lookup cache ──
+  // Maps partTypeId → { categoryName, partName, typeName, isDefault, image }
+  const [partTypeLookup, setPartTypeLookup] = useState({});
+  const [lookupLoading, setLookupLoading] = useState(true);
+
+  // ── Mapping state ──
+  const [mappingData, setMappingData] = useState(null); // { availability: [], contrast: [] }
+  const [mappingLoading, setMappingLoading] = useState(false);
+  const [mappingError, setMappingError] = useState(null);
+
+  // ──────────────────────────────────────────────────────────────
+  // Task 1.1 + 1.2 + 1.3: Build catalog lookup cache on mount
+  // ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const buildLookup = async () => {
+      setLookupLoading(true);
+      try {
+        // 1.1 Load all catalog products
+        const productsRes = await adminService.getProducts();
+        const products = productsRes.data?.data || productsRes.data || [];
+
+        // 1.2 Fetch all product trees in parallel
+        const treeResults = await Promise.allSettled(
+          products.map((p) => adminService.getProductTree(p.id))
+        );
+
+        // 1.3 Construct lookup map
+        const lookup = {};
+        treeResults.forEach((result, idx) => {
+          if (result.status !== "fulfilled") return;
+          const tree = result.value.data?.data || result.value.data || {};
+          const product = products[idx];
+          const categoryName = product.name || "Unknown Category";
+          const parts = tree.parts || [];
+
+          parts.forEach((part) => {
+            const partName = part.name || "Unknown Part";
+            const types = part.types || [];
+            types.forEach((type) => {
+              lookup[type.id] = {
+                categoryName,
+                partName,
+                typeName: type.name || "Unknown Type",
+                isDefault: !!type.isDefault,
+                image:
+                  getPublicAssetUrl(type.assetId || type.asset?.id) ||
+                  type.imageUrl ||
+                  type.asset?.url ||
+                  null,
+              };
+            });
+          });
+        });
+
+        setPartTypeLookup(lookup);
+      } catch (err) {
+        console.error("Failed to build catalog lookup:", err);
+      } finally {
+        setLookupLoading(false);
+      }
+    };
+    buildLookup();
+  }, []);
+
+  // ──────────────────────────────────────────────────────────────
+  // Task 2.1 + 2.2: Fetch mapping when fabric selection changes
+  // ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!selectedFabricId) {
+      setMappingData(null);
+      setMappingError(null);
+      return;
+    }
+
+    const fetchMapping = async () => {
+      setMappingLoading(true);
+      setMappingError(null);
+      try {
+        const res = await adminService.getMapping(selectedFabricId);
+        const data = res.data?.data || res.data || {};
+        setMappingData(data);
+      } catch (err) {
+        console.error("Failed to fetch mappings:", err);
+        setMappingError("Failed to load mappings for this fabric.");
+        setMappingData(null);
+      } finally {
+        setMappingLoading(false);
+      }
+    };
+    fetchMapping();
+  }, [selectedFabricId]);
+
+  // ──────────────────────────────────────────────────────────────
+  // Task 3.1: Resolve availability list into table rows
+  // ──────────────────────────────────────────────────────────────
+  const resolvedMappings = useMemo(() => {
+    if (!mappingData?.availability || Object.keys(partTypeLookup).length === 0) {
+      return {};
+    }
+
+    const grouped = {};
+    mappingData.availability.forEach((item) => {
+      const info = partTypeLookup[item.partTypeId];
+      if (!info) return; // skip unknown part types
+
+      const categoryName = info.categoryName;
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = [];
+      }
+
+      grouped[categoryName].push({
+        id: item.id,
+        partTypeId: item.partTypeId,
+        partName: info.partName,
+        typeName: info.typeName,
+        isDefault: info.isDefault,
+        isChecked: !!item.isChecked,
+        image: info.image,
+      });
+    });
+
+    return grouped;
+  }, [mappingData, partTypeLookup]);
+
   // Derived selected fabric
   const selectedFabric = useMemo(() => {
     return (state.fabrics || []).find((f) => f.id === selectedFabricId) || null;
   }, [state.fabrics, selectedFabricId]);
-
-  // Derived mappings for this fabric
-  const fabricMappings = useMemo(() => {
-    if (!selectedFabric) return [];
-    return (state.fabricMappings || []).filter((m) => m.fabricId === selectedFabric.id);
-  }, [state.fabricMappings, selectedFabric]);
-
-  // Group mappings by category
-  const mappingsByCategory = useMemo(() => {
-    const grouped = {};
-    fabricMappings.forEach((m) => {
-      if (!grouped[m.categoryId]) {
-        grouped[m.categoryId] = [];
-      }
-      grouped[m.categoryId].push(m);
-    });
-    return grouped;
-  }, [fabricMappings]);
 
   const handleEditFabric = () => {
     // In a real app, pass the ID to the onboarding page
@@ -147,7 +254,13 @@ export default function FabricDetailPage() {
 
           <div className="admin-card mappings-card">
             <h3>Component Mappings</h3>
-            <FabricMappingTable mappingsByCategory={mappingsByCategory} />
+            {lookupLoading || mappingLoading ? (
+              <p style={{ color: "#64748b", padding: "16px 0" }}>⏳ Loading mappings...</p>
+            ) : mappingError ? (
+              <p style={{ color: "#dc2626", padding: "16px 0" }}>{mappingError}</p>
+            ) : (
+              <FabricMappingTable resolvedMappings={resolvedMappings} />
+            )}
           </div>
         </div>
       ) : (
