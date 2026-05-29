@@ -652,3 +652,192 @@
     flex-direction: row;
   }
 }
+
+/* ── Slide-over Detail Drawer ── */
+.cp-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  animation: cpFadeIn 0.3s ease-out;
+}
+
+.cp-drawer {
+  width: 100%;
+  max-width: 500px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: -10px 0 30px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: cpSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes cpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cpSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.cp-drawer-header {
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+}
+
+.cp-drawer-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cp-drawer-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.cp-drawer-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.cp-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Value Row & Fabric List ── */
+.cp-value-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: all 0.2s;
+}
+
+.cp-value-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.cp-value-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cp-value-title {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.cp-value-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid #c7d2fe;
+}
+
+.cp-value-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cp-chevron-icon {
+  color: #94a3b8;
+  transition: transform 0.2s;
+}
+
+.cp-chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.cp-fabric-list {
+  border-top: 1px solid #f1f5f9;
+  padding: 12px 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cp-fabric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.cp-fabric-row:last-child {
+  border-bottom: none;
+}
+
+.cp-fabric-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cp-fabric-thumbnail {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.cp-fabric-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cp-fabric-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.cp-fabric-code {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+

@@ -36,7 +36,7 @@ export const adminService = {
 
   // ── Customization Mappings ──
   getMapping: (fabricId) => apiClient.get(`/api/mapping/${fabricId}`),
-  getMappingByPart: (partType) => apiClient.get(`/api/mapping/part/${partType}`),
+  getMappingByPart: (partType) => apiClient.get(`/api/mapping/part-type/${partType}`),
   createMapping: (data) => apiClient.post('/api/mapping', data),
   updateMapping: (id, data) => apiClient.put(`/api/mapping/${id}`, data),
 

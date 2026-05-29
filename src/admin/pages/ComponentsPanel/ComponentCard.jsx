@@ -1,7 +1,7 @@
 import StatusBadge from "../../components/StatusBadge";
 
 export default function ComponentCard({ component, onToggle, onEdit, onDelete }) {
-  const isActive = component.status === "active";
+  const isActive = component.isActive;
   const totalValues = component.valueCount ?? 0;
   const activeValues = component.activeValueCount ?? 0;
 
@@ -10,10 +10,9 @@ export default function ComponentCard({ component, onToggle, onEdit, onDelete })
       {/* Component Title Area */}
       <div className="cp-card-image" style={{ height: 100, background: 'linear-gradient(145deg, #eef2ff, #e0e7ff)' }}>
         <div className="cp-card-badge">
-          <StatusBadge status={component.status} size="xs" />
+          <StatusBadge status={isActive ? "active" : "inactive"} size="xs" />
         </div>
         
-        {/* We can show an icon or placeholder since components don't have images here */}
         <div className="cp-card-placeholder">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.5" opacity="0.5">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -22,9 +21,11 @@ export default function ComponentCard({ component, onToggle, onEdit, onDelete })
           </svg>
         </div>
 
-        {/* Category Tag */}
-        {component.categoryName && (
-          <span className="cp-card-material-tag">{component.categoryName}</span>
+        {/* Product / Category Tag */}
+        {component.productName && (
+          <span className="cp-card-material-tag" style={{ fontSize: "10px" }}>
+            {component.productName}
+          </span>
         )}
       </div>
 
@@ -40,7 +41,7 @@ export default function ComponentCard({ component, onToggle, onEdit, onDelete })
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
             </svg>
-            <span>{totalValues} Values Total</span>
+            <span>{totalValues} Values</span>
           </div>
           <div className="cp-card-meta-item">
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -61,18 +62,20 @@ export default function ComponentCard({ component, onToggle, onEdit, onDelete })
             <input
               type="checkbox"
               checked={isActive}
-              onChange={() => onToggle(component.categoryId, component.id)}
+              onChange={() => onToggle(component.productId, component.id)}
             />
             <span className="cp-toggle-slider" />
           </label>
         </div>
         <div className="cp-card-divider" />
         <div className="cp-card-actions">
-          <button className="cp-action-btn cp-action-edit" onClick={() => onEdit(component.id)} title="Edit Component">
+          <button className="cp-action-btn cp-action-edit" onClick={() => onEdit(component)} title="Manage Mappings">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
             </svg>
-            <span>Edit</span>
+            <span>Mappings</span>
           </button>
           <button className="cp-action-btn cp-action-delete" onClick={() => onDelete(component)} title="Delete Component">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
