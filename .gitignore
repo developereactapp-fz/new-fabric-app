@@ -37,3 +37,7 @@ test_api4.js
 test_api6.js
 scratch/*
 openspec/*
+.claude/*
+.agents/*
+CLAUDE.md
+graphify-out/*
