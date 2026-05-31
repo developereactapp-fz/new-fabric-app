@@ -15,8 +15,7 @@ export default function SummaryCards({ components, categories }) {
           <line x1="12" y1="22.08" x2="12" y2="12" />
         </svg>
       ),
-      color: "#eef2ff",
-      border: "#c7d2fe",
+      className: "cp-summary-total",
     },
     {
       label: "Active Components",
@@ -27,8 +26,7 @@ export default function SummaryCards({ components, categories }) {
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
       ),
-      color: "#f0fdf4",
-      border: "#bbf7d0",
+      className: "cp-summary-active",
     },
     {
       label: "Categories",
@@ -38,8 +36,7 @@ export default function SummaryCards({ components, categories }) {
           <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
         </svg>
       ),
-      color: "#faf5ff",
-      border: "#e9d5ff",
+      className: "cp-summary-categories",
     },
     {
       label: "Component Values",
@@ -54,8 +51,7 @@ export default function SummaryCards({ components, categories }) {
           <line x1="3" y1="18" x2="3.01" y2="18" />
         </svg>
       ),
-      color: "#eff6ff",
-      border: "#bfdbfe",
+      className: "cp-summary-values",
     },
   ];
 
@@ -64,8 +60,7 @@ export default function SummaryCards({ components, categories }) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="cp-summary-card"
-          style={{ background: card.color, borderColor: card.border }}
+          className={`cp-summary-card ${card.className}`}
         >
           <div className="cp-summary-icon">{card.icon}</div>
           <div className="cp-summary-info">
@@ -77,3 +72,4 @@ export default function SummaryCards({ components, categories }) {
     </div>
   );
 }
+

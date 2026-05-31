@@ -3,20 +3,96 @@ import BulkUploadMode from "./BulkUploadMode";
 import ManualEntryMode from "./ManualEntryMode";
 import "./FabricConfigurator.css";
 
-import { CATEGORIES } from "../../config/appConfig";
+import { CATEGORIES, ATTRIBUTES } from "../../config/appConfig";
+import { adminService } from "../../../services/adminService";
+import { toast } from "sonner";
 
 export default function FabricConfiguratorPage() {
   const [mode, setMode] = useState("bulk"); // "bulk" | "manual"
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [isCleaning, setIsCleaning] = useState(false);
+
+  const handleDeduplicate = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to scan and remove duplicate attribute values from the server? This will delete duplicate values case-insensitively across all attributes (keeping the first unique instance)."
+    );
+    if (!confirmed) return;
+
+    setIsCleaning(true);
+    let deletedCount = 0;
+    try {
+      for (const attr of ATTRIBUTES) {
+        const res = await adminService.getAttributes({ category: attr });
+        const raw = res.data?.data || res.data || [];
+        const items = Array.isArray(raw) ? raw : [];
+
+        const seen = new Set();
+        const duplicates = [];
+
+        for (const item of items) {
+          const valLower = item.value?.trim().toLowerCase();
+          if (!valLower) continue;
+          if (seen.has(valLower)) {
+            duplicates.push(item);
+          } else {
+            seen.add(valLower);
+          }
+        }
+
+        for (const dup of duplicates) {
+          await adminService.deleteAttribute(dup.id);
+          deletedCount++;
+        }
+      }
+
+      if (deletedCount > 0) {
+        toast.success(`Deduplication complete. Removed ${deletedCount} duplicate values.`);
+      } else {
+        toast.success("Deduplication complete. No duplicate values found.");
+      }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      console.error("Deduplication failed:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to remove duplicate values from the server."
+      );
+    } finally {
+      setIsCleaning(false);
+    }
+  };
 
   return (
     <div className="fc-page">
-      <div className="admin-page-header">
+      <div className="admin-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
         <div>
           <h2>Fabric Main Configurator</h2>
           <p>Manage master-level fabric attributes for dropdowns, filtering, and mapping</p>
         </div>
+        <div>
+          <button
+            className="admin-btn admin-btn-secondary fc-dedup-btn"
+            onClick={handleDeduplicate}
+            disabled={isCleaning}
+          >
+            {isCleaning ? (
+              <>
+                <span className="fc-spinner" /> Deduplicating...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}>
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Deduplicate Server Values
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
 
       {/* Mode & Category Selection */}
       <div className="admin-card" style={{ marginBottom: 24 }}>

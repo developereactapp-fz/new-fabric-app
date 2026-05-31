@@ -21,6 +21,7 @@ export default function ComponentsPanelPage() {
   const [productTrees, setProductTrees] = useState([]);
   const [fabricsList, setFabricsList] = useState([]);
   const [globalLoading, setGlobalLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // ── Local UI States ──
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
@@ -36,6 +37,7 @@ export default function ComponentsPanelPage() {
   // ── Fetch All Catalog Products, Trees & Fabrics on Mount ──
   const fetchData = useCallback(async () => {
     setGlobalLoading(true);
+    setError(null);
     try {
       // 1. Fetch fabrics
       const fabricsRes = await adminService.getFabrics({ limit: 100 });
@@ -63,6 +65,7 @@ export default function ComponentsPanelPage() {
       setProductTrees(trees);
     } catch (err) {
       console.error("Failed to load catalog data:", err);
+      setError("Failed to load catalog data. Please check your network connection or verify your authentication token.");
       setToast("Failed to load catalog components.");
       setTimeout(() => setToast(null), 3000);
     } finally {
@@ -81,14 +84,15 @@ export default function ComponentsPanelPage() {
       const parts = tree.parts || [];
       parts.forEach((part) => {
         const types = part.types || [];
+        const isActiveDerived = types.length === 0 || types.some((t) => t.isActive !== false);
         list.push({
           id: part.id,
           name: part.name,
           productId: product.id,
           productName: product.name,
           categoryName: product.category?.name || "Unknown Product",
-          isActive: part.isActive !== false,
-          status: part.isActive !== false ? "active" : "inactive",
+          isActive: isActiveDerived,
+          status: isActiveDerived ? "active" : "inactive",
           values: types,
           valueCount: types.length,
           activeValueCount: types.filter((t) => t.isActive !== false).length,
@@ -157,13 +161,22 @@ export default function ComponentsPanelPage() {
       const comp = allComponents.find((c) => c.id === partId);
       if (!comp) return;
       const newStatus = !comp.isActive;
+
+      if (comp.values.length === 0) {
+        setToast("Cannot change status on a component with no values.");
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+
       try {
-        await adminService.updatePart(partId, { isActive: newStatus });
-        fetchData();
-        setToast(`Component marked as ${newStatus ? "active" : "inactive"}`);
+        await Promise.allSettled(
+          comp.values.map((val) => adminService.updatePartType(val.id, { isActive: newStatus }))
+        );
+        await fetchData();
+        setToast(`Component values marked as ${newStatus ? "active" : "inactive"}`);
         setTimeout(() => setToast(null), 3000);
       } catch (err) {
-        console.error("Failed to toggle component status:", err);
+        console.error("Failed to toggle component values status:", err);
         setToast("Failed to update status.");
         setTimeout(() => setToast(null), 3000);
       }
@@ -332,6 +345,22 @@ export default function ComponentsPanelPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="cp-error-banner">
+          <div className="cp-error-banner-content">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>{error}</span>
+          </div>
+          <button className="cp-error-retry-btn" onClick={fetchData}>
+            Try Again
+          </button>
+        </div>
+      )}
 
       {globalLoading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "64px" }}>
