@@ -212,7 +212,7 @@ const UserEnquiryPage = () => {
 
           <div className="form-actions">
             <button className="cancel-btn" onClick={() => navigate(-1)}>Cancel</button>
-            <button className="submit-btn">
+            <button className="submit-btn" onClick={() => { alert("Enquiry Submitted!"); navigate("/dashboard"); }}>
               <SendIcon />
               Submit Enquiry
             </button>

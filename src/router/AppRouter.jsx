@@ -22,6 +22,11 @@ import VerificationSuccess from "../features/verification/VerificationSuccess";
 import SavedDesigns from "../features/save/SavedDesigns";
 import SavedDesignDetails from "../features/save/SavedDesignDetails";
 import UserEnquiryPage from "../features/userEnquiry/UserEnquiryPage";
+import Dashboard from "../pages/Dashboard/Dashboard";
+import CustomSuitSummary from "../pages/Summary/CustomSuitSummary";
+import NotificationCenter from "../pages/Notifications/NotificationCenter";
+import ProfileDashboard from "../pages/Profile/ProfileDashboard";
+import EditProfile from "../pages/Profile/EditProfile";
 
 // Admin imports (Lazy Loaded)
 const AdminLayout = lazy(() => import("../admin/AdminLayout"));
@@ -36,6 +41,9 @@ const CustomShirtPage = lazy(() => import("../admin/pages/CustomShirt/CustomShir
 const FabricDetailPage = lazy(() => import("../admin/pages/FabricDetail/FabricDetailPage"));
 const GroupBuilderPage = lazy(() => import("../admin/pages/GroupBuilder/GroupBuilderPage"));
 const ContrastMapperPage = lazy(() => import("../admin/pages/ContrastMapper/ContrastMapperPage"));
+const AdvancedEnquiryDashboard = lazy(() => import("./AdvancedEnquiryDashboard"));
+const CommunityPanelPage = lazy(() => import("./CommunityPanelPage"));
+const AdvancedNotificationPage = lazy(() => import("./AdvancedNotificationPage"));
 
 
 
@@ -66,6 +74,9 @@ export default function AppRouter() {
             <Route path="contrast-mapper" element={<ContrastMapperPage />} />
 
 
+            <Route path="advanced-enquiry" element={<AdvancedEnquiryDashboard />} />
+            <Route path="community-panel" element={<CommunityPanelPage />} />
+            <Route path="notifications-panel" element={<AdvancedNotificationPage />} />
           </Route>
 
           {/* ═══════ Customer Routes ═══════ */}
@@ -117,9 +128,19 @@ function CustomerApp() {
           <Route path="/saved-designs/:id" element={<SavedDesignDetails />} />
           <Route path="/enquiry" element={<UserEnquiryPage />} />
 
+          {/* Dashboard & Main */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/customsuitsummary" element={<CustomSuitSummary />} />
+          <Route path="/notifications" element={<NotificationCenter />} />
+
+          {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/resetpassword" element={<ResetPassword />} />
+
+          {/* Profile */}
+          <Route path="/profiledashboard" element={<ProfileDashboard />} />
+          <Route path="/editprofile" element={<EditProfile />} />
 
           <Route path="*" element={<h2>Page Not Found</h2>} />
 

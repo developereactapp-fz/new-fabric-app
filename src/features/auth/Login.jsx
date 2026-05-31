@@ -5,6 +5,7 @@ import * as yup from "yup";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 import AuthLayout from "../../layouts/AuthLayout";
+import { API_ENDPOINTS } from "../../config/api";
 import "./Auth.css";
 
 /* ---------------- VALIDATION ---------------- */
@@ -13,9 +14,11 @@ const schema = yup.object({
   password: yup.string().min(8, "Minimum 8 characters").required("Password is required"),
 });
 
+
 // const API = "https://apperal-clothing-app.onrender.com";
    const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 
+ 
 
 export default function Login() {
   const navigate = useNavigate();
@@ -37,7 +40,7 @@ export default function Login() {
     setMessage("");
 
     try {
-      const res = await axios.post(`${API}/api/auth/login`, {
+      const res = await axios.post(API_ENDPOINTS.LOGIN, {
         email: data.email,
         password: data.password,
         tenantSlug: "test-tenant"

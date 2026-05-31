@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 import AuthLayout from "../../layouts/AuthLayout";
+import { API_ENDPOINTS } from "../../config/api";
 import "./Auth.css";
 
 /* ---------------- VALIDATION ---------------- */
@@ -16,11 +17,10 @@ const schema = yup.object({
 });
 
 // const API = "https://apperal-clothing-app.onrender.com";
-   const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
-
+const API = import.meta.env.VITE_API_URL || "https://apperal-clothing-app-production.up.railway.app";
 
 export default function ResetPassword() {
-  const navigate = useNavigate();
+  
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,7 +38,7 @@ export default function ResetPassword() {
     setMessage("");
 
     try {
-      await axios.post(`${API}/api/auth/forgot-password`, {
+      await axios.post(API_ENDPOINTS.RESET_PASSWORD, {
         email: data.email,
         tenantSlug: "test-tenant"
       });
