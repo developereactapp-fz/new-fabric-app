@@ -788,30 +788,21 @@ export default function FabricPanel({ fabrics, selected, onSelect, garmentType =
       if (!key) return;
 
       const types = Array.isArray(part?.types) ? part.types : [];
-
-      if (types.length === 0) return;
+      const activeTypes = types.filter((t) => t.isActive !== false);
+      if (activeTypes.length === 0) return;
 
       out[key] = {
-
         title: part?.name || key,
-
-        options: types.map((t) => ({
-
+        options: activeTypes.map((t) => ({
           id: t?.id || t?.slug || t?.name,
-
           name: t?.name || "",
-
           description: t?.description || "",
-
           image: getPublicAssetUrl(t?.assetId || t?.asset?.id) || t?.asset?.url || t?.imageUrl || null,
-
           selected: !!t?.isDefault,
-
           raw: t,
-
         })),
-
       };
+
 
     });
 

@@ -98,6 +98,12 @@ export default function ComponentsPanelPage() {
     return list;
   }, [productTrees]);
 
+  // Derived state to get the latest updated component details from allComponents
+  const activeSelectedComponent = useMemo(() => {
+    if (!selectedComponent) return null;
+    return allComponents.find((c) => c.id === selectedComponent.id) || selectedComponent;
+  }, [allComponents, selectedComponent]);
+
   // ── Build categories for filtering & metrics ──
   const categoriesList = useMemo(() => {
     const uniqNames = new Set(allComponents.map((c) => c.categoryName));
@@ -272,44 +278,24 @@ export default function ComponentsPanelPage() {
   // ── Toggle Master Switch (Main Switch) for a Component Value ──
   const handleToggleMasterSwitch = async (partTypeId, isCurrentlyOn) => {
     setMappingActionLoading(true);
-    const targetChecked = !isCurrentlyOn;
-
-    // Optimistic update all fabrics
-    setMappings((prev) => {
-      const entry = prev[partTypeId] || { availability: [] };
-      const updatedAvail = fabricsList.map((f) => {
-        const existing = entry.availability.find((a) => a.fabricId === f.id);
-        return {
-          id: existing?.id,
-          fabricId: f.id,
-          isChecked: targetChecked,
-        };
-      });
-      return {
-        ...prev,
-        [partTypeId]: { ...entry, availability: updatedAvail },
-      };
-    });
+    const targetActive = !isCurrentlyOn;
 
     try {
-      // Parallel API calls to update mappings for all fabrics
-      await Promise.all(
-        fabricsList.map((f) =>
-          adminService.createMapping({
-            fabricId: f.id,
-            partTypeId,
-            isChecked: targetChecked,
-          })
-        )
-      );
-      setToast(`Mapping status updated for all fabrics.`);
+      await adminService.updatePartType(partTypeId, { isActive: targetActive });
+      
+      // Update local state by calling fetchData to get latest database state
+      await fetchData();
+
+      if (targetActive === false && expandedValueId === partTypeId) {
+        setExpandedValueId(null);
+      }
+      
+      setToast(`Component value marked as ${targetActive ? "active" : "inactive"}`);
       setTimeout(() => setToast(null), 3000);
     } catch (err) {
-      console.error("Failed to save master mappings:", err);
-      setToast("Failed to save master mappings.");
+      console.error("Failed to toggle component value active status:", err);
+      setToast("Failed to update active status.");
       setTimeout(() => setToast(null), 3000);
-      // Reload mappings from server to ensure state consistency
-      handleOpenDrawer(selectedComponent);
     } finally {
       setMappingActionLoading(false);
     }
@@ -418,14 +404,14 @@ export default function ComponentsPanelPage() {
       )}
 
       {/* Slide-over detail drawer for mapping management */}
-      {selectedComponent && (
+      {activeSelectedComponent && (
         <div className="cp-drawer-overlay" onClick={() => setSelectedComponent(null)}>
           <div className="cp-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="cp-drawer-header">
               <div>
-                <h2>{selectedComponent.name}</h2>
+                <h2>{activeSelectedComponent.name}</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b", fontWeight: 500 }}>
-                  Product: {selectedComponent.productName} ({selectedComponent.categoryName})
+                  Product: {activeSelectedComponent.productName} ({activeSelectedComponent.categoryName})
                 </p>
               </div>
               <button className="cp-drawer-close" onClick={() => setSelectedComponent(null)}>
@@ -441,29 +427,39 @@ export default function ComponentsPanelPage() {
                 Manage mapping and fabric availability for individual values.
               </p>
 
-              {selectedComponent.values.length === 0 ? (
+              {activeSelectedComponent.values.length === 0 ? (
                 <p style={{ fontStyle: "italic", color: "#94a3b8" }}>No values added to this component.</p>
               ) : (
-                selectedComponent.values.map((val) => {
+                activeSelectedComponent.values.map((val) => {
                   const mappingEntry = mappings[val.id] || { availability: [], loaded: false, loading: true };
                   const activeFabrics = mappingEntry.availability.filter((a) => a.isChecked);
                   const activeCount = activeFabrics.length;
                   const isExpanded = expandedValueId === val.id;
 
-                  // Main Switch is ON if any fabric is checked
-                  const isMasterOn = activeCount > 0;
+                  // Main Switch is ON if component value is active in database
+                  const isMasterOn = val.isActive !== false;
 
                   return (
                     <div key={val.id} className="cp-value-item">
                       {/* Header Row */}
                       <div
                         className="cp-value-header"
-                        onClick={() => setExpandedValueId(isExpanded ? null : val.id)}
+                        onClick={() => isMasterOn && setExpandedValueId(isExpanded ? null : val.id)}
+                        style={{ cursor: isMasterOn ? "pointer" : "not-allowed", opacity: isMasterOn ? 1 : 0.7 }}
                       >
                         <div className="cp-value-header-left">
                           <span className="cp-value-title">{val.name}</span>
+                          {!isMasterOn && (
+                            <span style={{ marginLeft: "8px", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#fee2e2", color: "#ef4444", fontWeight: 600 }}>
+                              Inactive
+                            </span>
+                          )}
                           {mappingEntry.loading ? (
                             <span style={{ fontSize: "11px", color: "#94a3b8" }}>Loading...</span>
+                          ) : !isMasterOn ? (
+                            <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>
+                              Globally Inactive
+                            </span>
                           ) : (
                             <span className="cp-value-count">
                               Mapped to {activeCount} fabric{activeCount !== 1 ? "s" : ""}
@@ -473,7 +469,7 @@ export default function ComponentsPanelPage() {
 
                         <div className="cp-value-header-right" onClick={(e) => e.stopPropagation()}>
                           {/* Master Main Switch */}
-                          <label className="cp-toggle" title={isMasterOn ? "Disable for all fabrics" : "Enable for all fabrics"}>
+                          <label className="cp-toggle" title={isMasterOn ? "Mark inactive globally" : "Mark active globally"}>
                             <input
                               type="checkbox"
                               checked={isMasterOn}
@@ -483,24 +479,26 @@ export default function ComponentsPanelPage() {
                             <span className="cp-toggle-slider" />
                           </label>
 
-                          <svg
-                            className={`cp-chevron-icon ${isExpanded ? "open" : ""}`}
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            onClick={() => setExpandedValueId(isExpanded ? null : val.id)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
+                          {isMasterOn && (
+                            <svg
+                              className={`cp-chevron-icon ${isExpanded ? "open" : ""}`}
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              onClick={() => setExpandedValueId(isExpanded ? null : val.id)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          )}
                         </div>
                       </div>
 
                       {/* Expanded Fabrics List */}
-                      {isExpanded && (
+                      {isExpanded && isMasterOn && (
                         <div className="cp-fabric-list">
                           {mappingEntry.loading ? (
                             <p style={{ color: "#94a3b8", fontSize: "12px", textAlign: "center", padding: "12px" }}>
